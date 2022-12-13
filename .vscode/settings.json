@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "socket.h": "c",
+    "nrf_modem_lib.h": "c"
+  }
+}

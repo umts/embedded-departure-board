@@ -1,0 +1,32 @@
+# Available runners configured by board.cmake.
+runners:
+- nrfjprog
+- jlink
+
+# Default flash runner if --runner is not given.
+flash-runner: nrfjprog
+
+# Default debug runner if --runner is not given.
+debug-runner: jlink
+
+# Common runner configuration values.
+config:
+  board_dir: /home/jforgue/zephyr-cell-new/zephyr/boards/arm/circuitdojo_feather_nrf9160
+  # Build outputs:
+  elf_file: zephyr.elf
+  hex_file: zephyr.hex
+  bin_file: zephyr.bin
+  # Host tools:
+  gdb: /home/jforgue/.local/zephyr-sdk-0.15.2/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb
+  openocd: /home/jforgue/.local/zephyr-sdk-0.15.2/sysroots/x86_64-pokysdk-linux/usr/bin/openocd
+  openocd_search:
+    - /home/jforgue/.local/zephyr-sdk-0.15.2/sysroots/x86_64-pokysdk-linux/usr/share/openocd/scripts
+
+# Runner specific arguments
+args:
+  nrfjprog:
+    - --erase
+  jlink:
+    - --dt-flash=y
+    - --device=nRF9160_xxAA
+    - --speed=4000

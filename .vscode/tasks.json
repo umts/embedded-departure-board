@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+    {
+      "type": "shell",
+      "label": "west build app",
+      "command": "west",
+      "args": ["build", "${workspaceFolder}/app", "--pristine"],
+      "options": {
+        "env": {
+          "BOARD": "circuitdojo_feather_nrf9160_ns",
+          "ZEPHYR_TOOLCHAIN_VARIANT": "zephyr",
+          "ZEPHYR_SDK_INSTALL_DIR": "${HOME}/.local/zephyr-sdk-0.15.2/"
+        }
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": "build",
+      "detail": "compiler: $HOME/.local/bin/west"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+İõ=×¿ßÕ=uõ_×ß×õ]_õİµ?uıßõíõÕ}Õw½}×ãõ-UÕÕİİ7«ı½Uõİı¿Õÿuõ÷ıWu÷µİ÷]Uıw]ÃU_UıwıwİİUııw?İõUõı_WUUÕWıw×WUİwıw¿]ÕÕ}UİÿÕ}ÕıwwU}wı?İÕUwıÕWÕİUııÕ_ÕİUıı]_U}ÕwıwwİİUııİwİÕUõıUUuÕwıwõUÕõwwwU]İwıwwU}ÕwıwU]İwıw÷U}Õwİ]÷ÕÕõwıwWÕİUııİwİİUııUWU}Õ÷ı÷÷u]ÕıwwWİÕUõıU÷İÕõwıwuİUõıW_U}Õwıw÷U}ÕwıwwİUõw=•éıw÷}ıU_Õı}ı•$ßÿÕWı_[00:00:00.201,599] [1;31m<err> pcf85063a: Failed to get pointer to I2C_1 device![0m
+*** Booting Zephyr OS build v2.7.99-ncs1-1  ***
+[00:00:00.214,477] [1;31m<err> main: Failed to get RTC device binding[0m
+[00:00:00.228,179] [1;31m<err> os: ***** USAGE FAULT *****[0m
+[00:00:00.233,764] [1;31m<err> os:   Stack overflow (context area not valid)[0m
+[00:00:00.240,966] [1;31m<err> os: r0/a1:  0x2000eba0  r1/a2:  0xeebfcfbd  r2/a3:  0x30950807[0m
+[00:00:00.249,633] [1;31m<err> os: r3/a4:  0x7ef933bb r12/ip:  0xa5a00635 r14/lr:  0xfdf4aefc[0m
+[00:00:00.258,331] [1;31m<err> os:  xpsr:  0xdffdf600[0m
+[00:00:00.263,519] [1;31m<err> os: Faulting instruction address (r15/pc): 0x14748010[0m
+[00:00:00.271,423] [1;31m<err> os: >>> ZEPHYR FATAL ERROR 2: Stack overflow on CPU 0[0m
+[00:00:00.279,327] [1;31m<err> os: Current thread: 0x2000cab0 (unknown)[0m
+[00:00:00.286,102] [1;31m<err> os: Halting system[0m

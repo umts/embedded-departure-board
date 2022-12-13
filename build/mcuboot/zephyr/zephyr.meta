@@ -1,0 +1,191 @@
+modules:
+- name: nrf
+  path: /home/jforgue/zephyr-cell-new/nrf
+  revision: 188a16036ab968bc0f9226ba178ca461548a8c66-dirty
+- name: pcf85063a
+  path: /home/jforgue/zephyr-cell-new/pcf85063a
+  revision: 61cde56d0f269d6cd881bd98a8667d46623b4c51
+- name: hostap
+  path: /home/jforgue/zephyr-cell-new/modules/lib/hostap
+  revision: 49fddb8f5bb9511cf8d9e56bf680576b26fe2fc8
+- name: mcuboot
+  path: /home/jforgue/zephyr-cell-new/bootloader/mcuboot
+  revision: 78fd7ff9f31d88b9119734965e2afdda0cb9689a
+- name: mbedtls
+  path: /home/jforgue/zephyr-cell-new/modules/crypto/mbedtls
+  revision: 7fed49c9b9f983ad6416986661ef637459723bcb
+- name: trusted-firmware-m
+  path: /home/jforgue/zephyr-cell-new/modules/tee/tf-m/trusted-firmware-m
+  revision: 4a9297127f03e71a36c14538587eb6eb1d86fed9
+- name: tfm-mcuboot
+  path: /home/jforgue/zephyr-cell-new/modules/tee/tfm-mcuboot
+  revision: 4aa516e7281fc6f9a2dce0b0efda9acc580fa254
+- name: azure-sdk-for-c
+  path: /home/jforgue/zephyr-cell-new/modules/lib/azure-sdk-for-c
+  revision: 308c171cb4b5eed266649012a68406487ec81fb2
+- name: memfault-firmware-sdk
+  path: /home/jforgue/zephyr-cell-new/modules/lib/memfault-firmware-sdk
+  revision: d7ed96dabb9fbdb73efd65f895950a17b496b84a
+- name: cirrus-logic
+  path: /home/jforgue/zephyr-cell-new/modules/hal/cirrus-logic
+  revision: 9f6b3812237fbb0d4157ba3584c13f1644fcbe3a
+- name: canopennode
+  path: /home/jforgue/zephyr-cell-new/modules/lib/canopennode
+  revision: 53d3415c14d60f8f4bfca54bfbc5d5a667d7e724
+- name: chre
+  path: /home/jforgue/zephyr-cell-new/modules/lib/chre
+  revision: ef76d3456db07e4959df555047d6962279528c8d
+- name: cmsis
+  path: /home/jforgue/zephyr-cell-new/modules/hal/cmsis
+  revision: 093de61c2a7d12dc9253daf8692f61f793a9254a
+- name: fatfs
+  path: /home/jforgue/zephyr-cell-new/modules/fs/fatfs
+  revision: a30531af3a95a9a3ea7d771ea8a578ebfed45514
+- name: hal_nordic
+  path: /home/jforgue/zephyr-cell-new/modules/hal/nordic
+  revision: fe0be3c3546e136a67264084c0e3edfd7354645a
+- name: st
+  path: /home/jforgue/zephyr-cell-new/modules/hal/st
+  revision: cccbc24c14decfd3f93959f7b14514536af973c7
+- name: hal_wurthelektronik
+  path: /home/jforgue/zephyr-cell-new/modules/hal/wurthelektronik
+  revision: 24ca9873c3d608fad1fea0431836bc8f144c132e
+- name: libmetal
+  path: /home/jforgue/zephyr-cell-new/modules/hal/libmetal
+  revision: 2f586b4f1276fb075ee145421bdf6cbe5403aa41
+- name: liblc3
+  path: /home/jforgue/zephyr-cell-new/modules/lib/liblc3
+  revision: 448f3de31f49a838988a162ef1e23a89ddf2d2ed
+- name: littlefs
+  path: /home/jforgue/zephyr-cell-new/modules/fs/littlefs
+  revision: ca583fd297ceb48bced3c2548600dc615d67af24
+- name: nanopb
+  path: /home/jforgue/zephyr-cell-new/modules/lib/nanopb
+  revision: dc4deed54fd4c7e1935e3b6387eedf21bb45dc38
+- name: nrf_hw_models
+  path: /home/jforgue/zephyr-cell-new/modules/bsim_hw_models/nrf_hw_models
+  revision: 65bc5305d432c08e24a3f343006d1e7deaff4908
+- name: open-amp
+  path: /home/jforgue/zephyr-cell-new/modules/lib/open-amp
+  revision: 8d53544871e1f300c478224faca6be8384ab0d04
+- name: picolibc
+  path: /home/jforgue/zephyr-cell-new/modules/lib/picolibc
+  revision: 04ada5951cbaf8e7b17f8226ce31cb6837c28ba7
+- name: segger
+  path: /home/jforgue/zephyr-cell-new/modules/debug/segger
+  revision: d4e568a920b4bd087886170a5624c167b2d0665e
+- name: tinycbor
+  path: /home/jforgue/zephyr-cell-new/modules/lib/tinycbor
+  revision: 9e1f34bc08123aaad7666d3652aaa839e8178b3b
+- name: tinycrypt
+  path: /home/jforgue/zephyr-cell-new/modules/crypto/tinycrypt
+  revision: 3e9a49d2672ec01435ffbf0d788db6d95ef28de0
+- name: TraceRecorder
+  path: /home/jforgue/zephyr-cell-new/modules/debug/TraceRecorder
+  revision: 9893bf1cf649a2c4ee2e27293f887994f3d0da5b
+- name: tf-m-tests
+  path: /home/jforgue/zephyr-cell-new/modules/tee/tf-m/tf-m-tests
+  revision: bcb53bccccdc05c713aade707e7a8ddad35c210f
+- name: psa-arch-tests
+  path: /home/jforgue/zephyr-cell-new/modules/tee/tf-m/psa-arch-tests
+  revision: f4fc2442b8e29e2a03d9899e46e5a3ea3df8c2c9
+- name: uoscore-uedhoc
+  path: /home/jforgue/zephyr-cell-new/modules/lib/uoscore-uedhoc
+  revision: e8920192b66db4f909eb9cd3f155d5245c1ae825
+- name: zcbor
+  path: /home/jforgue/zephyr-cell-new/modules/lib/zcbor
+  revision: 0556edac504d1f34699aa8a22fcd507c14756c9e
+- name: zscilib
+  path: /home/jforgue/zephyr-cell-new/modules/lib/zscilib
+  revision: ca070ddabdaf67175a2da901d0bd62e8899371c5
+- name: nrfxlib
+  path: /home/jforgue/zephyr-cell-new/nrfxlib
+  revision: 03d0965d9d8a3e8a6dfe3c959aefe27f1320c3ca
+west:
+  manifest: /home/jforgue/zephyr-cell-new/app/west.yml
+  projects:
+  - path: /home/jforgue/zephyr-cell-new/app
+    revision: null
+  - path: /home/jforgue/zephyr-cell-new/nrf
+    revision: 188a16036ab968bc0f9226ba178ca461548a8c66-dirty-off
+  - path: /home/jforgue/zephyr-cell-new/pcf85063a
+    revision: 61cde56d0f269d6cd881bd98a8667d46623b4c51
+  - path: /home/jforgue/zephyr-cell-new/zephyr
+    revision: c0689b16ff127d1b71a4cc20310d476e1807e26e
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/hostap
+    revision: 49fddb8f5bb9511cf8d9e56bf680576b26fe2fc8
+  - path: /home/jforgue/zephyr-cell-new/bootloader/mcuboot
+    revision: 78fd7ff9f31d88b9119734965e2afdda0cb9689a
+  - path: /home/jforgue/zephyr-cell-new/mbedtls
+    revision: 89419b374d17d30b7637cfb91f699c2d8432127a-dirty-off
+  - path: /home/jforgue/zephyr-cell-new/nrfxlib
+    revision: 03d0965d9d8a3e8a6dfe3c959aefe27f1320c3ca
+  - path: /home/jforgue/zephyr-cell-new/modules/tee/tf-m/trusted-firmware-m
+    revision: 4a9297127f03e71a36c14538587eb6eb1d86fed9
+  - path: /home/jforgue/zephyr-cell-new/modules/tee/tfm-mcuboot
+    revision: 4aa516e7281fc6f9a2dce0b0efda9acc580fa254
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/azure-sdk-for-c
+    revision: 308c171cb4b5eed266649012a68406487ec81fb2
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/memfault-firmware-sdk
+    revision: d7ed96dabb9fbdb73efd65f895950a17b496b84a
+  - path: /home/jforgue/zephyr-cell-new/modules/hal/cirrus-logic
+    revision: 9f6b3812237fbb0d4157ba3584c13f1644fcbe3a
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/canopennode
+    revision: 53d3415c14d60f8f4bfca54bfbc5d5a667d7e724
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/chre
+    revision: ef76d3456db07e4959df555047d6962279528c8d
+  - path: /home/jforgue/zephyr-cell-new/modules/hal/cmsis
+    revision: 093de61c2a7d12dc9253daf8692f61f793a9254a
+  - path: /home/jforgue/zephyr-cell-new/tools/edtt
+    revision: 1ea61a390d2bfcf3b2ecdba8f8b0b98dfdffbd11
+  - path: /home/jforgue/zephyr-cell-new/modules/fs/fatfs
+    revision: a30531af3a95a9a3ea7d771ea8a578ebfed45514
+  - path: /home/jforgue/zephyr-cell-new/modules/hal/nordic
+    revision: fe0be3c3546e136a67264084c0e3edfd7354645a
+  - path: /home/jforgue/zephyr-cell-new/modules/hal/st
+    revision: cccbc24c14decfd3f93959f7b14514536af973c7
+  - path: /home/jforgue/zephyr-cell-new/modules/hal/wurthelektronik
+    revision: 24ca9873c3d608fad1fea0431836bc8f144c132e
+  - path: /home/jforgue/zephyr-cell-new/modules/hal/libmetal
+    revision: 2f586b4f1276fb075ee145421bdf6cbe5403aa41
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/liblc3
+    revision: 448f3de31f49a838988a162ef1e23a89ddf2d2ed
+  - path: /home/jforgue/zephyr-cell-new/modules/fs/littlefs
+    revision: ca583fd297ceb48bced3c2548600dc615d67af24
+  - path: /home/jforgue/zephyr-cell-new/modules/crypto/mbedtls
+    revision: 7fed49c9b9f983ad6416986661ef637459723bcb
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/nanopb
+    revision: dc4deed54fd4c7e1935e3b6387eedf21bb45dc38
+  - path: /home/jforgue/zephyr-cell-new/tools/net-tools
+    revision: e0828aa9629b533644dc96ff6d1295c939bd713c
+  - path: /home/jforgue/zephyr-cell-new/modules/bsim_hw_models/nrf_hw_models
+    revision: 65bc5305d432c08e24a3f343006d1e7deaff4908
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/open-amp
+    revision: 8d53544871e1f300c478224faca6be8384ab0d04
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/picolibc
+    revision: 04ada5951cbaf8e7b17f8226ce31cb6837c28ba7
+  - path: /home/jforgue/zephyr-cell-new/modules/debug/segger
+    revision: d4e568a920b4bd087886170a5624c167b2d0665e
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/tinycbor
+    revision: 9e1f34bc08123aaad7666d3652aaa839e8178b3b
+  - path: /home/jforgue/zephyr-cell-new/modules/crypto/tinycrypt
+    revision: 3e9a49d2672ec01435ffbf0d788db6d95ef28de0
+  - path: /home/jforgue/zephyr-cell-new/modules/debug/TraceRecorder
+    revision: 9893bf1cf649a2c4ee2e27293f887994f3d0da5b
+  - path: /home/jforgue/zephyr-cell-new/modules/tee/tf-m/tf-m-tests
+    revision: bcb53bccccdc05c713aade707e7a8ddad35c210f
+  - path: /home/jforgue/zephyr-cell-new/modules/tee/tf-m/psa-arch-tests
+    revision: f4fc2442b8e29e2a03d9899e46e5a3ea3df8c2c9
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/uoscore-uedhoc
+    revision: e8920192b66db4f909eb9cd3f155d5245c1ae825
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/zcbor
+    revision: 0556edac504d1f34699aa8a22fcd507c14756c9e
+  - path: /home/jforgue/zephyr-cell-new/modules/lib/zscilib
+    revision: ca070ddabdaf67175a2da901d0bd62e8899371c5
+workspace:
+  dirty: true
+  extra: false
+  'off': true
+zephyr:
+  path: /home/jforgue/zephyr-cell-new/zephyr
+  revision: c0689b16ff127d1b71a4cc20310d476e1807e26e

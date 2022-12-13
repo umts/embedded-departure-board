@@ -1,0 +1,126 @@
+menu "nrf (/home/jforgue/zephyr-cell-new/nrf)"
+osource "/home/jforgue/zephyr-cell-new/nrf/Kconfig.nrf"
+config ZEPHYR_NRF_MODULE
+	bool
+	default y
+endmenu
+menu "pcf85063a (/home/jforgue/zephyr-cell-new/pcf85063a)"
+osource "/home/jforgue/zephyr-cell-new/pcf85063a/Kconfig"
+config ZEPHYR_PCF85063A_MODULE
+	bool
+	default y
+endmenu
+menu "hostap (/home/jforgue/zephyr-cell-new/modules/lib/hostap)"
+osource "/home/jforgue/zephyr-cell-new/modules/lib/hostap/zephyr/Kconfig"
+config ZEPHYR_HOSTAP_MODULE
+	bool
+	default y
+endmenu
+menu "mcuboot (/home/jforgue/zephyr-cell-new/bootloader/mcuboot)"
+osource "$(ZEPHYR_MCUBOOT_KCONFIG)"
+config ZEPHYR_MCUBOOT_MODULE
+	bool
+	default y
+endmenu
+menu "mbedtls (/home/jforgue/zephyr-cell-new/modules/crypto/mbedtls)"
+osource "$(ZEPHYR_MBEDTLS_KCONFIG)"
+config ZEPHYR_MBEDTLS_MODULE
+	bool
+	default y
+endmenu
+menu "trusted-firmware-m (/home/jforgue/zephyr-cell-new/modules/tee/tf-m/trusted-firmware-m)"
+osource "$(ZEPHYR_TRUSTED_FIRMWARE_M_KCONFIG)"
+config ZEPHYR_TRUSTED_FIRMWARE_M_MODULE
+	bool
+	default y
+endmenu
+menu "azure-sdk-for-c (/home/jforgue/zephyr-cell-new/modules/lib/azure-sdk-for-c)"
+osource "$(ZEPHYR_AZURE_SDK_FOR_C_KCONFIG)"
+config ZEPHYR_AZURE_SDK_FOR_C_MODULE
+	bool
+	default y
+endmenu
+menu "memfault-firmware-sdk (/home/jforgue/zephyr-cell-new/modules/lib/memfault-firmware-sdk)"
+osource "/home/jforgue/zephyr-cell-new/modules/lib/memfault-firmware-sdk/ports/zephyr/Kconfig"
+config ZEPHYR_MEMFAULT_FIRMWARE_SDK_MODULE
+	bool
+	default y
+endmenu
+menu "cirrus-logic (/home/jforgue/zephyr-cell-new/modules/hal/cirrus-logic)"
+osource "/home/jforgue/zephyr-cell-new/modules/hal/cirrus-logic/Kconfig"
+config ZEPHYR_CIRRUS_LOGIC_MODULE
+	bool
+	default y
+endmenu
+menu "canopennode (/home/jforgue/zephyr-cell-new/modules/lib/canopennode)"
+osource "$(ZEPHYR_CANOPENNODE_KCONFIG)"
+config ZEPHYR_CANOPENNODE_MODULE
+	bool
+	default y
+endmenu
+menu "chre (/home/jforgue/zephyr-cell-new/modules/lib/chre)"
+osource "/home/jforgue/zephyr-cell-new/modules/lib/chre/platform/zephyr/Kconfig"
+config ZEPHYR_CHRE_MODULE
+	bool
+	default y
+endmenu
+menu "hal_nordic (/home/jforgue/zephyr-cell-new/modules/hal/nordic)"
+osource "$(ZEPHYR_HAL_NORDIC_KCONFIG)"
+config ZEPHYR_HAL_NORDIC_MODULE
+	bool
+	default y
+endmenu
+menu "liblc3 (/home/jforgue/zephyr-cell-new/modules/lib/liblc3)"
+osource "$(ZEPHYR_LIBLC3_KCONFIG)"
+config ZEPHYR_LIBLC3_MODULE
+	bool
+	default y
+endmenu
+menu "littlefs (/home/jforgue/zephyr-cell-new/modules/fs/littlefs)"
+osource "$(ZEPHYR_LITTLEFS_KCONFIG)"
+config ZEPHYR_LITTLEFS_MODULE
+	bool
+	default y
+endmenu
+menu "nanopb (/home/jforgue/zephyr-cell-new/modules/lib/nanopb)"
+osource "$(ZEPHYR_NANOPB_KCONFIG)"
+config ZEPHYR_NANOPB_MODULE
+	bool
+	default y
+endmenu
+menu "picolibc (/home/jforgue/zephyr-cell-new/modules/lib/picolibc)"
+osource "/home/jforgue/zephyr-cell-new/modules/lib/picolibc/zephyr/Kconfig"
+config ZEPHYR_PICOLIBC_MODULE
+	bool
+	default y
+endmenu
+menu "TraceRecorder (/home/jforgue/zephyr-cell-new/modules/debug/TraceRecorder)"
+osource "/home/jforgue/zephyr-cell-new/modules/debug/TraceRecorder/kernelports/Zephyr/Kconfig"
+config ZEPHYR_TRACERECORDER_MODULE
+	bool
+	default y
+endmenu
+menu "uoscore-uedhoc (/home/jforgue/zephyr-cell-new/modules/lib/uoscore-uedhoc)"
+osource "$(ZEPHYR_UOSCORE_UEDHOC_KCONFIG)"
+config ZEPHYR_UOSCORE_UEDHOC_MODULE
+	bool
+	default y
+endmenu
+menu "zcbor (/home/jforgue/zephyr-cell-new/modules/lib/zcbor)"
+osource "$(ZEPHYR_ZCBOR_KCONFIG)"
+config ZEPHYR_ZCBOR_MODULE
+	bool
+	default y
+endmenu
+menu "zscilib (/home/jforgue/zephyr-cell-new/modules/lib/zscilib)"
+osource "/home/jforgue/zephyr-cell-new/modules/lib/zscilib/Kconfig.zscilib"
+config ZEPHYR_ZSCILIB_MODULE
+	bool
+	default y
+endmenu
+menu "nrfxlib (/home/jforgue/zephyr-cell-new/nrfxlib)"
+osource "/home/jforgue/zephyr-cell-new/nrfxlib/Kconfig.nrfxlib"
+config ZEPHYR_NRFXLIB_MODULE
+	bool
+	default y
+endmenu

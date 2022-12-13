@@ -1,0 +1,32 @@
+# Import requirements for nRF9160 Feather Examples and Drivers
+manifest:
+  remotes:
+    - name: nrfconnect
+      url-base: https://github.com/nrfconnect
+  projects:
+    - name: nrf
+      repo-path: sdk-nrf
+      remote: nrfconnect
+      revision: v2.2.0
+      import:
+        name-blocklist:
+          - matter
+          - nrf-802154
+          - cjson
+          - openthread
+          - cmock
+          - unity
+          - cddl-gen
+          - homekit
+          - loramac-node
+          - lz4
+          - lvgl
+          - mipi-sys-t
+    # RTC Driver
+    - name: pcf85063a
+      url: https://github.com/circuitdojo/pcf85063a
+      revision: master
+      path: pcf85063a
+  self:
+    # This repository should be cloned to nrf9160-feather
+    path: app
