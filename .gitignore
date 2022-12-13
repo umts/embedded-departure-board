@@ -1,0 +1,11 @@
+# Zephyr build folder
+build/
+
+# Zephyr logs
+log*.txt
+
+# Compiled Python bytecode
+*.py[cod]
+
+# Log files
+*.log

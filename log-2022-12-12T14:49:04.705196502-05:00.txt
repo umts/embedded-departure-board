@@ -1,15 +1,0 @@
-İõ=×¿ßÕ=uõ_×ß×õ]_õİµ?uıßÕíõÕ}Õw}õ×kuíwİßİı]½ıßİ]½UW?]õ÷ıWu÷µİ÷]UıwUË]WUõwıÿİ]Uııw?İ]UııwwU}Õwıw×WUİwıw?İÕÕ}İÕwİu•õww•Uıwıw?]ÕU÷ı]WUİÕııİWÕİUıı]WU}ÕwıwİİUııİ?İİUıı]wU}Õwıwõ]•ıw÷wÕ]İwıwwUUÕwıUUÕwıw÷U}Õwİ]÷İİõwıwWİİUııİ?İİUıı]×U}Õwıwwõ]ÕıWWÕÕUõıU÷ÕÕõwıuÕUõıW_UuÕwı÷UuÕwıwİÕõ÷½•éıwwııU]]ÕõuõUÕ×õ=Õ]*** Booting Zephyr OS build v2.7.99-ncs1-1  ***
-[00:00:00.205,841] [1;31m<err> main: Failed to get RTC device binding[0m
-[00:00:00.212,860] [1;31m<err> os: Exception occurred in Secure State[0m
-[00:00:00.219,421] [1;31m<err> os: ***** HARD FAULT *****[0m
-[00:00:00.224,975] [1;31m<err> os:   Fault escalation (see below)[0m
-[00:00:00.231,231] [1;31m<err> os: ***** BUS FAULT *****[0m
-[00:00:00.236,724] [1;31m<err> os:   Precise data bus error[0m
-[00:00:00.242,462] [1;31m<err> os:   BFAR Address: 0x50008158[0m
-[00:00:00.248,382] [1;31m<err> os: r0/a1:  0x00000000  r1/a2:  0x00000000  r2/a3:  0x00029f10[0m
-[00:00:00.257,049] [1;31m<err> os: r3/a4:  0x2000c720 r12/ip:  0x00000010 r14/lr:  0x00020789[0m
-[00:00:00.265,747] [1;31m<err> os:  xpsr:  0x61000000[0m
-[00:00:00.270,965] [1;31m<err> os: Faulting instruction address (r15/pc): 0x000207e6[0m
-[00:00:00.278,869] [1;31m<err> os: >>> ZEPHYR FATAL ERROR 0: CPU exception on CPU 0[0m
-[00:00:00.286,682] [1;31m<err> os: Current thread: 0x2000c698 (unknown)[0m
-[00:00:00.293,487] [1;31m<err> os: Halting system[0m
