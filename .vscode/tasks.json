@@ -5,7 +5,11 @@
       "type": "shell",
       "label": "west build app",
       "command": "west",
-      "args": ["build", "${workspaceFolder}/app", "--pristine"],
+      "args": [
+        "build",
+        "${workspaceFolder}/app",
+        "${input:pristine}"
+      ],
       "options": {
         "env": {
           "BOARD": "circuitdojo_feather_nrf9160_ns",
@@ -18,6 +22,34 @@
       ],
       "group": "build",
       "detail": "compiler: $HOME/.local/bin/west"
+    },
+    {
+      "type": "shell",
+      "label": "newtmgr image upload",
+      "command": "newtmgr",
+      "args": [
+        "-c",
+        "serial",
+        "image",
+        "upload",
+        "${workspaceFolder}/build/zephyr/app_update.bin"
+      ],
+      "options": {},
+      "group": "none",
+      "detail": "connstring: 'dev=/dev/ttyUSB0,baud=1000000'",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "pristine",
+      "type": "pickString",
+      "description": "Build options",
+      "options": [
+        "",
+        "--pristine",
+        "--force"
+      ]
     }
   ]
 }

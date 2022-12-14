@@ -1,6 +1,8 @@
 {
   "files.associations": {
     "socket.h": "c",
-    "nrf_modem_lib.h": "c"
+    "nrf_modem_lib.h": "c",
+    "pcf85063a.h": "c",
+    "*.overlay": "dts"
   }
 }
