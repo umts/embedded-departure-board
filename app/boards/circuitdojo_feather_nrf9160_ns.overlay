@@ -1,0 +1,20 @@
+&i2c1 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+  zephyr,concat-buf-size = <256>;
+
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-1 = <&i2c1_sleep>;
+	pinctrl-names = "default", "sleep";
+	pcf85063a: pcf85063a@51 {
+		compatible = "nxp,pcf85063a";
+		reg = <0x51>;
+	};
+
+	lis2dh: lis2dh@18 {
+		compatible = "st,lis2dh";
+		reg = <0x18>;
+		irq-gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
+		disconnect-sdo-sa0-pull-up;
+	};
+};

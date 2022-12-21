@@ -12,7 +12,6 @@ manifest:
         name-blocklist:
           - matter
           - nrf-802154
-          - cjson
           - openthread
           - cmock
           - unity

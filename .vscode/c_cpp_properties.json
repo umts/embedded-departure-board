@@ -2,12 +2,15 @@
   "configurations": [
     {
       "name": "Linux",
-      "includePath": ["${workspaceFolder}/**"],
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${HOME}/.local/zephyr-sdk-0.15.2/arm-zephyr-eabi/arm-zephyr-eabi/include/*"
+      ],
       "defines": [],
       "compilerPath": "${HOME}/.local/bin/west",
       "cStandard": "c17",
-      "cppStandard": "c++14",
-      "intelliSenseMode": "linux-clang-x64"
+      "cppStandard": "c++20",
+      "intelliSenseMode": "linux-gcc-arm"
     }
   ],
   "version": 4

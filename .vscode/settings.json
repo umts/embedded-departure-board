@@ -3,6 +3,31 @@
     "socket.h": "c",
     "nrf_modem_lib.h": "c",
     "pcf85063a.h": "c",
-    "*.overlay": "dts"
-  }
+    "*.overlay": "dts",
+    "counter.h": "c",
+    "inttypes.h": "c",
+    "log.h": "c",
+    "kernel.h": "c",
+    "string.h": "c",
+    "stdint.h": "c",
+    "__assert.h": "c",
+    "device.h": "c",
+    "gpio.h": "c",
+    "i2c.h": "c",
+    "util.h": "c",
+    "lte_lc.h": "c",
+    "*.inc": "c",
+    "*.tcc": "c",
+    "chrono": "c",
+    "future": "c",
+    "iomanip": "c",
+    "limits": "c",
+    "numeric": "c",
+    "ratio": "c",
+    "streambuf": "c",
+    "tuple": "c",
+    "type_traits": "c",
+    "stdlib.h": "c"
+  },
+  "C_Cpp.errorSquiggles": "EnabledIfIncludesResolve"
 }

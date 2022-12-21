@@ -1,48 +1,37 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/gpio.h>
-#include <date_time.h>
-#include <zephyr/drivers/counter.h>
-#include <drivers/counter/pcf85063a.h>
-#include <modem/nrf_modem_lib.h>
-#include <modem/lte_lc.h>
-
 #include <zephyr/device.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/drivers/counter.h>
+
+#include <date_time.h>
+#include <drivers/counter/pcf85063a.h>
+
+#include <modem/nrf_modem_lib.h>
+#include <modem/lte_lc.h>
+#include <stdint.h>
+
+#define RTC DEVICE_DT_GET(DT_NODELABEL(pcf85063a))
 
 LOG_MODULE_REGISTER(get_rtc, LOG_LEVEL_DBG);
 
 K_SEM_DEFINE(date_time_ready, 0, 1);
 
-const struct device *rtc;
-
-void rtc_init() {
-	/* Get the device */
-	rtc = device_get_binding("PCF85063A");
-	if (rtc == NULL) {
-		LOG_ERR("Failed to get RTC device binding");
-		return;
-	}
-
-	//LOG_INF("device is %p, name is %s", rtc, log_strdup(rtc->name));
-
-	int err = counter_start(rtc);
-	if (err) {
-		LOG_ERR("Unable to start RTC. Err: %i", err);
-	}
-}
-
-static void print_date_time(const struct tm *time) {
-	LOG_INF("%i:%i:%i %i/%i/%i - %i", time->tm_hour, time->tm_min, time->tm_sec, time->tm_mon + 1, time->tm_mday, 1900 + time->tm_year, time->tm_isdst);
-	LOG_INF("yday %i", time->tm_yday);
-}
+const struct device *const rtc = RTC;
 
 static void date_time_event_handler(const struct date_time_evt *evt) {
 	switch (evt->type) {
 	case DATE_TIME_OBTAINED_MODEM:
+  	// LOG_INF("Date & time obtained MODEM.");
+		// k_sem_give(&date_time_ready);
+		// break;
 	case DATE_TIME_OBTAINED_NTP:
+  	LOG_INF("Date & time obtained NTP.");
+		k_sem_give(&date_time_ready);
+		break;
 	case DATE_TIME_OBTAINED_EXT:
-		LOG_INF("Date & time obtained.");
+		LOG_INF("Date & time obtained EXT.");
 		k_sem_give(&date_time_ready);
 		break;
 	case DATE_TIME_NOT_OBTAINED:
@@ -53,70 +42,83 @@ static void date_time_event_handler(const struct date_time_evt *evt) {
 	}
 }
 
-void get_time(void) {
-	int err = 0;
+void rtc_init() {
+  int err = 0;
 
-	/* Init lte_lc*/
-	err = lte_lc_init_and_connect();
-	if (err)
-		LOG_ERR("Failed to init and connect. Err: %i", err);
+	/* Check device readiness */
+  if (!device_is_ready(rtc)) {
+    LOG_ERR("pcf85063a isn't ready!");
+  }
 
-	/* Force time update */
+	LOG_INF("device is %p, name is %s", rtc, rtc->name);
+
+	err = counter_start(rtc);
+	if (err) {
+		LOG_ERR("Unable to start RTC. Err: %i", err);
+	}
+
+  /* Force time update */
 	err = date_time_update_async(date_time_event_handler);
-	if (err)
+	if (err) {
 		LOG_ERR("Unable to update time with date_time_update_async. Err: %i", err);
+  }
 
-	/* Wait for time */
+  	/* Wait for time */
 	k_sem_take(&date_time_ready, K_FOREVER);
+}
 
-	/* Get the time */
-	uint64_t ts = 0;
+void set_rtc_time(void) {
+  int err = 0;
+  uint64_t ts = 0;
+
+  /* Get the time */
 	err = date_time_now(&ts);
 	if (err) {
 		LOG_ERR("Unable to get date & time. Err: %i", err);
 		return;
 	}
 
-	/* Convert to seconds */
-	ts = ts / 1000;
-
-	LOG_INF("UTC Unix Epoc: %lld", ts);
-
-	/* Convert time to struct tm */
+  /* Convert time to struct tm */
+  struct tm rtc_time = {0};
 	struct tm *tm_p = gmtime(&ts);
-	struct tm time = {0};
-	struct tm future_time = {0};
 
 	if (tm_p != NULL) {
-		memcpy(&time, tm_p, sizeof(struct tm));
+		memcpy(&rtc_time, tm_p, sizeof(struct tm));
 	} else {
 		LOG_ERR("Unable to convert to broken down UTC");
 		return;
 	}
 
-	/* Print out the current time */
-	print_date_time(&time);
-
 	/* Set time */
-	err = pcf85063a_set_time(rtc, &time);
+	err = pcf85063a_set_time(rtc, &rtc_time);
 	if (err) {
 		LOG_ERR("Unable to set time. Err: %i", err);
 		return;
 	}
+}
 
-	k_sleep(K_SECONDS(2));
+// void drift_test(time_t rtc_time) {
+//   int err = 0;
+//   uint64_t ts = 0;
+
+//   err = date_time_now(&ts);
+// 	if (err) {
+// 		LOG_ERR("Unable to get date & time. Err: %i", err);
+// 	}
+// }
+
+// Drifted by 1sec between [00:50:35.348,510] and [00:51:05.355,407]
+
+time_t get_rtc_time(void) {
+	int err = 0;
+  struct tm rtc_time = {0};
 
 	/* Get current time from device */
-	err = pcf85063a_get_time(rtc, &future_time);
+	err = pcf85063a_get_time(rtc, &rtc_time);
 	if (err) {
 		LOG_ERR("Unable to get time. Err: %i", err);
 	}
 
-	/* Print out the current time */
-	print_date_time(&future_time);
-
 	/* Convert back to timestamp */
-	uint64_t future_ts = mktime(&future_time);
-
-	LOG_INF("UTC Unix Epoc: %lld", future_ts);
+	return mktime(&rtc_time);
 }

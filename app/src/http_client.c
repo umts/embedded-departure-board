@@ -41,8 +41,7 @@ int at_comms_init(void) {
 }
 
 
-char* http_get_request(void)
-{
+char* http_get_request(void) {
 	int err;
 	int fd;
 	char *response_body;
