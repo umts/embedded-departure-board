@@ -27,7 +27,8 @@
     "streambuf": "c",
     "tuple": "c",
     "type_traits": "c",
-    "stdlib.h": "c"
+    "stdlib.h": "c",
+    "time.h": "c"
   },
   "C_Cpp.errorSquiggles": "EnabledIfIncludesResolve"
 }

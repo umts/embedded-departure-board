@@ -1,10 +1,20 @@
+/* Newlib C includes */
 #include <stdlib.h>
 #include <string.h>
+
+/* Zephyr includes */
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/timeutil.h>
+
+/* nrf lib includes */
 #include <cJSON.h>
 #include <cJSON_os.h>
+
+/* app includes */
 #include <routes.h>
+#include <rtc.h>
+
 
 LOG_MODULE_REGISTER(parse_json, LOG_LEVEL_DBG);
 void cJSON_Init(void);
@@ -109,6 +119,8 @@ void get_departures(char *json_string) {
       goto end;
     }
 
+    char direction = (direction_code->valuestring[0]);
+
     struct Routes *route = get_route_by_id(route_id->valueint);
 
     if (route != NULL) {
@@ -136,15 +148,23 @@ void get_departures(char *json_string) {
         char *edt_string = (edt->valuestring) + 6;
         // Subtracting from the end of the string i.e. strlen(edt_string) gives doesn't work for some reason
         edt_string[10] = '\0';
-        int edt_seconds = atoi(edt_string);
 
-        char direction = (direction_code->valuestring[0]);
+        time_t edt_seconds = atoll(edt_string);
+        int edt_direction;
 
-        if (((direction == 'N') || (direction == 'E')) && (edt_seconds > route->etd[0])) {
-          route->etd[0] = edt_seconds;
-        } else if ((edt_seconds > route->etd[1])) {
-          route->etd[1] = edt_seconds;
+        if ((direction == 'N') || (direction == 'E')) {
+          edt_direction = 0;
+        } else {
+          edt_direction = 1;
         }
+        // LOG_WRN("BEFORE route->etd[%c]: %lld", direction, route->etd[edt_direction]);
+        if (
+          (edt_seconds > get_rtc_time()) && 
+          ((edt_seconds < route->etd[edt_direction]) || (route->etd[edt_direction] == 0))
+        ) {
+          route->etd[edt_direction] = edt_seconds;
+        }
+        // LOG_WRN("AFTER route->etd[%c]: %lld", direction, route->etd[edt_direction]);
 
         // trip = cJSON_GetObjectItemCaseSensitive(departure, "Trip");
         // isd = cJSON_GetObjectItemCaseSensitive(trip, "InternetServiceDesc");
@@ -168,7 +188,6 @@ void get_departures(char *json_string) {
       }
     }
   }
-
 end:
   cJSON_Delete(stops_json);
 }
