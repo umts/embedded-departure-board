@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <stdbool.h>
 
 /* Zephyr includes */
 #include <zephyr/kernel.h>
@@ -17,19 +18,12 @@
 #include <http_client.h>
 #include <parse_json.h>
 #include <rtc.h>
-#include <routes.h>
+#include <stop.h>
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
 //#define MY_I2C "I2C_1"
 //const struct device *i2c_dev;
-
-struct Routes route_38 = { "38", 20038, {0,0} };
-struct Routes route_r29 = { "r29", 10029, {0,0} };
-struct Routes route_b43 = { "b43", 30043, {0,0} };
-struct Routes route_b43e = { "b43e", 30943, {0,0} };
-
-struct Routes *routes[] = {&route_38, &route_r29, &route_b43, &route_b43e};
 
 // static void lte_init() {
 //   int err = 0;
@@ -41,12 +35,8 @@ struct Routes *routes[] = {&route_38, &route_r29, &route_b43, &route_b43e};
 //   }
 // }
 
-int minutes_to_departure(struct Routes *route, char direction_code) {
-  if ((direction_code == 'N') || (direction_code == 'E')) {
-    return (int)(route->etd[0] - get_rtc_time()) / 60;
-  } else {
-    return (int)(route->etd[1] - get_rtc_time()) / 60;
-  }
+int minutes_to_departure(struct Departure *departure) {
+  return (int)(departure->etd - get_rtc_time()) / 60;
 }
 
 void main(void) {
@@ -65,20 +55,29 @@ void main(void) {
   //   LOG_INF("UTC Unix Epoc: %lld", get_rtc_time());
   // }
   
-  get_departures(http_get_request());
+  struct Stop *stop = parse_stop_json(http_get_request());
+  k_msleep(1000);
 
-  // LOG_INF("UTC Unix Epoc: %lld", get_rtc_time());
-  LOG_INF("R29 North Epoc: %lld", route_r29.etd[0]);
+  for (int i = 0; i < stop->routes_size; i++) {
+    struct Route *route = stop->routes[i];
+    LOG_INF("\nRoute ID: %d, Direction Code: %c", route->id, route->direction);
+    for (int j = 0; j < route->departures_size; j++) {
+      struct Departure *departure = &(route->departures[j]);
+      if (!departure->skipped) {
+        LOG_INF(
+          "%d -> %s: %d",
+          departure->id,
+          departure->isd,
+          minutes_to_departure(departure)
+        );
+      }
+      free(departure);
+    }
+    free(route);
+  }
+  free(stop);
 
-  LOG_INF("R29 South: %d", minutes_to_departure(&route_r29, 'S'));
-  LOG_INF("R29 North: %d", minutes_to_departure(&route_r29, 'N'));
-  LOG_INF("B43 West: %d", minutes_to_departure(&route_b43, 'W'));
-  LOG_INF("B43 East: %d", minutes_to_departure(&route_b43, 'E'));
-
-  // LOG_INF("Route 38 EDT: [North: %lld, South: %lld]", route_38.etd[0], route_38.etd[1]);
-  // LOG_INF("Route R29 EDT: [North: %lld, South: %lld]", route_r29.etd[0], route_r29.etd[1]);
-  // LOG_INF("Route B43 EDT: [East: %lld, West: %lld]", route_b43.etd[0], route_b43.etd[1]);
-  // LOG_INF("Route B43E EDT: [East: %lld, West: %lld]", route_b43e.etd[0], route_b43e.etd[1]);
+  // (edt_seconds > get_rtc_time()) && ((edt_seconds < route->etd) || (route->etd == 0))
 
   lte_lc_power_off();
 }

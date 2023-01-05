@@ -27,29 +27,25 @@ LOG_MODULE_REGISTER(get_rtc, LOG_LEVEL_DBG);
 const struct device *const rtc = RTC;
 
 void rtc_init() {
-  int err = 0;
-
 	/* Check device readiness */
   if (!device_is_ready(rtc)) {
     LOG_ERR("pcf85063a isn't ready!");
   }
 
-	LOG_INF("device is %p, name is %s", rtc, rtc->name);
-
-	err = counter_start(rtc);
+  /* Start rtc counter */
+	int err = counter_start(rtc);
 	if (err) {
 		LOG_ERR("Unable to start RTC. Err: %i", err);
 	}
 }
 
 void set_rtc_time(void) {
-  int err = 0;
+  int err;
   struct sntp_time ts;
 
   /* Get sntp time */
-  int res = sntp_simple(SNTP_SERVER, SNTP_INIT_TIMEOUT_MS, &ts);
-
-	if (res < 0) {
+  err = sntp_simple(SNTP_SERVER, SNTP_INIT_TIMEOUT_MS, &ts);
+	if (err) {
 		LOG_ERR("Cannot set time using SNTP");
 	}
 
@@ -68,11 +64,10 @@ void set_rtc_time(void) {
 // Drifted by 1sec between [00:50:35.348,510] and [00:51:05.355,407]
 
 time_t get_rtc_time(void) {
-	int err = 0;
   struct tm rtc_time = {0};
 
 	/* Get current time from device */
-	err = pcf85063a_get_time(rtc, &rtc_time);
+	int err = pcf85063a_get_time(rtc, &rtc_time);
 	if (err) {
 		LOG_ERR("Unable to get time. Err: %i", err);
 	}

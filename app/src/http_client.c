@@ -5,21 +5,9 @@
 #include <zephyr/logging/log.h>
 #include <modem/nrf_modem_lib.h>
 #include <modem/lte_lc.h>
+#include <http_client.h>
 
 LOG_MODULE_REGISTER(http_client, LOG_LEVEL_DBG);
-
-#define HTTP_HOSTNAME "bustracker.pvta.com"
-#define STOP_ID "73"
-
-#define HTTP_HEAD \
-  "GET /InfoPoint/rest/StopDepartures/Get/" STOP_ID " HTTP/1.1\r\n" \
-	"Host: " HTTP_HOSTNAME ":80\r\n" \
-  "Accept: application/json\r\n" \
-	"Connection: close\r\n\r\n"
-
-#define HTTP_HEAD_LEN (sizeof(HTTP_HEAD) - 1)
-
-#define RECV_BUF_SIZE 40960
 
 static const char send_buf[] = HTTP_HEAD;
 static char recv_buf[RECV_BUF_SIZE];

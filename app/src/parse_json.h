@@ -1,4 +1,6 @@
 #ifndef PARSE_JSON_H
 #define PARSE_JSON_H
-  void get_departures(char *json);
+  #include <stop.h>
+
+  struct Stop* parse_stop_json(char *json);
 #endif
