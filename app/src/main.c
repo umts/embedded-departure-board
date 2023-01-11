@@ -25,16 +25,6 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 //#define MY_I2C "I2C_1"
 //const struct device *i2c_dev;
 
-// static void lte_init() {
-//   int err = 0;
-
-// 	/* Init lte_lc*/
-// 	err = lte_lc_init_and_connect();
-// 	if (err) {
-// 		LOG_ERR("Failed to init and connect. Err: %i", err);
-//   }
-// }
-
 int minutes_to_departure(struct Departure *departure) {
   return (int)(departure->etd - get_rtc_time()) / 60;
 }
@@ -60,26 +50,22 @@ void main(void) {
 
   for (int i = 0; i < stop->routes_size; i++) {
     struct Route *route = stop->routes[i];
-    LOG_INF("\nRoute ID: %d, Direction Code: %c", route->id, route->direction);
+    LOG_INF(
+      "================ Route ID: %d, Direction Code: %c ================",
+      route->id, route->direction
+    );
     for (int j = 0; j < route->departures_size; j++) {
-      struct Departure *departure = &(route->departures[j]);
-      if (!departure->skipped) {
-        LOG_INF(
-          "%d -> %s: %d",
-          departure->id,
-          departure->isd,
-          minutes_to_departure(departure)
-        );
+      struct Departure departure = route->departures[j];
+      if (!departure.skipped) {
+        LOG_INF("  - %s: %d", departure.isd, minutes_to_departure(&departure));
       }
-      free(departure);
+      free(&departure);
     }
-    free(route);
+    free(&route);
   }
-  free(stop);
-
-  // (edt_seconds > get_rtc_time()) && ((edt_seconds < route->etd) || (route->etd == 0))
-
+  free(&stop);
   lte_lc_power_off();
+  LOG_WRN("FIN");
 }
 
   //printk("\n%s", http_get_request());

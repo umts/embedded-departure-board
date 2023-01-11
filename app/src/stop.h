@@ -31,6 +31,4 @@
     int routes_size;
     struct Route *routes[];
   };
-
-  struct Route *create_route(int id, char direction, int departures_size, struct Departure departures[]);
 #endif
