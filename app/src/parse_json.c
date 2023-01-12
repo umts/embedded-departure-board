@@ -40,13 +40,34 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
   cJSON_ArrayForEach(departure_json, departures_json) {
     char **unique_isds = malloc(sizeof(char*));
 
-    // Verify isd and check uniqueness
+    // Verify and assign isd
     cJSON *trip = cJSON_GetObjectItemCaseSensitive(departure_json, "Trip");
     cJSON *isd = cJSON_GetObjectItemCaseSensitive(trip, "InternetServiceDesc");
     if (!cJSON_IsString(isd)) {
       LOG_ERR("InternetServiceDesc is not a string");
+      free(unique_isds);
       return NULL;
-    } else if (isd_unique(unique_isds, isd->valuestring, valid_dep_count)) {
+    }
+
+    // Verify and assign edt
+    cJSON *edt = cJSON_GetObjectItemCaseSensitive(departure_json, "EDT");
+    if (!cJSON_IsString(edt)) {
+      LOG_ERR("EDT is not a string");
+      free(unique_isds);
+      return NULL;
+    }
+  
+    /* EDT ex: /Date(1648627309163-0400)\, where 1648627309163 is ms since the epoch.
+    We don't care about the time zone (plus it's wrong), so we just want the seconds. We strip
+    off the leading '/Date(' and trailing '-400)\' + the last 3 digits to do a rough conversion to seconds. */
+    char *edt_string = (edt->valuestring) + 6;
+    edt_string[10] = '\0';
+    int edt_seconds = (time_t)atoll(edt_string);
+
+    if (
+      isd_unique(unique_isds, isd->valuestring, valid_dep_count) &&
+      (edt_seconds > get_rtc_time())
+    ) {
 
       // Push unique isd to array
       unique_isds = realloc(unique_isds, sizeof(char*) * (valid_dep_count + 1));
@@ -54,11 +75,13 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
 
       struct Departure *new_departure = malloc(sizeof(struct Departure));
       new_departure->isd = isd->valuestring;
+      new_departure->etd = edt_seconds;
 
       // Verify and assign departure skipped status
       cJSON *ssrl = cJSON_GetObjectItemCaseSensitive(departure_json, "StopStatusReportLabel");
       if (!cJSON_IsString(ssrl)) {
         LOG_ERR("StopStatusReportLabel is not a string");
+        free(unique_isds);
         return NULL;
       } else if (strcmp(ssrl->valuestring, "Skipped")) {
         new_departure->skipped = false;
@@ -66,24 +89,11 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
         new_departure->skipped = true;
       }
 
-      // Verify and assign edt
-      cJSON *edt = cJSON_GetObjectItemCaseSensitive(departure_json, "EDT");
-      if (!cJSON_IsString(edt)) {
-        LOG_ERR("EDT is not a string");
-        return NULL;
-      } else {
-        /* EDT ex: /Date(1648627309163-0400)\, where 1648627309163 is ms since the epoch.
-        We don't care about the time zone (plus it's wrong), so we just want the seconds. We strip
-        off the leading '/Date(' and trailing '-400)\' + the last 3 digits to do a rough conversion to seconds. */
-        char *edt_string = (edt->valuestring) + 6;
-        edt_string[10] = '\0';
-        new_departure->etd = (time_t)atoll(edt_string);
-      }
-
       // Verify and assign sdt
       cJSON *sdt = cJSON_GetObjectItemCaseSensitive(departure_json, "SDT");
       if (!cJSON_IsString(sdt)) {
         LOG_ERR("SDT is not a string");
+        free(unique_isds);
         return NULL;
       } else {
         char *sdt_string = (sdt->valuestring) + 6;
@@ -94,6 +104,7 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
       cJSON *trip_id = cJSON_GetObjectItemCaseSensitive(trip, "TripId");
       if (!cJSON_IsNumber(trip_id)) {
         LOG_ERR("TripId is not a number");
+        free(unique_isds);
         return NULL;
       } else {
         new_departure->id = trip_id->valueint;
