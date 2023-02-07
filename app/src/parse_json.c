@@ -22,6 +22,9 @@ void cJSON_Init(void);
 
 bool isd_unique(char *array[], char *isd, int arr_len) {
   // Array is empty, return true
+  // if (isd[strlen(isd)] != '\0') {
+  //   LOG_ERR("ISD is not zero terminated");
+  // }
   if (arr_len == 0) {
     return true;
   }
@@ -36,10 +39,9 @@ bool isd_unique(char *array[], char *isd, int arr_len) {
 struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
   cJSON *departure_json = NULL;
   int valid_dep_count = 0;
+  char **unique_isds = malloc(sizeof(char*));
 
   cJSON_ArrayForEach(departure_json, departures_json) {
-    char **unique_isds = malloc(sizeof(char*));
-
     // Verify and assign isd
     cJSON *trip = cJSON_GetObjectItemCaseSensitive(departure_json, "Trip");
     cJSON *isd = cJSON_GetObjectItemCaseSensitive(trip, "InternetServiceDesc");
@@ -114,8 +116,8 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
       route->departures[valid_dep_count] = *new_departure;
       valid_dep_count++;
     }
-    free(unique_isds);
   }
+  free(unique_isds);
   route->departures_size = valid_dep_count;
   return route;
 }

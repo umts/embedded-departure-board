@@ -9,6 +9,7 @@
 #include <zephyr/drivers/counter.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/posix/time.h>
+#include <zephyr/drivers/i2c.h>
 
 /* nrf lib includes */
 #include <modem/lte_lc.h>
@@ -22,8 +23,34 @@
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
-//#define MY_I2C "I2C_1"
-//const struct device *i2c_dev;
+#define DISPLAY_ADDR 0x41
+#define I2C1 DEVICE_DT_GET(DT_NODELABEL(i2c1))
+
+const struct device *i2c1 = I2C1;
+
+void i2c_init() {
+	/* Check device readiness */
+  for (int i = 0; i < 3; i++) {
+    if (!device_is_ready(i2c1) && (i == 3 - 1)) {
+		  LOG_ERR("I2C device failed to initialize after 3 attempts.");
+	  } else if (!device_is_ready(i2c1)) {
+      LOG_WRN("I2C device isn't ready! Retrying...");
+      k_msleep(1000);
+    } else {
+      break;
+    }
+  }
+}
+
+int write_byte_to_display(uint16_t i2c_addr, int min) {
+  if (min > 255) {
+    LOG_ERR("Minutes to departure is too larg (>255)");
+    return 1;
+  }
+  unsigned char i2c_tx_buffer = (unsigned char)min;
+
+  return i2c_write(i2c1, &i2c_tx_buffer, 1, i2c_addr);
+}
 
 int minutes_to_departure(struct Departure *departure) {
   return (int)(departure->etd - get_rtc_time()) / 60;
@@ -57,7 +84,9 @@ void main(void) {
     for (int j = 0; j < route->departures_size; j++) {
       struct Departure departure = route->departures[j];
       if (!departure.skipped) {
-        LOG_INF("  - %s: %d", departure.isd, minutes_to_departure(&departure));
+        int min = minutes_to_departure(&departure);
+        LOG_INF("  - %s: %d", departure.isd, min);
+        write_byte_to_display(DISPLAY_ADDR, min);
       }
       free(&departure);
     }
@@ -67,18 +96,3 @@ void main(void) {
   lte_lc_power_off();
   LOG_WRN("FIN");
 }
-
-  //printk("\n%s", http_get_request());
-  
-  // // Bind i2c
-	// i2c_dev = device_get_binding(MY_I2C);
-	// if (i2c_dev == NULL) {
-	// 	printk("Can't bind I2C device %s\n", MY_I2C);
-	// 	return;
-	// }
-
-	// // Write to i2c
-	// uint8_t i2c_addr = 0x41;
-  // unsigned char i2c_tx_buffer[] = {'3', '0'};
-
-  // i2c_write(i2c_dev, &i2c_tx_buffer, sizeof(i2c_tx_buffer), i2c_addr);
