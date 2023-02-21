@@ -1,3 +1,5 @@
+#include <rtc.h>
+
 /* Newlib C includes */
 #include <stdint.h>
 
@@ -99,8 +101,10 @@ time_t get_rtc_time(void) {
 	  } else if (err) {
       LOG_WRN("Failed to get time from pcf85063a, retrying. Err: %i", err);
     } else {
-      /* Convert to Unix timestamp */
-      return mktime(&rtc_time);
+      break;
     }
   }
+
+  /* Convert to Unix timestamp */
+  return mktime(&rtc_time);
 }
