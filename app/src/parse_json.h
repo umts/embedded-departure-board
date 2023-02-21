@@ -2,5 +2,5 @@
 #define PARSE_JSON_H
   #include <stop.h>
 
-  struct Stop* parse_stop_json(char *json);
+  void parse_json_for_stop(Stop *stop, char *json_string);
 #endif

@@ -1,13 +1,15 @@
-/* Newlib C includes */
-#include <stdlib.h>
-#include <string.h>
-#include <inttypes.h>
-#include <stdbool.h>
+#include <parse_json.h>
 
 /* Zephyr includes */
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/timeutil.h>
+
+/* Newlib C includes */
+#include <stdlib.h>
+#include <string.h>
+#include <inttypes.h>
+#include <stdbool.h>
 
 /* nrf lib includes */
 #include <cJSON.h>
@@ -21,14 +23,17 @@ LOG_MODULE_REGISTER(parse_json, LOG_LEVEL_DBG);
 void cJSON_Init(void);
 
 bool isd_unique(char *array[], char *isd, int arr_len) {
-  // Array is empty, return true
-  // if (isd[strlen(isd)] != '\0') {
-  //   LOG_ERR("ISD is not zero terminated");
-  // }
-  if (arr_len == 0) {
-    return true;
+  if (isd[strlen(isd)] != '\0') {
+    LOG_ERR("ISD is not zero terminated");
   }
+
+  /* Array is empty, return true */
+  // if (arr_len == 0) {
+  //   return true;
+  // }
+
   for (int i = 0; i < arr_len; i++) {
+    LOG_WRN("isd: %s", isd);
     if (strcmp(array[i], isd) == 0) {
       return false;
     }
@@ -36,10 +41,10 @@ bool isd_unique(char *array[], char *isd, int arr_len) {
   return true;
 }
 
-struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
+Route* parse_departures(cJSON *departures_json, Route *route) {
   cJSON *departure_json = NULL;
   int valid_dep_count = 0;
-  char **unique_isds = malloc(sizeof(char*));
+  char *unique_isds[MAX_DEPARTURES] = { NULL };
 
   cJSON_ArrayForEach(departure_json, departures_json) {
     // Verify and assign isd
@@ -47,7 +52,6 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
     cJSON *isd = cJSON_GetObjectItemCaseSensitive(trip, "InternetServiceDesc");
     if (!cJSON_IsString(isd)) {
       LOG_ERR("InternetServiceDesc is not a string");
-      free(unique_isds);
       return NULL;
     }
 
@@ -55,13 +59,14 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
     cJSON *edt = cJSON_GetObjectItemCaseSensitive(departure_json, "EDT");
     if (!cJSON_IsString(edt)) {
       LOG_ERR("EDT is not a string");
-      free(unique_isds);
       return NULL;
     }
   
     /* EDT ex: /Date(1648627309163-0400)\, where 1648627309163 is ms since the epoch.
-    We don't care about the time zone (plus it's wrong), so we just want the seconds. We strip
-    off the leading '/Date(' and trailing '-400)\' + the last 3 digits to do a rough conversion to seconds. */
+    *  We don't care about the time zone (plus it's wrong), so we just want the seconds.
+    *  We strip off the leading '/Date(' and trailing '-400)\' + the last 3 digits to do
+    *  a rough conversion to seconds.
+    */
     char *edt_string = (edt->valuestring) + 6;
     edt_string[10] = '\0';
     int edt_seconds = (time_t)atoll(edt_string);
@@ -72,10 +77,10 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
     ) {
 
       // Push unique isd to array
-      unique_isds = realloc(unique_isds, sizeof(char*) * (valid_dep_count + 1));
       unique_isds[valid_dep_count] = isd->valuestring;
 
-      struct Departure *new_departure = malloc(sizeof(struct Departure));
+      Departure *new_departure = &route->departures[valid_dep_count];
+      //strcpy(new_departure->isd, isd->valuestring);
       new_departure->isd = isd->valuestring;
       new_departure->etd = edt_seconds;
 
@@ -83,7 +88,6 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
       cJSON *ssrl = cJSON_GetObjectItemCaseSensitive(departure_json, "StopStatusReportLabel");
       if (!cJSON_IsString(ssrl)) {
         LOG_ERR("StopStatusReportLabel is not a string");
-        free(unique_isds);
         return NULL;
       } else if (strcmp(ssrl->valuestring, "Skipped")) {
         new_departure->skipped = false;
@@ -95,7 +99,6 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
       cJSON *sdt = cJSON_GetObjectItemCaseSensitive(departure_json, "SDT");
       if (!cJSON_IsString(sdt)) {
         LOG_ERR("SDT is not a string");
-        free(unique_isds);
         return NULL;
       } else {
         char *sdt_string = (sdt->valuestring) + 6;
@@ -106,28 +109,27 @@ struct Route* parse_departures(cJSON *departures_json, struct Route *route) {
       cJSON *trip_id = cJSON_GetObjectItemCaseSensitive(trip, "TripId");
       if (!cJSON_IsNumber(trip_id)) {
         LOG_ERR("TripId is not a number");
-        free(unique_isds);
         return NULL;
       } else {
         new_departure->id = trip_id->valueint;
       }
 
-      route = realloc(route, sizeof(*route) + (sizeof(*new_departure) * (valid_dep_count + 1)));
-      route->departures[valid_dep_count] = *new_departure;
+      //route->departures[valid_dep_count] = *new_departure;
       valid_dep_count++;
     }
   }
-  free(unique_isds);
   route->departures_size = valid_dep_count;
   return route;
 }
 
-struct Stop* parse_routes(cJSON *route_directions, struct Stop *stop) {
+Stop* parse_routes(cJSON *route_directions, Stop *stop) {
   cJSON *route_direction = NULL;
   int routes_count = 0;
 
+  // TODO: Select routes form ROUTE_IDS in stop.h
+
   cJSON_ArrayForEach(route_direction, route_directions) {
-    struct Route *new_route = malloc(sizeof(struct Route));
+    Route *new_route = &stop->routes[routes_count];
 
     // Verify and assign route_id
     cJSON *route_id = cJSON_GetObjectItemCaseSensitive(route_direction, "RouteId");
@@ -154,22 +156,25 @@ struct Stop* parse_routes(cJSON *route_directions, struct Stop *stop) {
       return NULL;
     }
 
-    stop = realloc(stop, sizeof(*stop) * (sizeof(new_route) * (routes_count + 1)));
-    stop->routes[routes_count] = new_route;
+    //stop->routes[routes_count] = new_route;
     routes_count++;
   }
 
-  stop->id = STOP_ID;
   stop->routes_size = routes_count;
   return stop;
 }
 
-struct Stop* parse_stop_json(char *json_string) {
+void parse_json_for_stop(Stop *stop, char *json_string) {
+  // cJSON *stops_json = cJSON_ParseWithLength(json_string, sizeof(json_string) + 1);
   cJSON *stops_json = cJSON_Parse(json_string);
-  struct Stop *stop = malloc(sizeof(struct Stop));
 
   if (stops_json == NULL) {
     LOG_ERR("JSON pointer NULL!");
+    // LOG_INF("%s\n", json_string);
+    const char *error_ptr = cJSON_GetErrorPtr();
+    if (error_ptr != NULL) {
+      LOG_INF("%s\n", error_ptr);   
+    }
     goto end;
   }
 
@@ -195,5 +200,4 @@ struct Stop* parse_stop_json(char *json_string) {
 
 end:
   cJSON_Delete(stops_json);
-  return stop;
 }
