@@ -1,39 +1,38 @@
-/* Newlib C includes */
-#include <stdlib.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <stdbool.h>
-
 /* Zephyr includes */
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/counter.h>
+#include <zephyr/drivers/i2c.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/posix/time.h>
-#include <zephyr/drivers/i2c.h>
+#include <zephyr/types.h>
+
+/* Newlib C includes */
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 /* nrf lib includes */
 #include <modem/lte_lc.h>
 
 /* app includes */
-// #include <https_client.h>
-#include <http_client.h>
-#include <parse_json.h>
+#include <custom_http_client.h>
+#include <jsmn_parse.h>
 #include <rtc.h>
 #include <stop.h>
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
-#define DISPLAY_ADDR 0x41
 #define I2C1 DEVICE_DT_GET(DT_NODELABEL(i2c1))
 
-const struct device *i2c1 = I2C1;
+const struct device *i2c_display = I2C1;
 
-void i2c_init() {
+void i2c_display_ready() {
 	/* Check device readiness */
   for (int i = 0; i < 3; i++) {
-    if (!device_is_ready(i2c1) && (i == 3 - 1)) {
+    if (!device_is_ready(i2c_display) && (i == 3 - 1)) {
 		  LOG_ERR("I2C device failed to initialize after 3 attempts.");
-	  } else if (!device_is_ready(i2c1)) {
+	  } else if (!device_is_ready(i2c_display)) {
       LOG_WRN("I2C device isn't ready! Retrying...");
       k_msleep(1000);
     } else {
@@ -42,25 +41,50 @@ void i2c_init() {
   }
 }
 
-int write_byte_to_display(uint16_t i2c_addr, int min) {
-  if (min > 255) {
-    LOG_ERR("Minutes to departure is too larg (>255)");
-    return 1;
-  }
-  unsigned char i2c_tx_buffer = (unsigned char)min;
-
-  return i2c_write(i2c1, &i2c_tx_buffer, 1, i2c_addr);
+int write_byte_to_display(uint16_t i2c_addr, uint16_t min) {
+  i2c_display_ready();
+  const uint8_t i2c_tx_buffer[] = { ((min >> 8) & 0xFF), (min & 0xFF) };
+  
+  return i2c_write(i2c_display, &i2c_tx_buffer, sizeof(i2c_tx_buffer), i2c_addr);
 }
 
-int minutes_to_departure(struct Departure *departure) {
-  return (int)(departure->etd - get_rtc_time()) / 60;
+uint16_t minutes_to_departure(JSON_DEPARTURE *departure) {
+  /* EDT ex: /Date(1648627309163-0400)\, where 1648627309163 is ms since the epoch.
+  *  We don't care about the time zone and we just want the seconds.
+  *  We strip off the leading '/Date(' and trailing '-400)\' + the last 3 digits to do
+  *  a rough conversion to seconds.
+  */
+  char edt_string[11];
+  memset(edt_string, '\0', sizeof(edt_string));
+  memcpy(edt_string, ((departure->edt) + 6), 10);
+  int edt_seconds = atoi(edt_string);
+  return (uint16_t)(edt_seconds - get_rtc_time()) / 60;
+}
+
+bool isd_unique(char *array[], char *isd, int arr_len) {
+  if (isd[strlen(isd)] != '\0') {
+    LOG_ERR("ISD is not zero terminated");
+  }
+
+  /* Array is empty, return true */
+  // if (arr_len == 0) {
+  //   return true;
+  // }
+
+  for (int i = 0; i < arr_len; i++) {
+    LOG_WRN("isd: %s", isd);
+    if (strcmp(array[i], isd) == 0) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void main(void) {
-  //lte_init();
+  // lte_init();
   rtc_init();
   set_rtc_time();
-  
+
   // TODO: Create seperate thread for time sync
   // while(true) {
   //   k_sleep(K_MINUTES(50));
@@ -71,28 +95,50 @@ void main(void) {
   //   k_msleep(5000);
   //   LOG_INF("UTC Unix Epoc: %lld", get_rtc_time());
   // }
-  
-  struct Stop *stop = parse_stop_json(http_get_request());
-  k_msleep(1000);
 
-  for (int i = 0; i < stop->routes_size; i++) {
-    struct Route *route = stop->routes[i];
-    LOG_INF(
-      "================ Route ID: %d, Direction Code: %c ================",
-      route->id, route->direction
-    );
-    for (int j = 0; j < route->departures_size; j++) {
-      struct Departure departure = route->departures[j];
-      if (!departure.skipped) {
-        int min = minutes_to_departure(&departure);
-        LOG_INF("  - %s: %d", departure.isd, min);
-        write_byte_to_display(DISPLAY_ADDR, min);
+  Stop stop;
+  uint16_t min = 0;
+
+  // if (http_request_json() != 0) { goto cleanup; }
+
+  // LOG_INF("\n%s", recv_body_buf);
+
+  // if (recv_body_buf == NULL) { goto cleanup; }
+  // if (parse_json_for_stop(&stop, recv_body_buf) != 0) { goto cleanup; }
+  if (parse_json_for_stop(&stop, json_string) != 0) { goto cleanup; }
+
+  for (int i = 0; i < stop.directions_size; i++) {
+    LOG_WRN("\tRouteID: %d %s", stop.directions[i].route_id, stop.directions[i].direction_code);
+    for (int j = 0; j < stop.directions->departures_size; j++) {
+      min = minutes_to_departure(&stop.directions[i].departures[j]);
+      LOG_WRN("\t\tEDT: %s, %d", stop.directions[i].departures[j].edt, min);
+      LOG_WRN("\t\tStopStatusReportLabel: %s", stop.directions[i].departures[j].stop_status_report_label);
+      if (strcmp(stop.directions[i].departures[j].stop_status_report_label, "Skipped") != 0) {
+        LOG_WRN("\t\t\tInternetServiceDesc: %s", stop.directions[i].departures[j].trip.internet_sign_desc);
       }
-      free(&departure);
     }
-    free(&route);
   }
-  free(&stop);
+
+    // for (int i = 0; i < stop.routes_size; i++) {
+    //   struct Route route = stop.routes[i];
+    //   LOG_INF(
+    //     "================ Route ID: %d, Direction Code: %c ================",
+    //     route.id, route.direction
+    //   );
+    //   for (int j = 0; j < route.departures_size; j++) {
+    //     struct Departure departure = route.departures[j];
+    //     if (!departure.skipped) {
+    //       min = minutes_to_departure(&departure);
+    //       LOG_INF("  - %s: %d", departure.isd, min);
+    //       if (route.id == 30043 && route.direction == 'W') {
+    //         write_byte_to_display(B43_DISPLAY_ADDR, min);
+    //       }
+    //     }
+    //   }
+    // }
+    // k_msleep(5000);
+
+cleanup:
   lte_lc_power_off();
   LOG_WRN("FIN");
 }
