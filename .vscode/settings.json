@@ -1,37 +1,11 @@
 {
   "files.associations": {
-    "socket.h": "c",
-    "nrf_modem_lib.h": "c",
-    "pcf85063a.h": "c",
-    "*.overlay": "dts",
-    "counter.h": "c",
-    "inttypes.h": "c",
-    "log.h": "c",
-    "kernel.h": "c",
-    "string.h": "c",
-    "stdint.h": "c",
-    "__assert.h": "c",
-    "device.h": "c",
-    "gpio.h": "c",
-    "i2c.h": "c",
-    "util.h": "c",
-    "lte_lc.h": "c",
-    "*.inc": "c",
-    "*.tcc": "c",
-    "chrono": "c",
-    "future": "c",
-    "iomanip": "c",
-    "limits": "c",
-    "numeric": "c",
-    "ratio": "c",
-    "streambuf": "c",
-    "tuple": "c",
-    "type_traits": "c",
-    "stdlib.h": "c",
-    "time.h": "c",
-    "timeutil.h": "c",
-    "array": "c"
+    "*.h": "c",
+    "*.txt": "ansi"
   },
   "C_Cpp.errorSquiggles": "EnabledIfIncludesResolve",
-  "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: WebKit, ColumnLimit: 100 }"
+  "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Webkit, ColumnLimit: 100 }",
+  "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, ColumnLimit: 100 }",
+  "c-cpp-flylint.cppcheck.enable": false,
+  "c-cpp-flylint.flawfinder.enable": false
 }
