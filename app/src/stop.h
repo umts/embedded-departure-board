@@ -27,26 +27,31 @@
   */
   #define B43_DISPLAY_ADDR 0x43
 
-  // #include <stdbool.h>
+#include <stdbool.h>
+#include <zephyr/types.h>
 
-  // struct Departure {
-  //   int id;
-  //   bool skipped;
-  //   char *isd;
-  //   int etd;
-  //   int std;
-  // };
+  typedef struct Trip {
+    // char *internet_service_desc;
+    char direction_code;
+  } Trip;
 
-  // struct Route {
-  //   char direction;
-  //   int id;
-  //   int departures_size;
-  //   struct Departure departures[];
-  // };
-  
-  // struct Stop {
-  //   const char *id;
-  //   int routes_size;
-  //   struct Route routes[MAX_ROUTES];
-  // } Stop;
+  typedef struct Departure {
+    bool skipped;
+    unsigned int etd;
+    Trip trip;
+  } Departure;
+
+  typedef struct RouteDirection {
+    char direction_code;
+    int id;
+    size_t departures_size;
+    Departure departures[MAX_DEPARTURES];
+  } RouteDirection;
+
+  typedef struct Stop {
+    unsigned long long last_updated;
+    const char *id;
+    size_t routes_size;
+    RouteDirection route_directions[MAX_ROUTES];
+  } Stop;
 #endif

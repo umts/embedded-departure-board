@@ -8,7 +8,7 @@
 
   /** @def RECV_BODY_BUF_SIZE
    *  @brief A macro that defines the max size for HTTP response body receive buffer.
-   * 
+   *
    *  Actual size varies quite a bit depending on how many routes are currently running.
   */
   #define RECV_BODY_BUF_SIZE 40960

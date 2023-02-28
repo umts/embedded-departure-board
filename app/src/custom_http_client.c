@@ -58,7 +58,7 @@ static const char send_buf[] = HTTP_REQUEST_HEADERS;
 static char recv_headers_buf[RECV_HEADER_BUF_SIZE];
 
 /** HTTP response body buffer with size defined by the RECV_BODY_BUF_SIZE macro. */
-char recv_body_buf[RECV_BODY_BUF_SIZE];
+char recv_body_buf[RECV_BODY_BUF_SIZE] = { 0 };
 
 /** Godaddy server ca certificate */
 // static const char ca_certificate[] = {
@@ -174,6 +174,9 @@ int http_request_json(void) {
 	struct addrinfo *addr_inf;
 
   if (connect_socket(&sock, addr_inf) < 0) { goto clean_up; }
+
+  /* Zero out recv buffer */
+  memset(recv_body_buf, '\0', sizeof(recv_body_buf));
 
 	do {
 		bytes = send(sock, &send_buf[offset], HTTP_REQUEST_HEAD_LEN - offset, 0);

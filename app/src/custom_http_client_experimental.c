@@ -310,7 +310,7 @@ char* http_request_json(void) {
 	((struct sockaddr_in *)res->ai_addr)->sin_port = htons(80);
 
 	fd = socket(AF_INET, SOCK_STREAM, res->ai_protocol);
-	
+
 	if (fd == -1) {
 		LOG_ERR("Failed to open socket!\n");
 		goto clean_up;
