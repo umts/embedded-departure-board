@@ -34,7 +34,7 @@ LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 #endif
 
 /** @def HTTP_REQUEST_HEADERS
- *  @brief A macro that defines the HTTP request headers for the GET request. 
+ *  @brief A macro that defines the HTTP request headers for the GET request.
 */
 #define HTTP_REQUEST_HEADERS \
   "GET " HTTP_REQUEST_PATH " HTTP/1.1\r\n" \
@@ -44,7 +44,7 @@ LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 
 /** @def RECV_HEADER_BUF_SIZE
  *  @brief A macro that defines the max size for HTTP response headers receive buffer.
- * 
+ *
  *  Seems to be ~320 bytes, size ~doubled for safety.
 */
 #define RECV_HEADER_BUF_SIZE 600
@@ -58,7 +58,7 @@ static const char send_buf[] = HTTP_REQUEST_HEADERS;
 static char recv_headers_buf[RECV_HEADER_BUF_SIZE];
 
 /** HTTP response body buffer with size defined by the RECV_BODY_BUF_SIZE macro. */
-char recv_body_buf[RECV_BODY_BUF_SIZE];
+char recv_body_buf[RECV_BODY_BUF_SIZE] = { 0 };
 
 /** Godaddy server ca certificate */
 // static const char ca_certificate[] = {
@@ -80,7 +80,7 @@ static int connect_socket(int *sock, struct addrinfo *addr_inf) {
 	((struct sockaddr_in *)addr_inf->ai_addr)->sin_port = htons(80);
 
 	*sock = socket(AF_INET, SOCK_STREAM, addr_inf->ai_protocol);
-	
+
 	if (*sock == -1) {
 		LOG_ERR("Failed to open socket!\n");
 	}
@@ -174,6 +174,9 @@ int http_request_json(void) {
 	struct addrinfo *addr_inf;
 
   if (connect_socket(&sock, addr_inf) < 0) { goto clean_up; }
+
+  /* Zero out recv buffer */
+  memset(recv_body_buf, '\0', sizeof(recv_body_buf));
 
 	do {
 		bytes = send(sock, &send_buf[offset], HTTP_REQUEST_HEAD_LEN - offset, 0);
