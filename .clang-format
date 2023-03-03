@@ -78,7 +78,7 @@ BasedOnStyle:  Google
 # BreakConstructorInitializers: BeforeColon
 # BreakAfterJavaFieldAnnotations: false
 # BreakStringLiterals: true
-ColumnLimit:     100
+ColumnLimit:  100
 # CommentPragmas:  '^ IWYU pragma:'
 # QualifierAlignment: Leave
 # CompactNamespaces: false

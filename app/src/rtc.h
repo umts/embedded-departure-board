@@ -5,5 +5,5 @@
 
 void rtc_init(void);
 void set_rtc_time(void);
-time_t get_rtc_time(void);
+uint64_t get_rtc_time(void);
 #endif

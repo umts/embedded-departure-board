@@ -1,7 +1,7 @@
 /* Zephyr includes */
-#include <zephyr/kernel.h>
 #include <zephyr/drivers/counter.h>
 #include <zephyr/drivers/i2c.h>
+#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/posix/time.h>
 #include <zephyr/types.h>
@@ -17,22 +17,23 @@
 
 /* app includes */
 #include <custom_http_client.h>
+#include <i2c_display_index.h>
 #include <jsmn_parse.h>
 #include <rtc.h>
 #include <stop.h>
 
-LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
 #define I2C1 DEVICE_DT_GET(DT_NODELABEL(i2c1))
 
 const struct device *i2c_display = I2C1;
 
-void i2c_display_ready() {
-	/* Check device readiness */
+static bool i2c_display_ready() {
+  /* Check device readiness */
   for (int i = 0; i < 3; i++) {
     if (!device_is_ready(i2c_display) && (i == 3 - 1)) {
-		  LOG_ERR("I2C device failed to initialize after 3 attempts.");
-	  } else if (!device_is_ready(i2c_display)) {
+      LOG_ERR("I2C device failed to initialize after 3 attempts.");
+    } else if (!device_is_ready(i2c_display)) {
       LOG_WRN("I2C device isn't ready! Retrying...");
       k_msleep(1000);
     } else {
@@ -43,7 +44,7 @@ void i2c_display_ready() {
 
 int write_byte_to_display(uint16_t i2c_addr, uint16_t min) {
   i2c_display_ready();
-  const uint8_t i2c_tx_buffer[] = { ((min >> 8) & 0xFF), (min & 0xFF) };
+  const uint8_t i2c_tx_buffer[] = {((min >> 8) & 0xFF), (min & 0xFF)};
 
   return i2c_write(i2c_display, &i2c_tx_buffer, sizeof(i2c_tx_buffer), i2c_addr);
 }
@@ -78,8 +79,9 @@ void main(void) {
   //   k_msleep(5000);
   //   LOG_INF("UTC Unix Epoc: %lld", get_rtc_time());
   // }
-  while(1) {
+  while (1) {
     uint16_t min = 0;
+    uint16_t display_address;
 
     if (http_request_json() != 0) {
       LOG_ERR("HTTP GET request for JSON failed; cleaning up.");
@@ -106,12 +108,20 @@ void main(void) {
         LOG_DBG("Skipped: %s", departure.skipped ? "true" : "false");
         if (!departure.skipped) {
           LOG_DBG("EDT: %d", departure.etd);
-          min = minutes_to_departure(&departure);
           LOG_DBG(" - Trip direction: %c", departure.trip.direction_code);
+
+          min = minutes_to_departure(&departure);
           LOG_DBG(" - Minutes to departure: %d", min);
 
-          if (route_direction.id == 30043 && route_direction.direction_code == 'W') {
-            write_byte_to_display(B43_DISPLAY_ADDR, min);
+          display_address =
+              (uint16_t)get_display_address(route_direction.id, route_direction.direction_code);
+
+          if (display_address != 0) {
+            LOG_WRN("Display address: 0x%x", display_address);
+            write_byte_to_display(display_address, min);
+          } else {
+            LOG_WRN("I2C display address for Route: %d, Direction Code: %c not found.",
+                    route_direction.id, route_direction.direction_code);
           }
         }
       }
