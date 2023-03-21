@@ -9,3 +9,6 @@ log*.txt
 
 # Log files
 *.log
+
+# Secret keys
+app/keys/private/*

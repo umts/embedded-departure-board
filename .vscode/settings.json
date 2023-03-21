@@ -1,11 +1,13 @@
 {
   "files.associations": {
     "*.h": "c",
-    "*.txt": "ansi"
+    "log-*.txt": "ansi"
   },
   "C_Cpp.errorSquiggles": "EnabledIfIncludesResolve",
   "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, ColumnLimit: 100 }",
   "C_Cpp.clang_format_style": "file",
   "editor.formatOnSave": true,
-  "editor.formatOnSaveMode": "modificationsIfAvailable"
+  "editor.formatOnSaveMode": "modificationsIfAvailable",
+  "restructuredtext.preview.name": "docutils",
+  "restructuredtext.syntaxHighlighting.disabled": true
 }
