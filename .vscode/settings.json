@@ -1,7 +1,8 @@
 {
   "files.associations": {
     "*.h": "c",
-    "log-*.txt": "ansi"
+    "log-*.txt": "ansi",
+    "*.overlay": "dts"
   },
   "C_Cpp.errorSquiggles": "EnabledIfIncludesResolve",
   "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, ColumnLimit: 100 }",
