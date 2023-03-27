@@ -34,23 +34,23 @@ typedef struct Trip {
   char direction_code;
 } Trip;
 
-  typedef struct Departure {
-    bool skipped;
-    unsigned int etd;
-    Trip trip;
-  } Departure;
+typedef struct Departure {
+  bool skipped;
+  unsigned int etd;
+  Trip trip;
+} Departure;
 
-  typedef struct RouteDirection {
-    char direction_code;
-    int id;
-    unsigned int departures_size;
-    Departure departures[MAX_DEPARTURES];
-  } RouteDirection;
+typedef struct RouteDirection {
+  char direction_code;
+  int id;
+  unsigned int departures_size;
+  Departure departures[MAX_DEPARTURES];
+} RouteDirection;
 
-  typedef struct Stop {
-    unsigned long long last_updated;
-    const char *id;
-    unsigned int routes_size;
-    RouteDirection route_directions[MAX_ROUTES];
-  } Stop;
+typedef struct Stop {
+  unsigned long long last_updated;
+  const char *id;
+  unsigned int routes_size;
+  RouteDirection route_directions[MAX_ROUTES];
+} Stop;
 #endif

@@ -18,3 +18,14 @@
 		disconnect-sdo-sa0-pull-up;
 	};
 };
+
+&uart2 {
+  status = "okay";
+  current-speed = <1000000>;
+  parity = "odd";
+  disable-rx;
+  hw-flow-control;
+	pinctrl-0 = <&uart2_default>;
+	pinctrl-1 = <&uart2_sleep>;
+	pinctrl-names = "default", "sleep";
+};

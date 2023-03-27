@@ -1,15 +1,5 @@
-#ifndef STOP_DISPLAY_INDEX_H
-#define STOP_DISPLAY_INDEX_H
-
-/** @def B43_WEST_DISPLAY_ADDR
- *  @brief A macro that defines the I2C display address for route B43 West.
- */
-#define B43_WEST_DISPLAY_ADDR 0x43
-
-/** @def B43_EAST_DISPLAY_ADDR
- *  @brief A macro that defines the I2C display address for route B43 East.
- */
-#define B43_EAST_DISPLAY_ADDR 0x45
+#ifndef I2C_DISPLAY_INDEX_H
+#define I2C_DISPLAY_INDEX_H
 
 static int get_display_address(int route_id, char direction_code) {
   switch (route_id) {
@@ -22,7 +12,7 @@ static int get_display_address(int route_id, char direction_code) {
           break;
 
         case 'S':
-          return 4;
+          return 8;
 
         case 'W':
           break;
@@ -57,13 +47,13 @@ static int get_display_address(int route_id, char direction_code) {
           break;
 
         case 'E':
-          return 1;
+          return 2;
 
         case 'S':
           break;
 
         case 'W':
-          return 2;
+          return 4;
 
         default:
           break;
@@ -82,7 +72,7 @@ static int get_display_address(int route_id, char direction_code) {
           break;
 
         case 'W':
-          return 3;
+          return 6;
 
         default:
           break;
