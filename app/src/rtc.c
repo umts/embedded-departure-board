@@ -21,7 +21,8 @@
 #include <modem/nrf_modem_lib.h>
 #include <modem/lte_lc.h>
 
-#define SNTP_SERVER "time.nist.gov"
+#define SNTP_SERVER "pool.ntp.org"
+#define SNTP_FALLBACK_SERVER "time.nist.gov"
 #define SNTP_INIT_TIMEOUT_MS 3000
 #define RETRY_COUNT 3
 #define RTC DEVICE_DT_GET(DT_NODELABEL(pcf85063a))
@@ -56,21 +57,36 @@ void rtc_init() {
   }
 }
 
-void set_rtc_time(void) {
+void get_ntp_time(struct sntp_time *ts) {
   int err;
-  struct sntp_time ts;
 
   /* Get sntp time */
-  for (int i = 0; i < RETRY_COUNT; i++) {
-    err = sntp_simple(SNTP_SERVER, SNTP_INIT_TIMEOUT_MS, &ts);
-    if (err && (i == RETRY_COUNT - 1)) {
-		  LOG_ERR("Unable to set time using SNTP after 3 tries. Err: %i", err);
-	  } else if (err) {
-      LOG_WRN("Failed to set time using SNTP, retrying. Err: %i", err);
+  for (int rc = 0; rc < (RETRY_COUNT * 2); rc++) {
+    if (rc < RETRY_COUNT) {
+      err = sntp_simple(SNTP_SERVER, SNTP_INIT_TIMEOUT_MS, ts);
+    } else {
+      err = sntp_simple(SNTP_FALLBACK_SERVER, SNTP_INIT_TIMEOUT_MS, ts);
+    }
+
+    if (err && (rc == (RETRY_COUNT * 2) - 1)) {
+      LOG_ERR("Failed to get time from all NTP pools! Err: %i\n Check your network connection.",
+              err);
+    } else if (err && (rc == RETRY_COUNT - 1)) {
+      LOG_ERR("Unable to get time after 3 tries from NTP pool " SNTP_SERVER
+              " . Err: %i\n Attempting to use fallback NTP pool...",
+              err);
+    } else if (err) {
+      LOG_WRN("Failed to get time using SNTP, Err: %i. Retrying...", err);
     } else {
       break;
     }
   }
+}
+
+void set_rtc_time(void) {
+  int err;
+  struct sntp_time ts;
+  get_ntp_time(&ts);
 
   /* Convert time to struct tm */
   struct tm rtc_time = *gmtime(&ts.seconds);
@@ -114,16 +130,7 @@ uint64_t get_rtc_time(void) {
   struct sntp_time ts;
 
   /* Get sntp time */
-  for (int i = 0; i < RETRY_COUNT; i++) {
-    int err = sntp_simple(SNTP_SERVER, SNTP_INIT_TIMEOUT_MS, &ts);
-    if (err && (i == RETRY_COUNT - 1)) {
-      LOG_ERR("Unable to set time using SNTP after 3 tries. Err: %i", err);
-    } else if (err) {
-      LOG_WRN("Failed to set time using SNTP, retrying. Err: %i", err);
-    } else {
-      break;
-    }
-  }
+  get_ntp_time(&ts);
 
   /* Convert to Unix timestamp */
   // return mktime(&rtc_time);
