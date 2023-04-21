@@ -24,7 +24,8 @@ LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 #define HTTP_REQUEST_HOSTNAME "bustracker.pvta.com"
 
 /** A macro that defines the HTTP file path for the request headers. */
-#define HTTP_REQUEST_PATH "/InfoPoint/rest/StopDepartures/Get/" STOP_ID
+#define HTTP_REQUEST_PATH \
+  "/InfoPoint/rest/SignageStopDepartures/GetSignageDeparturesByStopId?stopId=" STOP_ID
 
 /** A macro that defines the HTTP port for the request headers. */
 #if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
