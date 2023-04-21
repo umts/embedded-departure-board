@@ -8,7 +8,5 @@
   "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, ColumnLimit: 100 }",
   "C_Cpp.clang_format_style": "file",
   "editor.formatOnSave": true,
-  "editor.formatOnSaveMode": "modificationsIfAvailable",
-  "restructuredtext.preview.name": "docutils",
-  "restructuredtext.syntaxHighlighting.disabled": true
+  "editor.formatOnSaveMode": "modificationsIfAvailable"
 }

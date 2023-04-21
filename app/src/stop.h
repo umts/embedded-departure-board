@@ -29,15 +29,8 @@
 
 #include <stdbool.h>
 
-typedef struct Trip {
-  // char *internet_service_desc;
-  char direction_code;
-} Trip;
-
 typedef struct Departure {
-  bool skipped;
   unsigned int etd;
-  Trip trip;
 } Departure;
 
 typedef struct RouteDirection {

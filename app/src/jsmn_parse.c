@@ -19,10 +19,11 @@
 LOG_MODULE_REGISTER(jsmn_parse, LOG_LEVEL_WRN);
 
 /** The number of keys + values in for each object type in our JSON string */
-#define TRIP_TOK_COUNT 26
-#define DEPARTURE_TOK_COUNT (52 + TRIP_TOK_COUNT)
-#define ROUTE_DIRECTION_TOK_COUNT (18 + (MAX_DEPARTURES * DEPARTURE_TOK_COUNT))
-#define STOP_TOK_COUNT (8 + (MAX_ROUTES * ROUTE_DIRECTION_TOK_COUNT))
+#define DEPARTURE_TOK_COUNT 18
+#define HEADWAY_TOK_COUNT 14
+#define ROUTE_DIRECTION_TOK_COUNT \
+  (12 + (MAX_DEPARTURES * (DEPARTURE_TOK_COUNT + HEADWAY_TOK_COUNT)))
+#define STOP_TOK_COUNT (6 + (MAX_ROUTES * ROUTE_DIRECTION_TOK_COUNT))
 
 /** With jsmn JSON objects count as a token, so we need to offset by an
  *  additional 1 for each level deeper we go.
@@ -32,7 +33,6 @@ LOG_MODULE_REGISTER(jsmn_parse, LOG_LEVEL_WRN);
 // #define STOP_TOK tokens[t + 1]
 #define ROUTE_DIRECTION_TOK tokens[t + rdir + 2]
 #define DEPARTURE_TOK tokens[t + rdir + dep + 3]
-#define TRIP_TOK tokens[t + rdir + dep + tr + 4]
 
 static jsmn_parser p;
 
@@ -77,7 +77,7 @@ static void print_token_substring(const char *json_ptr, jsmntok_t *token) {
 }
 #endif
 
-bool isd_unique(const char *json_ptr, char array[][50], jsmntok_t *tok, size_t arr_len) {
+bool unique_disply_text(const char *json_ptr, char array[][50], jsmntok_t *tok, size_t arr_len) {
   for (int i = 0; i < arr_len; i++) {
     if (jsoneq(json_ptr, tok, array[i]) == 0) {
       return false;
@@ -86,51 +86,16 @@ bool isd_unique(const char *json_ptr, char array[][50], jsmntok_t *tok, size_t a
   return true;
 }
 
-/** Iterates through the Trip object keys to find desired values. */
-static bool parse_trip(char *json_ptr, int rdir, int dep, const size_t trip_size,
-                       char unique_isds[][50], Trip *trip, size_t valid_departure_count) {
-  bool trip_valid = false;
-  LOG_DBG(">>>>>>>>>Trip (t: %d, dep: %d, trip_size: %d)<<<<<<<<<", t, dep, trip_size);
-  for (int tr = 0; tr < trip_size * 2; tr++) {
-    if (jsoneq(json_ptr, &TRIP_TOK, "InternetServiceDesc") == 0) {
-      tr++;
-      LOG_DBG("> InternetServiceDesc:");
-      print_token_substring(json_ptr, &TRIP_TOK);
-      trip_valid = isd_unique(json_ptr, unique_isds, &TRIP_TOK, valid_departure_count);
-      if (trip_valid) {
-        memset(unique_isds[valid_departure_count], '\0', sizeof(unique_isds[0]));
-        strncpy(unique_isds[valid_departure_count], json_ptr + TRIP_TOK.start,
-                TRIP_TOK.end - TRIP_TOK.start);
-        unique_isds[valid_departure_count][(TRIP_TOK.end - TRIP_TOK.start) + 1] = '\0';
-      } else {
-        LOG_DBG("Trip not valid.");
-        break;
-      }
-    } else if (jsoneq(json_ptr, &TRIP_TOK, "TripDirection") == 0) {
-      tr++;
-      LOG_DBG("> TripDirection:");
-      print_token_substring(json_ptr, &TRIP_TOK);
-      trip->direction_code = *(json_ptr + TRIP_TOK.start);
-    } else {
-      /* We don't care about other keys so skip their values */
-      tr++;
-    }
-  }
-  t += (trip_size * 2);
-  LOG_DBG(">>>>>>>>>>>>>>>>>(t: %d, trip_size: %d)<<<<<<<<<<<<<<<", t, trip_size);
-  return trip_valid;
-}
-
 /** Iterates through the Departures array objects to find desired values. */
 static void parse_departures(char *json_ptr, int rdir, const size_t departures_count,
                              RouteDirection *route_direction, uint64_t time_now) {
-  static char unique_isds[MAX_DEPARTURES][50];
+  static char unique_deps[MAX_DEPARTURES][50];
   size_t valid_departure_count = 0;
 
   for (int dep_num = 0; dep_num < departures_count; dep_num++) {
     Departure *departure = &route_direction->departures[valid_departure_count];
-    bool trip_valid = false;
-    departure->skipped = false;
+    bool departure_uniq = false;
+    bool edt_in_future = false;
 
     /** Increase t by 1 to step into the object */
     t++;
@@ -144,7 +109,23 @@ static void parse_departures(char *json_ptr, int rdir, const size_t departures_c
     LOG_DBG("***********Start Departure (t: %d, dep_num: %d, departure_size: %d)**********", t,
             dep_num, departure_size);
     for (int dep = 0; dep < (departure_size * 2); dep++) {
-      if (jsoneq(json_ptr, &DEPARTURE_TOK, "EDT") == 0) {
+      if (jsoneq(json_ptr, &DEPARTURE_TOK, "DisplayText") == 0) {
+        dep++;
+        LOG_DBG("* DisplayText:");
+        print_token_substring(json_ptr, &DEPARTURE_TOK);
+        departure_uniq =
+            unique_disply_text(json_ptr, unique_deps, &DEPARTURE_TOK, valid_departure_count);
+        if (departure_uniq) {
+          strncpy(unique_deps[valid_departure_count], json_ptr + DEPARTURE_TOK.start,
+                  DEPARTURE_TOK.end - DEPARTURE_TOK.start);
+          unique_deps[valid_departure_count][(DEPARTURE_TOK.end - DEPARTURE_TOK.start)] = '\0';
+          if (edt_in_future) {
+            goto check_validity;
+          }
+        } else {
+          break;
+        }
+      } else if (jsoneq(json_ptr, &DEPARTURE_TOK, "EDT") == 0) {
         dep++;
         /* EDT ex: /Date(1648627309163-0400)\, where 1648627309163 is ms since the epoch.
          * We increase the pointer by 6 to remove the leading '/Date(' for atoi().
@@ -153,44 +134,51 @@ static void parse_departures(char *json_ptr, int rdir, const size_t departures_c
         char *edt_string = json_ptr + DEPARTURE_TOK.start + 7;
         edt_string[10] = '\0';
         unsigned int edt = atoi(edt_string);
+        LOG_DBG("* EDT: %d", edt);
         if (edt > time_now) {
           departure->etd = edt;
+          edt_in_future = true;
+          if (departure_uniq) {
+            goto check_validity;
+          }
+        } else if (departure_uniq) {
+          memset(unique_deps[valid_departure_count], '\0', sizeof(unique_deps[0]));
+          break;
         } else {
           break;
         }
-        LOG_DBG("* EDT: %d", atoi(edt_string));
-      } else if (jsoneq(json_ptr, &DEPARTURE_TOK, "StopStatusReportLabel") == 0) {
+      } else if (jsoneq(json_ptr, &DEPARTURE_TOK, "ETA") == 0) {
         dep++;
-        if (jsoneq(json_ptr, &DEPARTURE_TOK, "Skipped") == 0) {
-          departure->skipped = true;
-        }
-        LOG_DBG("* StopStatusReportLabel:");
-        print_token_substring(json_ptr, &DEPARTURE_TOK);
-      } else if (jsoneq(json_ptr, &DEPARTURE_TOK, "Trip") == 0) {
+      } else if (jsoneq(json_ptr, &DEPARTURE_TOK, "GoogleTripId") == 0) {
         dep++;
-        if (DEPARTURE_TOK.type == JSMN_OBJECT && DEPARTURE_TOK.size != 0) {
-          /* DEPARTURE_TOK is a Trip object in this case,
-           * so DEPARTURE_TOK.size is the number of Trip keys.
-           */
-          trip_valid = parse_trip(json_ptr, rdir, dep, DEPARTURE_TOK.size, unique_isds,
-                                  &departure->trip, valid_departure_count);
-          if (trip_valid) {
-            valid_departure_count++;
-          } else {
-            break;
-          }
-        }
+      } else if (jsoneq(json_ptr, &DEPARTURE_TOK, "LastUpdated") == 0) {
+        dep++;
+      } else if (jsoneq(json_ptr, &DEPARTURE_TOK, "SDT") == 0) {
+        dep++;
+      } else if (jsoneq(json_ptr, &DEPARTURE_TOK, "STA") == 0) {
+        dep++;
+      } else if (jsoneq(json_ptr, &DEPARTURE_TOK, "VehicleId") == 0) {
+        dep++;
       } else {
-        /* We don't care about other keys so skip their values */
         dep++;
+        LOG_WRN("Unexpected key in Departures: %.*s\n", DEPARTURE_TOK.end - DEPARTURE_TOK.start,
+                json_ptr + DEPARTURE_TOK.start);
+      }
+
+    check_validity:
+      if (departure_uniq && edt_in_future) {
+        valid_departure_count++;
+        break;
       }
     }
     t += (departure_size * 2);
     LOG_DBG("*********************(t: %d)********************\n", t);
   }
-  // for (int i = 0; i < MAX_DEPARTURES; i++) {
-  //   LOG_WRN("isd %d: %s", i, unique_isds[i]);
-  // }
+#ifdef CONFIG_DEBUG
+  for (int i = 0; i < MAX_DEPARTURES; i++) {
+    LOG_DBG("Uniq display text(s) %d: %s", i, unique_deps[i]);
+  }
+#endif
   route_direction->departures_size = valid_departure_count;
 }
 
@@ -213,7 +201,19 @@ static void parse_route_directions(char *json_ptr, const size_t route_directions
      * so we need to double the size to get the true count.
      */
     for (int rdir = 0; rdir < (route_direction_size * 2); rdir++) {
-      if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "Departures") == 0) {
+      if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "Direction") == 0) {
+        rdir++;
+        route_direction->direction_code = *(json_ptr + ROUTE_DIRECTION_TOK.start);
+        LOG_DBG("- Direction: %c", *(json_ptr + ROUTE_DIRECTION_TOK.start));
+      } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "IsDone") == 0) {
+        rdir++;
+      } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "IsHeadway") == 0) {
+        rdir++;
+      } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "RouteId") == 0) {
+        rdir++;
+        route_direction->id = atoi(json_ptr + ROUTE_DIRECTION_TOK.start);
+        LOG_DBG("- RouteId: %d", atoi(json_ptr + ROUTE_DIRECTION_TOK.start));
+      } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "Departures") == 0) {
         rdir++;
         if ((ROUTE_DIRECTION_TOK.type == JSMN_ARRAY) && (ROUTE_DIRECTION_TOK.size > 0)) {
           parse_departures(json_ptr, rdir, ROUTE_DIRECTION_TOK.size, route_direction, time_now);
@@ -227,17 +227,12 @@ static void parse_route_directions(char *json_ptr, const size_t route_directions
           /* We don't care about this array but we do need to account for it's size */
           t += (ROUTE_DIRECTION_TOK.size * 2) + 1;
         }
-      } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "DirectionCode") == 0) {
-        rdir++;
-        route_direction->direction_code = *(json_ptr + ROUTE_DIRECTION_TOK.start);
-        LOG_DBG("- DirectionCode: %c", *(json_ptr + ROUTE_DIRECTION_TOK.start));
-      } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "RouteId") == 0) {
-        rdir++;
-        route_direction->id = atoi(json_ptr + ROUTE_DIRECTION_TOK.start);
-        LOG_DBG("- RouteId: %d", atoi(json_ptr + ROUTE_DIRECTION_TOK.start));
       } else {
         /* We don't care about other keys so skip their values */
         rdir++;
+        LOG_WRN("Unexpected key in RouteDirections: %.*s\n",
+                ROUTE_DIRECTION_TOK.end - ROUTE_DIRECTION_TOK.start,
+                json_ptr + ROUTE_DIRECTION_TOK.start);
       }
     }
     /* Increase t by an additional 1 to step into the next object */
@@ -267,7 +262,7 @@ int parse_json_for_stop(char *json_ptr, Stop *stop) {
     LOG_ERR("Parsed Empty JSON string.");
     return 1;
   }
-  LOG_INF("Number of allocated tokens: %d\n", ret);
+  LOG_INF("Tokens allocated: %d/%d\n", ret, STOP_TOK_COUNT);
 
   /* Set the starting position for t */
   switch (tokens[0].type) {
@@ -318,13 +313,11 @@ int parse_json_for_stop(char *json_ptr, Stop *stop) {
       }
     } else if (jsoneq(json_ptr, &tokens[t], "StopId") == 0) {
       t++;
+      /** TODO: Maybe verify the ID matches the one requested? Seems silly. */
       LOG_DBG("StopId: %d\n", atoi(json_ptr + tokens[t].start));
-    } else if (jsoneq(json_ptr, &tokens[t], "StopRecordId") == 0) {
-      /* We don't actually care about this value */
-      t++;
     } else {
       t++;
-      LOG_WRN("Unexpected key: %.*s\n", tokens[t].end - tokens[t].start,
+      LOG_WRN("Unexpected key in Stop: %.*s\n", tokens[t].end - tokens[t].start,
               json_ptr + tokens[t].start);
     }
     t++;
