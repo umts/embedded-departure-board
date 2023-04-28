@@ -1,6 +1,8 @@
 #ifndef STOP_H
 #define STOP_H
 
+#define RETRY_COUNT 3
+
 /* Edit this to chose what stop you want to query */
 #define STOP_ID "73"
 

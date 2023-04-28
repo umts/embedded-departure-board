@@ -72,11 +72,12 @@ void get_ntp_time(struct sntp_time *ts) {
       LOG_ERR("Failed to get time from all NTP pools! Err: %i\n Check your network connection.",
               err);
     } else if (err && (rc == RETRY_COUNT - 1)) {
-      LOG_ERR("Unable to get time after 3 tries from NTP pool " SNTP_SERVER
+      LOG_WRN("Unable to get time after 3 tries from NTP pool " SNTP_SERVER
               " . Err: %i\n Attempting to use fallback NTP pool...",
               err);
     } else if (err) {
       LOG_WRN("Failed to get time using SNTP, Err: %i. Retrying...", err);
+      k_msleep(100);
     } else {
       break;
     }
@@ -110,30 +111,17 @@ void set_rtc_time(void) {
 // TODO calculate and offset drift
 // Drifted by 1sec between [00:50:35.348,510] and [00:51:05.355,407]
 
-uint64_t get_rtc_time(void) {
-  // struct tm rtc_time = {0};
-  // uint32_t rtc_time;
+int get_rtc_time(void) {
+  struct tm rtc_time = {0};
 
-  // /* Get current time from device */
-  // for (int i = 0; i < RETRY_COUNT; i++) {
-  //   // int err = pcf85063a_get_time(rtc, &rtc_time);
-  //   int err = counter_get_value(rtc, &rtc_time);
-  //   if (err && (i == RETRY_COUNT - 1)) {
-  // 	  LOG_ERR("Unable to get time from pcf85063a after 3 tries. Err: %i", err);
-  //   } else if (err) {
-  //     LOG_WRN("Failed to get time from pcf85063a, retrying. Err: %i", err);
-  //   } else {
-  //     break;
-  //   }
-  // }
-
-  struct sntp_time ts;
-
-  /* Get sntp time */
-  get_ntp_time(&ts);
+  /* Get current time from device */
+  int err = pcf85063a_get_time(rtc, &rtc_time);
+  // int err = counter_get_value_64(rtc, &rtc_time);
+  if (err) {
+    LOG_ERR("Unable to get time from pcf85063a. Err: %i", err);
+    return -1;
+  }
 
   /* Convert to Unix timestamp */
-  // return mktime(&rtc_time);
-  // return rtc_time;
-  return ts.seconds;
+  return mktime(&rtc_time);
 }

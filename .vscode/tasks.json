@@ -3,12 +3,12 @@
 	"tasks": [
     {
       "type": "shell",
-      "label": "west build app",
+      "label": "west build",
       "command": "west",
       "args": [
         "build",
         "${workspaceFolder}/app",
-        "${input:pristine}"
+        "${input:build-opts}"
       ],
       "options": {
         "env": {
@@ -20,8 +20,11 @@
       "problemMatcher": [
         "$gcc"
       ],
-      "group": "build",
-      "detail": "compiler: $HOME/.local/bin/west"
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "detail": "west build app"
     },
     {
       "type": "shell",
@@ -38,11 +41,27 @@
       "group": "none",
       "detail": "connstring: 'dev=/dev/ttyUSB0,baud=1000000'",
       "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "west flash",
+      "command": "west",
+      "args": [
+        "flash",
+        "-r",
+        "nrfjprog",
+        "--erase",
+        "--softreset"
+      ],
+      "options": {},
+      "group": "none",
+      "detail": "flash with nfrjprog",
+      "problemMatcher": []
     }
   ],
   "inputs": [
     {
-      "id": "pristine",
+      "id": "build-opts",
       "type": "pickString",
       "description": "Build options",
       "options": [

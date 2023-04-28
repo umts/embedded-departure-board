@@ -62,6 +62,7 @@ static bool uart_feather_header_ready() {
       return true;
     }
   }
+  return false;
 }
 
 uint16_t minutes_to_departure(Departure *departure) {
@@ -70,8 +71,12 @@ uint16_t minutes_to_departure(Departure *departure) {
 }
 
 void main(void) {
-  rtc_init();
-  set_rtc_time();
+  int err;
+  uint16_t min;
+  int display_address;
+  unsigned char tx_buf[12];
+  static Stop stop = {.last_updated = 0, .id = STOP_ID};
+
   if (uart_feather_header_ready()) {
     uart_callback_set(uart_feather_header, uart_cb, NULL);
     uart_rx_disable(uart_feather_header);
@@ -80,7 +85,8 @@ void main(void) {
     goto cleanup;
   }
 
-  static Stop stop = {.last_updated = 0, .id = STOP_ID};
+  rtc_init();
+  set_rtc_time();
 
   // TODO: Create seperate thread for time sync
   // while(true) {
@@ -88,25 +94,22 @@ void main(void) {
   //   set_rtc_time();
   // }
 
-  // while(true) {
-  //   k_msleep(5000);
-  //   LOG_INF("UTC Unix Epoc: %lld", get_rtc_time());
-  // }
-
   while (1) {
-    uint16_t min = 0;
-    int display_address;
-    unsigned char tx_buf[12] = {0};
-
-    if (http_request_json() != 0) {
+    min = 0;
+    tx_buf[12] = 0;
+    if (http_request_json() != 200) {
       LOG_ERR("HTTP GET request for JSON failed; cleaning up.");
       goto cleanup;
     }
 
-    /** TODO: Implement retry */
-    if (parse_json_for_stop(recv_body_buf, &stop) != 0) {
+    err = parse_json_for_stop(recv_body_buf, &stop);
+
+    if (err == 1) {
       LOG_ERR("Failed to parse JSON; cleaning up.");
       goto cleanup;
+    } else if (err == 2) {
+      set_rtc_time();
+      continue;
     }
 
     LOG_DBG("Stop last updated: %lld", stop.last_updated);
@@ -143,7 +146,6 @@ void main(void) {
       LOG_ERR("Tx err %d", err);
     }
     k_msleep(30000);
-    // k_msleep(3000);
   }
 
 cleanup:
