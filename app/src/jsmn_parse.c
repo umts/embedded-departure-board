@@ -43,9 +43,9 @@ static jsmntok_t tokens[STOP_TOK_COUNT + 1];
 static unsigned int t;
 
 /** Compares a string with a jsmn token value. */
-static bool jsoneq(const char *json_ptr, jsmntok_t *tok, const char *s) {
-  if (tok->type == JSMN_STRING && (int)strlen(s) == tok->end - tok->start &&
-      strncmp(json_ptr + tok->start, s, tok->end - tok->start) == 0) {
+static bool jsoneq(const char *json_ptr, jsmntok_t *tok, const char *string) {
+  if (tok->type == JSMN_STRING && (int)strlen(string) == tok->end - tok->start &&
+      strncmp(json_ptr + tok->start, string, tok->end - tok->start) == 0) {
     return true;
   }
   return false;
@@ -77,9 +77,11 @@ static void print_token_substring(const char *json_ptr, jsmntok_t *token) {
 }
 #endif
 
-bool unique_disply_text(const char *json_ptr, char array[][50], jsmntok_t *tok, size_t arr_len) {
-  for (int i = 0; i < arr_len; i++) {
-    if (jsoneq(json_ptr, tok, array[i])) {
+static bool unique_disply_text(const char *json_ptr, RouteDirection *route_direction,
+                               jsmntok_t *tok, const size_t valid_departure_count) {
+  for (int i = 0; i < valid_departure_count; i++) {
+    Departure *departure = &route_direction->departures[i];
+    if (jsoneq(json_ptr, tok, departure->display_text)) {
       return false;
     }
   }
@@ -89,7 +91,6 @@ bool unique_disply_text(const char *json_ptr, char array[][50], jsmntok_t *tok, 
 /** Iterates through the Departures array objects to find desired values. */
 static void parse_departures(char *json_ptr, int rdir, const size_t departures_count,
                              RouteDirection *route_direction, int time_now) {
-  static char unique_deps[MAX_DEPARTURES][50];
   size_t valid_departure_count = 0;
 
   for (int dep_num = 0; dep_num < departures_count; dep_num++) {
@@ -111,14 +112,17 @@ static void parse_departures(char *json_ptr, int rdir, const size_t departures_c
     for (int dep = 0; dep < (departure_size * 2); dep++) {
       if (jsoneq(json_ptr, &DEPARTURE_TOK, "DisplayText")) {
         dep++;
+#ifdef CONFIG_DEBUG
         LOG_DBG("* DisplayText:");
         print_token_substring(json_ptr, &DEPARTURE_TOK);
+#endif
         departure_uniq =
-            unique_disply_text(json_ptr, unique_deps, &DEPARTURE_TOK, valid_departure_count);
+            unique_disply_text(json_ptr, route_direction, &DEPARTURE_TOK, valid_departure_count);
+
         if (departure_uniq) {
-          strncpy(unique_deps[valid_departure_count], json_ptr + DEPARTURE_TOK.start,
+          strncpy(departure->display_text, json_ptr + DEPARTURE_TOK.start,
                   DEPARTURE_TOK.end - DEPARTURE_TOK.start);
-          unique_deps[valid_departure_count][(DEPARTURE_TOK.end - DEPARTURE_TOK.start)] = '\0';
+          departure->display_text[(DEPARTURE_TOK.end - DEPARTURE_TOK.start)] = '\0';
           if (edt_in_future) {
             goto check_validity;
           }
@@ -142,7 +146,7 @@ static void parse_departures(char *json_ptr, int rdir, const size_t departures_c
             goto check_validity;
           }
         } else if (departure_uniq) {
-          memset(unique_deps[valid_departure_count], '\0', sizeof(unique_deps[0]));
+          departure->display_text[0] = '\0';
           break;
         } else {
           break;
@@ -176,7 +180,7 @@ static void parse_departures(char *json_ptr, int rdir, const size_t departures_c
   }
 #ifdef CONFIG_DEBUG
   for (int i = 0; i < MAX_DEPARTURES; i++) {
-    LOG_DBG("Uniq display text(s) %d: %s", i, unique_deps[i]);
+    LOG_DBG("Uniq display text(s) %d: %s", i, route_direction->departures[i].display_text);
   }
 #endif
   route_direction->departures_size = valid_departure_count;

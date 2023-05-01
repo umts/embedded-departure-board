@@ -38,13 +38,11 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
       LOG_ERR("Tx aborted");
       break;
     case UART_RX_RDY:
-      LOG_DBG("Received data %d bytes", evt->data.rx.len);
-      break;
     case UART_RX_STOPPED:
-      break;
     case UART_RX_BUF_REQUEST:
     case UART_RX_BUF_RELEASED:
     case UART_RX_DISABLED:
+      LOG_ERR("UART rx disabled");
       break;
   }
 }
@@ -72,6 +70,7 @@ uint16_t minutes_to_departure(Departure *departure) {
 
 void main(void) {
   int err;
+  int err_count = 0;
   uint16_t min;
   int display_address;
   unsigned char tx_buf[12];
@@ -109,29 +108,28 @@ void main(void) {
       goto cleanup;
     } else if (err == 2) {
       set_rtc_time();
+      err_count++;
       continue;
     }
 
-    LOG_DBG("Stop last updated: %lld", stop.last_updated);
-    LOG_DBG("Stop ID: %s", stop.id);
-    LOG_DBG("Stop routes size: %d", stop.routes_size);
+    LOG_DBG("Stop ID: %s\nStop routes size: %d\nLast updated: %lld\n", stop.id, stop.routes_size,
+            stop.last_updated);
 
     for (int i = 0; i < stop.routes_size; i++) {
       struct RouteDirection route_direction = stop.route_directions[i];
-      LOG_INF("========= Route ID: %d, Direction: %c, Departures size: %d =========",
+      LOG_INF("\n========= Route ID: %d; Direction: %c; Departures size: %d =========",
               route_direction.id, route_direction.direction_code, route_direction.departures_size);
       for (int j = 0; j < route_direction.departures_size; j++) {
         struct Departure departure = route_direction.departures[j];
 
-        LOG_DBG("EDT: %d", departure.etd);
-
         min = minutes_to_departure(&departure);
-        LOG_DBG(" - Minutes to departure: %d", min);
+        LOG_INF("Display text: %s", departure.display_text);
+        LOG_INF("Minutes to departure: %d", min);
 
         display_address = get_display_address(route_direction.id, route_direction.direction_code);
 
         if (display_address != -1) {
-          LOG_DBG("Display address: %d", display_address);
+          LOG_INF("Display address: %d", display_address);
           tx_buf[display_address] = ((min >> 8) & 0xFF);
           tx_buf[display_address + 1] = (min & 0xFF);
         } else {

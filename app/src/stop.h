@@ -24,14 +24,10 @@
  */
 #define MAX_DEPARTURES 4
 
-/** @def B43_DISPLAY_ADDR
- *  @brief A macro that defines the I2C display address for route B43.
- */
-#define B43_DISPLAY_ADDR 0x43
-
 #include <stdbool.h>
 
 typedef struct Departure {
+  char display_text[50];
   unsigned int etd;
 } Departure;
 
