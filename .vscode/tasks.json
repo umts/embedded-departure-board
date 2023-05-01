@@ -3,7 +3,7 @@
 	"tasks": [
     {
       "type": "shell",
-      "label": "west build",
+      "label": "Build",
       "command": "west",
       "args": [
         "build",
@@ -14,7 +14,7 @@
         "env": {
           "BOARD": "circuitdojo_feather_nrf9160_ns",
           "ZEPHYR_TOOLCHAIN_VARIANT": "zephyr",
-          "ZEPHYR_SDK_INSTALL_DIR": "${HOME}/.local/zephyr-sdk-0.15.2/"
+          "ZEPHYR_SDK_INSTALL_DIR": "${HOME}/.local/zephyr-sdk-0.16.0/"
         }
       },
       "problemMatcher": [
@@ -24,11 +24,27 @@
         "kind": "build",
         "isDefault": true
       },
-      "detail": "west build app"
+      "detail": "west build ${workspaceFolder}/app"
     },
     {
       "type": "shell",
-      "label": "newtmgr image upload",
+      "label": "Bootloader mode",
+      "command": "zephyr-tools",
+      "args": [
+        "-b",
+        "--port",
+        "/dev/ttyUSB0"
+      ],
+      "options": {},
+      "group": "none",
+      "detail": "zephyr-tools -b",
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "Load image via bootloader",
+      "dependsOn": "Bootloader mode",
+      "dependsOrder": "sequence",
       "command": "newtmgr",
       "args": [
         "-c",
@@ -39,12 +55,27 @@
       ],
       "options": {},
       "group": "none",
-      "detail": "connstring: 'dev=/dev/ttyUSB0,baud=1000000'",
+      "detail": "newtmgr image upload",
       "problemMatcher": []
     },
     {
       "type": "shell",
-      "label": "west flash",
+      "label": "Serial monitor",
+      "command": "zephyr-tools",
+      "args": [
+        "--port",
+        "/dev/ttyUSB0",
+        "--follow",
+        "--save"
+      ],
+      "options": {},
+      "group": "none",
+      "detail": "zephyr-tools --follow --save",
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "West flash",
       "command": "west",
       "args": [
         "flash",
@@ -55,7 +86,27 @@
       ],
       "options": {},
       "group": "none",
-      "detail": "flash with nfrjprog",
+      "detail": "west flash -r nfrjprog",
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "West flash and monitor",
+      "dependsOn": "West flash",
+      "dependsOrder": "sequence",
+      "command": "zephyr-tools",
+      "args": [
+        "--port",
+        "/dev/ttyUSB0",
+        "--follow",
+        "--save"
+      ],
+      "options": {},
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "detail": "west flash && zephyr-tools --follow",
       "problemMatcher": []
     }
   ],
