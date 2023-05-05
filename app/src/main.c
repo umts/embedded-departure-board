@@ -15,6 +15,7 @@
 
 /* nrf lib includes */
 #include <modem/lte_lc.h>
+#include <modem/nrf_modem_lib.h>
 
 /* app includes */
 #include <custom_http_client.h>
@@ -81,6 +82,18 @@ void main(void) {
     uart_rx_disable(uart_feather_header);
   } else {
     LOG_ERR("UART device failed");
+    goto cleanup;
+  }
+
+  err = nrf_modem_lib_init(NORMAL_MODE);
+  if (err) {
+    LOG_ERR("Failed to initialize modem library!");
+    goto cleanup;
+  }
+
+  err = lte_lc_init_and_connect();
+  if (err < 0) {
+    LOG_ERR("LTE failed to connect. Err: %d", err);
     goto cleanup;
   }
 
