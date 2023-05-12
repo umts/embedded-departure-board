@@ -7,20 +7,29 @@ manifest:
     - name: nrf
       repo-path: sdk-nrf
       remote: nrfconnect
-      revision: v2.2.0
+      revision: v2.3.0
       import:
         name-blocklist:
-          - matter
-          - nrf-802154
-          - openthread
-          - cmock
-          - unity
+          - ant
+          - azure-sdk-for-c
+          - babblesim
           - cddl-gen
+          - cirrus
+          - cjson
+          - cmock
+          - dragoon
+          - fatfs
+          - find-my
           - homekit
           - loramac-node
-          - lz4
           - lvgl
+          - lz4
+          - matter
           - mipi-sys-t
+          - nrf-802154
+          - openthread
+          - sdk-hostap
+          - unity
     # RTC Driver
     - name: pcf85063a
       url: https://github.com/circuitdojo/pcf85063a

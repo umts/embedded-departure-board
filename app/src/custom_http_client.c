@@ -14,9 +14,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* nrf lib includes */
+/* modem includes */
 #include <modem/lte_lc.h>
 #include <modem/nrf_modem_lib.h>
+#include <modem/modem_key_mgmt.h>
 
 LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 
@@ -68,27 +69,27 @@ char recv_body_buf[RECV_BODY_BUF_SIZE];
 // 	#include "../cert/gdig2.crt.pem"
 // };
 
-static int connect_socket(int *sock, struct addrinfo *addr_inf) {
+static int connect_socket(int *sock, struct zsock_addrinfo *addr_inf) {
   int ret;
-  static struct addrinfo hints = {
+  static struct zsock_addrinfo hints = {
       .ai_family = AF_INET,
       .ai_socktype = SOCK_STREAM,
   };
 
-  ret = getaddrinfo(HTTP_REQUEST_HOSTNAME, NULL, &hints, &addr_inf);
+  ret = zsock_getaddrinfo(HTTP_REQUEST_HOSTNAME, NULL, &hints, &addr_inf);
   if (ret) {
     LOG_ERR("getaddrinfo() failed, err %d\n", errno);
   }
 
   ((struct sockaddr_in *)addr_inf->ai_addr)->sin_port = htons(80);
 
-  *sock = socket(AF_INET, SOCK_STREAM, addr_inf->ai_protocol);
+  *sock = zsock_socket(AF_INET, SOCK_STREAM, addr_inf->ai_protocol);
 
   if (*sock == -1) {
     LOG_ERR("Failed to open socket!\n");
   }
 
-  ret = connect(*sock, addr_inf->ai_addr, sizeof(struct sockaddr_in));
+  ret = zsock_connect(*sock, addr_inf->ai_addr, sizeof(struct sockaddr_in));
   if (ret) {
     LOG_ERR("connect() failed, err: %d\n", errno);
   }
@@ -130,7 +131,7 @@ int separate_headers(int *sock) {
 
   do {
     if (headers) {
-      bytes = recv(*sock, &recv_headers_buf[offset], 1, 0);
+      bytes = zsock_recv(*sock, &recv_headers_buf[offset], 1, 0);
       if (bytes < 0) {
         LOG_ERR("recv() headers failed, err %d\n", errno);
         return bytes;
@@ -149,7 +150,7 @@ int separate_headers(int *sock) {
         state = 0;
       }
     } else {
-      bytes = recv(*sock, &recv_body_buf[offset], RECV_BODY_BUF_SIZE - offset, 0);
+      bytes = zsock_recv(*sock, &recv_body_buf[offset], RECV_BODY_BUF_SIZE - offset, 0);
       if (bytes < 0) {
         LOG_ERR("recv() body failed, err %d\n", errno);
         return bytes;
@@ -172,9 +173,17 @@ int separate_headers(int *sock) {
 
 int http_request_json(void) {
   int bytes;
+  int err;
   int status = -1;
   int attempt = 0;
-  struct addrinfo *addr_inf;
+  struct zsock_addrinfo *addr_inf;
+
+  err = lte_lc_init_and_connect();
+  if (err < -1) {
+    LOG_ERR("LTE failed to connect. Err: %d", err);
+    goto clean_up;
+  }
+
 retry:
   int sock = -1;
   size_t offset = 0;
@@ -185,7 +194,7 @@ retry:
   }
 
   do {
-    bytes = send(sock, &send_buf[offset], HTTP_REQUEST_HEAD_LEN - offset, 0);
+    bytes = zsock_send(sock, &send_buf[offset], HTTP_REQUEST_HEAD_LEN - offset, 0);
     if (bytes < 0) {
       LOG_ERR("send() failed, err %d.", errno);
       attempt++;
@@ -215,12 +224,17 @@ retry:
   }
 
 clean_up:
-  LOG_INF("Closing socket.");
-  (void)close(sock);
+  LOG_DBG("before ai_addrlen: %d", sizeof(&addr_inf));
+  zsock_freeaddrinfo(addr_inf);
+  (void)zsock_close(sock);
+
+  LOG_DBG("after ai_addrlen: %d\n", sizeof(&addr_inf));
+
 
   if ((attempt > 0) && (attempt <= RETRY_COUNT) && (status != 200)) {
     goto retry;
   }
 
+  lte_lc_power_off();
   return status;
 }

@@ -3,11 +3,11 @@
     {
       "name": "Linux",
       "includePath": [
-        "${workspaceFolder}/**",
-        "${HOME}/.local/zephyr-sdk-0.15.2/arm-zephyr-eabi/arm-zephyr-eabi/include/*"
+        "${workspaceRoot}/**",
+        "${HOME}.local/zephyr-sdk-0.16.0/arm-zephyr-eabi/arm-zephyr-eabi/include/*"
       ],
       "defines": [],
-      "compilerPath": "${HOME}/.local/bin/west",
+      "compilerPath": "${workspaceRoot}/.venv/bin/west",
       "cStandard": "c17",
       "cppStandard": "c++20",
       "intelliSenseMode": "linux-gcc-arm"

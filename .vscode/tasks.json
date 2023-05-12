@@ -4,8 +4,11 @@
     {
       "type": "shell",
       "label": "Build",
-      "command": "west",
+      "command": "source",
       "args": [
+        "${workspaceFolder}/.venv/bin/activate",
+        "&&",
+        "west",
         "build",
         "${workspaceFolder}/app",
         "${input:build-opts}"
@@ -17,9 +20,7 @@
           "ZEPHYR_SDK_INSTALL_DIR": "${HOME}/.local/zephyr-sdk-0.16.0/"
         }
       },
-      "problemMatcher": [
-        "$gcc"
-      ],
+      "problemMatcher": [],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -60,24 +61,31 @@
     },
     {
       "type": "shell",
-      "label": "Serial monitor",
-      "command": "zephyr-tools",
+      "label": "Serial Monitor",
+      "command": "source",
       "args": [
-        "--port",
+        "${workspaceFolder}/.venv/bin/activate",
+        "&&",
+        "pyserial-miniterm",
         "/dev/ttyUSB0",
-        "--follow",
-        "--save"
+        "115200",
+        "-e",
+        ">",
+        "./test.log"
       ],
       "options": {},
-      "group": "none",
-      "detail": "zephyr-tools --follow --save",
+      "group": "test",
+      "detail": "pyserial-minimonitor",
       "problemMatcher": []
     },
     {
       "type": "shell",
-      "label": "West flash",
-      "command": "west",
+      "label": "West Flash",
+      "command": "source",
       "args": [
+        "${workspaceFolder}/.venv/bin/activate",
+        "&&",
+        "west",
         "flash",
         "-r",
         "nrfjprog",
@@ -85,28 +93,26 @@
         "--softreset"
       ],
       "options": {},
-      "group": "none",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
       "detail": "west flash -r nfrjprog",
       "problemMatcher": []
     },
     {
       "type": "shell",
-      "label": "West flash and monitor",
-      "dependsOn": "West flash",
-      "dependsOrder": "sequence",
-      "command": "zephyr-tools",
-      "args": [
-        "--port",
-        "/dev/ttyUSB0",
-        "--follow",
-        "--save"
+      "label": "West Flash and Monitor",
+      "dependsOn": [
+        "West Flash",
+        "Serial Monitor"
       ],
+      "dependsOrder": "sequence",
+      "command": "pwd",
+      "args": [],
       "options": {},
-      "group": {
-        "kind": "test",
-        "isDefault": true
-      },
-      "detail": "west flash && zephyr-tools --follow",
+      "group": "test",
+      "detail": "west flash && serial monitor",
       "problemMatcher": []
     }
   ],

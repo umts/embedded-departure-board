@@ -12,3 +12,6 @@ log*.txt
 
 # Secret keys
 app/keys/private/*
+
+# Python venv
+.venv/

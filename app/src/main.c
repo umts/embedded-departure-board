@@ -14,7 +14,7 @@
 #include <stdlib.h>
 
 /* nrf lib includes */
-#include <modem/lte_lc.h>
+// #include <modem/lte_lc.h>
 #include <modem/nrf_modem_lib.h>
 
 /* app includes */
@@ -82,43 +82,33 @@ void main(void) {
     uart_rx_disable(uart_feather_header);
   } else {
     LOG_ERR("UART device failed");
-    goto cleanup;
+    goto clean_up;
   }
 
   err = nrf_modem_lib_init(NORMAL_MODE);
   if (err) {
     LOG_ERR("Failed to initialize modem library!");
-    goto cleanup;
+    goto clean_up;
   }
 
-  err = lte_lc_init_and_connect();
-  if (err < 0) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto cleanup;
+  if (set_rtc_time() != 0) {
+    LOG_ERR("Failed to set rtc.");
+    goto clean_up;
   }
-
-  rtc_init();
-  set_rtc_time();
-
-  // TODO: Create seperate thread for time sync
-  // while(true) {
-  //   k_sleep(K_MINUTES(50));
-  //   set_rtc_time();
-  // }
 
   while (1) {
     min = 0;
-    tx_buf[12] = 0;
+    memset(tx_buf, 0, sizeof(tx_buf));
     if (http_request_json() != 200) {
       LOG_ERR("HTTP GET request for JSON failed; cleaning up.");
-      goto cleanup;
+      goto clean_up;
     }
 
     err = parse_json_for_stop(recv_body_buf, &stop);
 
     if (err == 1) {
       LOG_ERR("Failed to parse JSON; cleaning up.");
-      goto cleanup;
+      goto clean_up;
     } else if (err == 2) {
       set_rtc_time();
       err_count++;
@@ -159,7 +149,7 @@ void main(void) {
     k_msleep(30000);
   }
 
-cleanup:
-  lte_lc_power_off();
+clean_up:
+  // lte_lc_power_off();
   LOG_WRN("Reached end of main; shutting down.");
 }

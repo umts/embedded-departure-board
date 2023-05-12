@@ -1,12 +1,34 @@
 {
   "files.associations": {
     "*.h": "c",
-    "log-*.txt": "ansi",
-    "*.overlay": "dts"
+    "log-*.txt": "ansi"
+    // "*.overlay": "dts"
   },
-  "C_Cpp.errorSquiggles": "EnabledIfIncludesResolve",
+  "C_Cpp.errorSquiggles": "enabledIfIncludesResolve",
   "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, ColumnLimit: 100 }",
   "C_Cpp.clang_format_style": "file",
+  "python.defaultInterpreterPath": "${workspaceRoot}/.venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "python.languageServer": "Jedi",
   "editor.formatOnSave": true,
-  "editor.formatOnSaveMode": "modificationsIfAvailable"
+  "editor.formatOnSaveMode": "modificationsIfAvailable",
+  "cortex-debug.enableTelemetry": false,
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Cortex Debug",
+        "cwd": "${workspaceRoot}",
+        "executable": "${workspaceRoot}/build/zephyr/zephyr.elf",
+        "request": "launch",
+        "type": "cortex-debug",
+        "servertype": "jlink",
+        "device": "nrf9160_xxAA",
+        "interface": "swd",
+        "rtos": "Zephyr",
+        // "symbolFiles": null
+        "showDevDebugOutput": "parsed"
+      }
+    ]
+  }
 }

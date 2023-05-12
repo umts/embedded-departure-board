@@ -17,9 +17,14 @@
 /* pcf85063a driver includes */
 #include <drivers/counter/pcf85063a.h>
 
-/* nrf lib includes */
-#include <modem/nrf_modem_lib.h>
+/* modem includes */
 #include <modem/lte_lc.h>
+#include <modem/nrf_modem_lib.h>
+#include <modem/modem_key_mgmt.h>
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <zephyr/net/socket.h>
 
 #define SNTP_SERVER "pool.ntp.org"
 #define SNTP_FALLBACK_SERVER "time.nist.gov"
@@ -31,33 +36,7 @@ LOG_MODULE_REGISTER(get_rtc, LOG_LEVEL_INF);
 
 const struct device *const rtc = RTC;
 
-void rtc_init() {
-	/* Check device readiness */
-  for (int i = 0; i < RETRY_COUNT; i++) {
-    if (!device_is_ready(rtc) && (i == RETRY_COUNT - 1)) {
-		  LOG_ERR("pcf85063a failed to initialize after 3 attempts.");
-	  } else if (!device_is_ready(rtc)) {
-      LOG_WRN("pcf85063a isn't ready! Retrying...");
-      k_msleep(1000);
-    } else {
-      break;
-    }
-  }
-
-  /* Start rtc counter */
-  for (int i = 0; i < RETRY_COUNT; i++) {
-    int err = counter_start(rtc);
-    if (err && (i == RETRY_COUNT - 1)) {
-		  LOG_ERR("Unable to start RTC after 3 tries. Err: %i", err);
-	  } else if (err) {
-      LOG_WRN("Failed to start RTC, retrying. Err: %i", err);
-    } else {
-      break;
-    }
-  }
-}
-
-void get_ntp_time(struct sntp_time *ts) {
+static void get_ntp_time(struct sntp_time *ts) {
   int err;
 
   /* Get sntp time */
@@ -84,28 +63,55 @@ void get_ntp_time(struct sntp_time *ts) {
   }
 }
 
-void set_rtc_time(void) {
-  int err;
+int set_rtc_time(void) {
   struct sntp_time ts;
+  int retry_count = 0;
+
+retry:
+  int err = -1;
+
+  if (!device_is_ready(rtc)) {
+    LOG_WRN("pcf85063a isn't ready!");
+    goto clean_up;
+  }
+
+  err = counter_start(rtc);
+  if (err < -1) {
+    LOG_WRN("Failed to start RTC. Err: %i", err);
+    goto clean_up;
+  }
+
+  err = lte_lc_init_and_connect();
+  if (err < -1) {
+    LOG_ERR("LTE failed to connect. Err: %d", err);
+    goto clean_up;
+  }
+
   get_ntp_time(&ts);
 
   /* Convert time to struct tm */
   struct tm rtc_time = *gmtime(&ts.seconds);
 
 	/* Set rtc time */
-  for (int i = 0; i < RETRY_COUNT; i++) {
-    err = pcf85063a_set_time(rtc, &rtc_time);
-    if (err && (i == RETRY_COUNT - 1)) {
-		  LOG_ERR("Unable to set RTC counter after 3 tries. Err: %i", err);
-	  } else if (err) {
-      LOG_WRN("Failed to set RTC counter, retrying. Err: %i", err);
-    } else {
-      break;
-    }
+  err = pcf85063a_set_time(rtc, &rtc_time);
+  if (err) {
+    LOG_WRN("Failed to set RTC counter. Err: %i", err);
+    goto clean_up;
   }
+
   LOG_INF("RTC time set to: %i:%i:%i %i/%i/%i - %i", rtc_time.tm_hour, rtc_time.tm_min,
           rtc_time.tm_sec, rtc_time.tm_mon + 1, rtc_time.tm_mday, 1900 + rtc_time.tm_year,
           rtc_time.tm_isdst);
+
+clean_up:
+  if (retry_count == 0) {
+    retry_count++;
+    k_msleep(1000);
+    goto retry;
+  }
+
+  lte_lc_power_off();
+  return err;
 }
 
 // TODO calculate and offset drift
