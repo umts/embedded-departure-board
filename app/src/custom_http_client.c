@@ -59,43 +59,17 @@ LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 static const char send_buf[] = HTTP_REQUEST_HEADERS;
 
 /** HTTP response headers buffer with size defined by the RECV_HEADER_BUF_SIZE macro. */
-static char recv_headers_buf[RECV_HEADER_BUF_SIZE];
+static char recv_headers_buf[RECV_HEADER_BUF_SIZE] = "\0";
 
 /** HTTP response body buffer with size defined by the RECV_BODY_BUF_SIZE macro. */
-char recv_body_buf[RECV_BODY_BUF_SIZE];
+char recv_body_buf[RECV_BODY_BUF_SIZE] = "\0";
 
+#if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
 /** Godaddy server ca certificate */
-// static const char ca_certificate[] = {
-// 	#include "../cert/gdig2.crt.pem"
-// };
-
-static int connect_socket(int *sock, struct zsock_addrinfo *addr_inf) {
-  int ret;
-  static struct zsock_addrinfo hints = {
-      .ai_family = AF_INET,
-      .ai_socktype = SOCK_STREAM,
-  };
-
-  ret = zsock_getaddrinfo(HTTP_REQUEST_HOSTNAME, NULL, &hints, &addr_inf);
-  if (ret) {
-    LOG_ERR("getaddrinfo() failed, err %d\n", errno);
-  }
-
-  ((struct sockaddr_in *)addr_inf->ai_addr)->sin_port = htons(80);
-
-  *sock = zsock_socket(AF_INET, SOCK_STREAM, addr_inf->ai_protocol);
-
-  if (*sock == -1) {
-    LOG_ERR("Failed to open socket!\n");
-  }
-
-  ret = zsock_connect(*sock, addr_inf->ai_addr, sizeof(struct sockaddr_in));
-  if (ret) {
-    LOG_ERR("connect() failed, err: %d\n", errno);
-  }
-
-  return ret;
-}
+static const char ca_certificate[] = {
+	#include "../cert/gdig2.crt.pem"
+};
+#endif
 
 static int parse_status(void) {
   char *ptr;
@@ -123,7 +97,7 @@ static int parse_status(void) {
   return code;
 }
 
-int separate_headers(int *sock) {
+static int separate_headers(int *sock) {
   int state = 0;
   int bytes;
   size_t offset = 0;
@@ -172,27 +146,51 @@ int separate_headers(int *sock) {
 }
 
 int http_request_json(void) {
+  int attempt = 0;
   int bytes;
   int err;
+  size_t offset;
+  int sock = -1;
   int status = -1;
-  int attempt = 0;
+
   struct zsock_addrinfo *addr_inf;
+  static struct zsock_addrinfo hints = {
+    .ai_family = AF_UNSPEC,
+    .ai_socktype = SOCK_STREAM,
+    .ai_flags = 0,
+    .ai_protocol = 0
+  };
 
   err = lte_lc_init_and_connect();
   if (err < -1) {
     LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto clean_up;
+    return err;;
   }
+
+  err = zsock_getaddrinfo(HTTP_REQUEST_HOSTNAME, NULL, &hints, &addr_inf);
+  if (err) {
+    LOG_ERR("getaddrinfo() failed, err %d\n", errno);
+    lte_lc_power_off();
+    return errno;
+  }
+
+  ((struct sockaddr_in *)addr_inf->ai_addr)->sin_port = htons(80);
 
 retry:
-  int sock = -1;
-  size_t offset = 0;
+  sock = zsock_socket(AF_INET, SOCK_STREAM, addr_inf->ai_protocol);
 
-  if (connect_socket(&sock, addr_inf) < 0) {
-    attempt++;
+  if (sock == -1) {
+    LOG_ERR("Failed to open socket!\n");
     goto clean_up;
   }
 
+  err = zsock_connect(sock, addr_inf->ai_addr, sizeof(struct sockaddr_in));
+  if (err) {
+    LOG_ERR("connect() failed, err: %d\n", errno);
+    goto clean_up;
+  }
+
+  offset = 0;
   do {
     bytes = zsock_send(sock, &send_buf[offset], HTTP_REQUEST_HEAD_LEN - offset, 0);
     if (bytes < 0) {
@@ -224,16 +222,13 @@ retry:
   }
 
 clean_up:
-  LOG_DBG("before ai_addrlen: %d", sizeof(&addr_inf));
-  zsock_freeaddrinfo(addr_inf);
   (void)zsock_close(sock);
-
-  LOG_DBG("after ai_addrlen: %d\n", sizeof(&addr_inf));
-
 
   if ((attempt > 0) && (attempt <= RETRY_COUNT) && (status != 200)) {
     goto retry;
   }
+
+  zsock_freeaddrinfo(addr_inf);
 
   lte_lc_power_off();
   return status;

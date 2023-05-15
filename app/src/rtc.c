@@ -68,7 +68,7 @@ int set_rtc_time(void) {
   int retry_count = 0;
 
 retry:
-  int err = -1;
+  int err = 0;
 
   if (!device_is_ready(rtc)) {
     LOG_WRN("pcf85063a isn't ready!");

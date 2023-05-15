@@ -71,7 +71,6 @@ uint16_t minutes_to_departure(Departure *departure) {
 
 void main(void) {
   int err;
-  int err_count = 0;
   uint16_t min;
   int display_address;
   unsigned char tx_buf[12];
@@ -99,20 +98,18 @@ void main(void) {
   while (1) {
     min = 0;
     memset(tx_buf, 0, sizeof(tx_buf));
-    if (http_request_json() != 200) {
-      LOG_ERR("HTTP GET request for JSON failed; cleaning up.");
+
+    err = http_request_json();
+    if (err != 200) {
+      LOG_ERR("HTTP GET request for JSON failed; cleaning up. ERR: %d", err);
       goto clean_up;
     }
 
     err = parse_json_for_stop(recv_body_buf, &stop);
 
-    if (err == 1) {
+    if (err) {
       LOG_ERR("Failed to parse JSON; cleaning up.");
       goto clean_up;
-    } else if (err == 2) {
-      set_rtc_time();
-      err_count++;
-      continue;
     }
 
     LOG_DBG("Stop ID: %s\nStop routes size: %d\nLast updated: %lld\n", stop.id, stop.routes_size,
