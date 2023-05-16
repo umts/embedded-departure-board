@@ -15,3 +15,6 @@ app/keys/private/*
 
 # Python venv
 .venv/
+
+# Cache
+.cache/

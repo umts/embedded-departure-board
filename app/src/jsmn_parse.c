@@ -261,10 +261,10 @@ int parse_json_for_stop(char *json_ptr, Stop *stop) {
 
   if (ret < 0) {
     LOG_ERR("Failed to parse JSON: %d.", ret);
-    return EXIT_FAILURE;
+    return ret;
   } else if (ret < 1) {
     LOG_ERR("Parsed Empty JSON string.");
-    return EXIT_FAILURE;
+    return ret;
   }
   LOG_INF("Tokens allocated: %d/%d\n", ret, STOP_TOK_COUNT);
 

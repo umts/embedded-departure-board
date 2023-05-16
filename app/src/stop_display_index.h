@@ -1,7 +1,10 @@
 #ifndef I2C_DISPLAY_INDEX_H
 #define I2C_DISPLAY_INDEX_H
 
-static int get_display_address(int route_id, char direction_code) {
+#include <string.h>
+
+static int get_display_address(const int route_id, const char direction_code,
+                               const char *display_text) {
   switch (route_id) {
     case 10029:
       switch (direction_code) {
@@ -12,7 +15,10 @@ static int get_display_address(int route_id, char direction_code) {
           break;
 
         case 'S':
-          return 8;
+          if (strcmp("Holyoke Transportation Ctr via Route 116", display_text)) {
+            return 8;
+          }
+          break;
 
         case 'W':
           break;

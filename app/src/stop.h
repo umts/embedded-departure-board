@@ -7,7 +7,7 @@
 #define STOP_ID "73"
 
 /* Specify what routes you want to get departure times for, leave blank for all routes */
-#define ROUTE_IDS []
+// #define ROUTE_IDS []
 
 /** @def MAX_ROUTES
  *  @brief A macro that defines the maximum number of routes expected for a stop.

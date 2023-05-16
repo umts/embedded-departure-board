@@ -49,23 +49,19 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
   }
 }
 
-static bool uart_feather_header_ready() {
+static bool uart_feather_header_ready(void) {
   /* Check device readiness */
-  for (int i = 0; i < 3; i++) {
-    if (!device_is_ready(uart_feather_header) && (i == 3 - 1)) {
-      LOG_ERR("UART device failed to initialize after 3 attempts.");
+  if (!device_is_ready(uart_feather_header)) {
+    LOG_WRN("UART device isn't ready! Retrying...");
+    k_msleep(1000);
+    if (!device_is_ready(uart_feather_header)) {
       return false;
-    } else if (!device_is_ready(uart_feather_header)) {
-      LOG_WRN("UART device isn't ready! Retrying...");
-      k_msleep(1000);
-    } else {
-      return true;
     }
   }
-  return false;
+  return true;
 }
 
-uint16_t minutes_to_departure(Departure *departure) {
+static uint16_t minutes_to_departure(Departure *departure) {
   int edt_ms = departure->etd;
   return (uint16_t)(edt_ms - get_rtc_time()) / 60;
 }
@@ -79,7 +75,7 @@ static void log_reset_reason(void) {
   } else {
     LOG_DBG("Reset Reason %d, Flags:", cause);
     if (cause == 0) {
-      LOG_DBG("Reason unknown, no flags set.");
+      LOG_ERR("RESET_UNKNOWN");
       return;
     }
     if (cause == RESET_PIN) {
@@ -145,18 +141,18 @@ void main(void) {
     uart_rx_disable(uart_feather_header);
   } else {
     LOG_ERR("UART device failed");
-    goto clean_up;
+    goto reset;
   }
 
   err = nrf_modem_lib_init(NORMAL_MODE);
   if (err) {
     LOG_ERR("Failed to initialize modem library!");
-    goto clean_up;
+    goto reset;
   }
 
   if (set_rtc_time() != 0) {
     LOG_ERR("Failed to set rtc.");
-    goto clean_up;
+    goto reset;
   }
 
   while (1) {
@@ -166,14 +162,13 @@ void main(void) {
     err = http_request_json();
     if (err != 200) {
       LOG_ERR("HTTP GET request for JSON failed; cleaning up. ERR: %d", err);
-      goto clean_up;
+      goto reset;
     }
 
     err = parse_json_for_stop(recv_body_buf, &stop);
-
     if (err) {
-      LOG_ERR("Failed to parse JSON; cleaning up.");
-      goto clean_up;
+      LOG_ERR("Failed to parse JSON. Err: %d", err);
+      goto reset;
     }
 
     LOG_DBG("Stop ID: %s\nStop routes size: %d\nLast updated: %lld\n", stop.id, stop.routes_size,
@@ -190,7 +185,8 @@ void main(void) {
         LOG_INF("Display text: %s", departure.display_text);
         LOG_INF("Minutes to departure: %d", min);
 
-        display_address = get_display_address(route_direction.id, route_direction.direction_code);
+        display_address = get_display_address(route_direction.id, route_direction.direction_code,
+                                              departure.display_text);
 
         if (display_address != -1) {
           LOG_INF("Display address: %d", display_address);
@@ -210,7 +206,8 @@ void main(void) {
     k_msleep(30000);
   }
 
-clean_up:
+reset:
   LOG_WRN("Reached end of main; rebooting.");
+  /* In ARM implementation sys_reboot ignores the parameter */
   sys_reboot(SYS_REBOOT_COLD);
 }
