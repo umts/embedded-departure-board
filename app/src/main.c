@@ -6,6 +6,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/posix/time.h>
 #include <zephyr/types.h>
+#include <zephyr/drivers/hwinfo.h>
+#include <zephyr/sys/reboot.h>
 
 /* Newlib C includes */
 #include <inttypes.h>
@@ -14,7 +16,6 @@
 #include <stdlib.h>
 
 /* nrf lib includes */
-// #include <modem/lte_lc.h>
 #include <modem/nrf_modem_lib.h>
 
 /* app includes */
@@ -69,12 +70,75 @@ uint16_t minutes_to_departure(Departure *departure) {
   return (uint16_t)(edt_ms - get_rtc_time()) / 60;
 }
 
+static void log_reset_reason(void) {
+  uint32_t cause;
+  int err = hwinfo_get_reset_cause(&cause);
+
+  if (err) {
+    LOG_ERR("Failed to get reset cause. Err: %d", err);
+  } else {
+    LOG_DBG("Reset Reason %d, Flags:", cause);
+    if (cause == 0) {
+      LOG_DBG("Reason unknown, no flags set.");
+      return;
+    }
+    if (cause == RESET_PIN) {
+      LOG_DBG("RESET_PIN");
+    }
+    if (cause == RESET_SOFTWARE) {
+      LOG_DBG("RESET_SOFTWARE");
+    }
+    if (cause == RESET_BROWNOUT) {
+      LOG_DBG("RESET_BROWNOUT");
+    }
+    if (cause == RESET_POR) {
+      LOG_DBG("RESET_POR");
+    }
+    if (cause == RESET_WATCHDOG) {
+      LOG_DBG("RESET_WATCHDOG");
+    }
+    if (cause == RESET_DEBUG) {
+      LOG_DBG("RESET_DEBUG");
+    }
+    if (cause == RESET_SECURITY) {
+      LOG_DBG("RESET_SECURITY");
+    }
+    if (cause == RESET_LOW_POWER_WAKE) {
+      LOG_DBG("RESET_LOW_POWER_WAKE");
+    }
+    if (cause == RESET_CPU_LOCKUP) {
+      LOG_DBG("RESET_CPU_LOCKUP");
+    }
+    if (cause == RESET_PARITY) {
+      LOG_DBG("RESET_PARITY");
+    }
+    if (cause == RESET_PLL) {
+      LOG_DBG("RESET_PLL");
+    }
+    if (cause == RESET_CLOCK) {
+      LOG_DBG("RESET_CLOCK");
+    }
+    if (cause == RESET_HARDWARE) {
+      LOG_DBG("RESET_HARDWARE");
+    }
+    if (cause == RESET_USER) {
+      LOG_DBG("RESET_USER");
+    }
+    if (cause == RESET_TEMPERATURE) {
+      LOG_DBG("RESET_TEMPERATURE");
+    }
+    hwinfo_clear_reset_cause();
+  }
+}
+
 void main(void) {
   int err;
   uint16_t min;
   int display_address;
   unsigned char tx_buf[12];
   static Stop stop = {.last_updated = 0, .id = STOP_ID};
+
+  log_reset_reason();
 
   if (uart_feather_header_ready()) {
     uart_callback_set(uart_feather_header, uart_cb, NULL);
@@ -147,6 +211,6 @@ void main(void) {
   }
 
 clean_up:
-  // lte_lc_power_off();
-  LOG_WRN("Reached end of main; shutting down.");
+  LOG_WRN("Reached end of main; rebooting.");
+  sys_reboot(SYS_REBOOT_COLD);
 }
