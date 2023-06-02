@@ -1,13 +1,14 @@
 /* Zephyr includes */
+#include <string.h>
 #include <zephyr/drivers/counter.h>
+#include <zephyr/drivers/hwinfo.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/posix/time.h>
-#include <zephyr/types.h>
-#include <zephyr/drivers/hwinfo.h>
 #include <zephyr/sys/reboot.h>
+#include <zephyr/types.h>
 
 /* Newlib C includes */
 #include <inttypes.h>
@@ -167,7 +168,9 @@ void main(void) {
 
     err = parse_json_for_stop(recv_body_buf, &stop);
     if (err) {
-      LOG_ERR("Failed to parse JSON. Err: %d", err);
+      LOG_DBG("recv_body_buf size: %d, recv_body strlen: %d", sizeof(recv_body_buf),
+              strlen(recv_body_buf));
+      LOG_DBG("recv_body_buf:\n%s", recv_body_buf);
       goto reset;
     }
 

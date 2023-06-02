@@ -15,7 +15,7 @@ static int get_display_address(const int route_id, const char direction_code,
           break;
 
         case 'S':
-          if (strcmp("Holyoke Transportation Ctr via Route 116", display_text)) {
+          if (!strcmp("Holyoke Transportation Ctr via Route 116", display_text)) {
             return 8;
           }
           break;

@@ -4,7 +4,7 @@
       "name": "Linux",
       "includePath": [
         "${workspaceRoot}/**",
-        "${HOME}.local/zephyr-sdk-0.16.0/arm-zephyr-eabi/arm-zephyr-eabi/include/*"
+        "${HOME}.local/zephyr-sdk-0.16.1/arm-zephyr-eabi/arm-zephyr-eabi/include/*"
       ],
       "defines": [],
       "compilerPath": "${workspaceRoot}/.venv/bin/west",

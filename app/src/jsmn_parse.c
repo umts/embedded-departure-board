@@ -259,12 +259,21 @@ int parse_json_for_stop(char *json_ptr, Stop *stop) {
   const int ret =
       jsmn_parse(&p, json_ptr, strlen(json_ptr), tokens, sizeof(tokens) / sizeof(jsmntok_t));
 
-  if (ret < 0) {
-    LOG_ERR("Failed to parse JSON: %d.", ret);
-    return ret;
-  } else if (ret < 1) {
-    LOG_ERR("Parsed Empty JSON string.");
-    return ret;
+  switch (ret) {
+    case 0:
+      LOG_ERR("Parsed Empty JSON string.");
+      return EXIT_FAILURE;
+    case JSMN_ERROR_NOMEM:
+      LOG_ERR("Failed to parse JSON; Not enough tokens were provided.");
+      return EXIT_FAILURE;
+    case JSMN_ERROR_INVAL:
+      LOG_ERR("Failed to parse JSON; Invalid character inside JSON string.");
+      return EXIT_FAILURE;
+    case JSMN_ERROR_PART:
+      LOG_ERR("Failed to parse JSON; The string is not a full JSON packet, more bytes expected.");
+      return EXIT_FAILURE;
+    default:
+      break;
   }
   LOG_INF("Tokens allocated: %d/%d\n", ret, STOP_TOK_COUNT);
 
