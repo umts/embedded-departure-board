@@ -25,8 +25,8 @@ static const struct led_rgb colors[] = {
 
 /** 4 x 7 digit map */
 static const unsigned int digit_pixel_map_x[] = {
-    0xf99999f0, 0x26222270, 0xf11f88f0, 0xf11f11f0, 0x999f1110,
-    0xf88f11f0, 0xf88f99f0, 0xf1111110, 0xf99f99f0, 0xf99f11f0};
+    0xf99999f0, 0x26222270, 0xf11f88f0, 0xf11f11f0, 0x999f1110, 0xf88f11f0,
+    0xf88f99f0, 0xf1111110, 0xf99f99f0, 0xf99f11f0, 0x12484210};
 
 struct led_rgb pixels[STRIP_NUM_PIXELS];
 
@@ -77,6 +77,9 @@ int write_num_to_display(int num) {
   } else if (num > 9) {
     display_digit(num % 10, 8);
     display_digit(num / 10 % 100, 3);
+  } else if (num == 0) {
+    display_digit(1, 8);
+    display_digit(10, 3);
   } else {
     display_digit(num, 6);
   }
