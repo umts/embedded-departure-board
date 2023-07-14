@@ -1,19 +1,9 @@
 /* Zephyr includes */
-#include <string.h>
-#include <zephyr/drivers/counter.h>
 #include <zephyr/drivers/hwinfo.h>
-#include <zephyr/drivers/i2c.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/posix/time.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/types.h>
-
-/* Newlib C includes */
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 /* nrf lib includes */
 #include <modem/nrf_modem_lib.h>
@@ -28,9 +18,9 @@
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
-static uint16_t minutes_to_departure(Departure *departure) {
+static unsigned int minutes_to_departure(Departure *departure) {
   int edt_ms = departure->etd;
-  return (uint16_t)(edt_ms - get_rtc_time()) / 60;
+  return (unsigned int)(edt_ms - get_rtc_time()) / 60;
 }
 
 static void log_reset_reason(void) {
@@ -96,7 +86,7 @@ static void log_reset_reason(void) {
 
 void main(void) {
   int err;
-  uint16_t min;
+  unsigned int min;
   int display_address;
   static Stop stop = {.last_updated = 0, .id = STOP_ID};
 
@@ -159,12 +149,10 @@ void main(void) {
 
         if (display_address != -1) {
           LOG_INF("Display address: %d", display_address);
-          // Only one display is currently set up
-          if (display_address == 1) {
-            int err = write_num_to_display(min);
-            if (err != 0) {
-              LOG_ERR("Tx err %d", err);
-            }
+          // There is currently no light sensor to adjust brightness
+          err = write_num_to_display(display_address, 0x55, min);
+          if (err != 0) {
+            goto reset;
           }
         } else {
           LOG_WRN(
