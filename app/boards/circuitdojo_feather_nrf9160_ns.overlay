@@ -1,4 +1,5 @@
 #include <zephyr/dt-bindings/led/led.h>
+#include "circuitdojo_feather_nrf9160-pinctrl.dtsi"
 
 &i2c1 {
   compatible = "nordic,nrf-twim";
@@ -29,33 +30,18 @@
   status = "disabled";
 };
 
-
-&pinctrl {
-  spi_feather_default: spi_feather_default {
-    group1 {
-      psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
-              <NRF_PSEL(SPIM_MOSI, 0, 21)>,
-              <NRF_PSEL(SPIM_MISO, 0, 22)>;
-    };
-  };
-
-  spi_feather_sleep: spi_feather_sleep {
-    group1 {
-      psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
-              <NRF_PSEL(SPIM_MOSI, 0, 21)>,
-              <NRF_PSEL(SPIM_MISO, 0, 22)>;
-      low-power-enable;
-    };
-  };
-};
-
 &spi2 {
   compatible = "nordic,nrf-spim";
   status = "okay";
   cs-gpios = <&gpio0 18 GPIO_ACTIVE_LOW>;
   pinctrl-0 = <&spi_feather_default>;
   pinctrl-1 = <&spi_feather_sleep>;
-  pinctrl-names = "default", "sleep";
+  // pinctrl-2 = <&spi_feather_pinmux_0>;
+  // pinctrl-3 = <&spi_feather_pinmux_1>;
+  // pinctrl-4 = <&spi_feather_pinmux_2>;
+  // pinctrl-5 = <&spi_feather_pinmux_3>;
+  // pinctrl-6 = <&spi_feather_pinmux_4>;
+  pinctrl-names = "default", "sleep";//, "pinmux_0";// "pinmux_1", "pinmux_2", "pinmux_3", "pinmux_4";
   led_strip: ws2812@0 {
     compatible = "worldsemi,ws2812-spi";
 

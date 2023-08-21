@@ -37,7 +37,7 @@ static int get_display_address(const int route_id, const char direction_code,
           break;
 
         case 'S':
-          return 0;
+          return 1;
 
         case 'W':
           break;
@@ -53,7 +53,7 @@ static int get_display_address(const int route_id, const char direction_code,
           break;
 
         case 'E':
-          return 1;
+          return 0;
 
         case 'S':
           break;

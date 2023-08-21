@@ -1,8 +1,27 @@
 #include <led_display.h>
 #include <zephyr/drivers/led_strip.h>
+#include <zephyr/drivers/pinctrl.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+
+#include "zephyr/devicetree.h"
+
+#define PINCTRL_STATE_PINMUX_0 2U
+#define PINCTRL_STATE_PINMUX_1 3U
+#define PINCTRL_STATE_PINMUX_2 4U
+#define PINCTRL_STATE_PINMUX_3 5U
+#define PINCTRL_STATE_PINMUX_4 6U
+
+// #define SPI2_DEVICE DT_PATH(soc, peripheral_40000000, spi_a000)
+#define SPI2_DEVICE DT_NODELABEL(spi2)
+
+PINCTRL_DT_DEV_CONFIG_DECLARE(SPI2_DEVICE);
+
+// PINCTRL_DT_STATE_PINS_DEFINE(SPI2_DEVICE, pinctrl_2);
+
+// static const struct pinctrl_state spi_feather_pinmux_0[] = {
+//     PINCTRL_DT_STATE_INIT(pinctrl_2, PINCTRL_STATE_PINMUX_0)};
 
 LOG_MODULE_REGISTER(led_display, LOG_LEVEL_DBG);
 

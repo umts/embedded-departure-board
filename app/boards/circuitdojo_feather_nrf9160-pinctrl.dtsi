@@ -1,0 +1,63 @@
+&pinctrl {
+  spi_feather_default: spi_feather_default {
+    group1 {
+      psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+              <NRF_PSEL(SPIM_MOSI, 0, 21)>,
+              <NRF_PSEL(SPIM_MISO, 0, 22)>;
+    };
+    group2 {
+      psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+              <NRF_PSEL(SPIM_MOSI, 0, 23)>,
+              <NRF_PSEL(SPIM_MISO, 0, 21)>;
+    };
+  };
+
+  spi_feather_sleep: spi_feather_sleep {
+    group1 {
+      psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+              <NRF_PSEL(SPIM_MOSI, 0, 23)>,
+              <NRF_PSEL(SPIM_MISO, 0, 24)>;
+      low-power-enable;
+    };
+  };
+
+  // spi_feather_pinmux_0: spi_feather_pinmux_0 {
+  //   group1 {
+  //     psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+  //             <NRF_PSEL(SPIM_MOSI, 0, 23)>,
+  //             <NRF_PSEL(SPIM_MISO, 0, 21)>;
+  //   };
+  // };
+
+  // /omit-if-no-ref/ spi_feather_pinmux_1: spi_feather_pinmux_1 {
+  //   group1 {
+  //     psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+  //             <NRF_PSEL(SPIM_MOSI, 0, 24)>,
+  //             <NRF_PSEL(SPIM_MISO, 0, 21)>;
+  //   };
+  // };
+
+  // /omit-if-no-ref/ spi_feather_pinmux_2: spi_feather_pinmux_2 {
+  //   group1 {
+  //     psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+  //             <NRF_PSEL(SPIM_MOSI, 0, 22)>,
+  //             <NRF_PSEL(SPIM_MISO, 0, 21)>;
+  //   };
+  // };
+
+  // /omit-if-no-ref/ spi_feather_pinmux_3: spi_feather_pinmux_3 {
+  //   group1 {
+  //     psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+  //             <NRF_PSEL(SPIM_MOSI, 0, 4)>,
+  //             <NRF_PSEL(SPIM_MISO, 0, 21)>;
+  //   };
+  // };
+
+  // /omit-if-no-ref/ spi_feather_pinmux_4: spi_feather_pinmux_4 {
+  //   group1 {
+  //     psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+  //             <NRF_PSEL(SPIM_MOSI, 0, 29)>,
+  //             <NRF_PSEL(SPIM_MISO, 0, 21)>;
+  //   };
+  // };
+};
