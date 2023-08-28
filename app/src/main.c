@@ -14,15 +14,31 @@
 #include <led_display.h>
 #include <rtc.h>
 #include <stop.h>
-#include <stop_display_index.h>
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
-static unsigned int minutes_to_departure(Departure *departure) {
-  int edt_ms = departure->etd;
-  return (unsigned int)(edt_ms - get_rtc_time()) / 60;
-}
+/** Specify the number of display boxes connected*/
+#define NUMBER_OF_DISPLAY_BOXES 5
 
+/** Specify the route, display text, and position for each display box */
+// clang-format off
+#define DISPLAY_BOXES {                                                                       \
+  { .id = 20038, .position = 0, .display_text = "Mt Holyoke College via Hampshire College" }, \
+  { .id = 30043, .position = 1, .display_text = "Amherst College via UMass" },                \
+  { .id = 30043, .position = 2, .display_text = "Northampton via Hampshire Mall" },           \
+  { .id = 30943, .position = 3, .display_text = "Northampton via UMass Express" },            \
+  { .id = 10029, .position = 4, .display_text = "Holyoke Transportation Ctr via Route 116" }  \
+}
+// clang-format on
+
+typedef const struct DisplayBox {
+  // const char direction_code;
+  const int id;
+  const int position;
+  const char *display_text;
+} DisplayBox;
+
+#ifdef CONFIG_DEBUG
 static void log_reset_reason(void) {
   uint32_t cause;
   int err = hwinfo_get_reset_cause(&cause);
@@ -83,14 +99,79 @@ static void log_reset_reason(void) {
     hwinfo_clear_reset_cause();
   }
 }
+#endif
+
+static unsigned int minutes_to_departure(Departure *departure) {
+  int edt_ms = departure->etd;
+  return (unsigned int)(edt_ms - get_rtc_time()) / 60;
+}
+
+int get_display_address(
+    const DisplayBox display_boxes[], const int route_id,
+    const char direction_code, const char *display_text
+) {
+  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+    if ((route_id == display_boxes[box].id) &&
+        !strcmp(display_boxes[box].display_text, display_text)) {
+      return display_boxes[box].position;
+    }
+  }
+  return -1;
+}
+
+int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
+  int display_address;
+  unsigned int min = 0;
+
+  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+    (void)turn_display_off(box);
+  }
+
+  for (int i = 0; i < stop.routes_size; i++) {
+    struct RouteDirection route_direction = stop.route_directions[i];
+    LOG_INF(
+        "\n========= Route ID: %d; Direction: %c; Departures size: %d "
+        "========= ",
+        route_direction.id, route_direction.direction_code,
+        route_direction.departures_size
+    );
+    for (int j = 0; j < route_direction.departures_size; j++) {
+      struct Departure departure = route_direction.departures[j];
+
+      min = minutes_to_departure(&departure);
+      LOG_INF("Display text: %s", departure.display_text);
+      LOG_INF("Minutes to departure: %d", min);
+
+      display_address = get_display_address(
+          display_boxes, route_direction.id, route_direction.direction_code,
+          departure.display_text
+      );
+
+      if (display_address != -1) {
+        LOG_INF("Display address: %d", display_address);
+        // There is currently no light sensor to adjust brightness
+        if (write_num_to_display(display_address, 0x7F, min)) {
+          return 1;
+        }
+      } else {
+        LOG_WRN(
+            "Display address for Route: %d, Direction Code: %c not found.",
+            route_direction.id, route_direction.direction_code
+        );
+      }
+    }
+  }
+  return 0;
+}
 
 void main(void) {
   int err;
-  unsigned int min;
-  int display_address;
   static Stop stop = {.last_updated = 0, .id = STOP_ID};
+  static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
-  log_reset_reason();
+#ifdef CONFIG_DEBUG
+  (void)log_reset_reason();
+#endif
 
   err = nrf_modem_lib_init(NORMAL_MODE);
   if (err) {
@@ -104,8 +185,6 @@ void main(void) {
   }
 
   while (1) {
-    min = 0;
-
     err = http_request_json();
     if (err != 200) {
       LOG_ERR("HTTP GET request for JSON failed; cleaning up. ERR: %d", err);
@@ -127,41 +206,11 @@ void main(void) {
         stop.routes_size, stop.last_updated
     );
 
-    for (int i = 0; i < stop.routes_size; i++) {
-      struct RouteDirection route_direction = stop.route_directions[i];
-      LOG_INF(
-          "\n========= Route ID: %d; Direction: %c; Departures size: %d "
-          "========= ",
-          route_direction.id, route_direction.direction_code,
-          route_direction.departures_size
-      );
-      for (int j = 0; j < route_direction.departures_size; j++) {
-        struct Departure departure = route_direction.departures[j];
-
-        min = minutes_to_departure(&departure);
-        LOG_INF("Display text: %s", departure.display_text);
-        LOG_INF("Minutes to departure: %d", min);
-
-        display_address = get_display_address(
-            route_direction.id, route_direction.direction_code,
-            departure.display_text
-        );
-
-        if (display_address != -1) {
-          LOG_INF("Display address: %d", display_address);
-          // There is currently no light sensor to adjust brightness
-          err = write_num_to_display(display_address, 0x55, min);
-          if (err != 0) {
-            goto reset;
-          }
-        } else {
-          LOG_WRN(
-              "Display address for Route: %d, Direction Code: %c not found.",
-              route_direction.id, route_direction.direction_code
-          );
-        }
-      }
+    if (parse_returned_routes(stop, display_boxes)) {
+      goto reset;
     }
+
+    // led_test_patern();
     k_msleep(30000);
   }
 
