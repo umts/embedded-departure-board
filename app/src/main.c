@@ -22,20 +22,19 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
 /** Specify the route, display text, and position for each display box */
 // clang-format off
-#define DISPLAY_BOXES {                                                                       \
-  { .id = 20038, .position = 0, .display_text = "Mt Holyoke College via Hampshire College" }, \
-  { .id = 30043, .position = 1, .display_text = "Amherst College via UMass" },                \
-  { .id = 30043, .position = 2, .display_text = "Northampton via Hampshire Mall" },           \
-  { .id = 30943, .position = 3, .display_text = "Northampton via UMass Express" },            \
-  { .id = 10029, .position = 4, .display_text = "Holyoke Transportation Ctr via Route 116" }  \
+#define DISPLAY_BOXES {                                  \
+  { .id = 20038, .position = 0, .direction_code = 'S' }, \
+  { .id = 30043, .position = 1, .direction_code = 'E' }, \
+  { .id = 30043, .position = 2, .direction_code = 'W' }, \
+  { .id = 30943, .position = 3, .direction_code = 'W' }, \
+  { .id = 10029, .position = 4, .direction_code = 'S' }  \
 }
 // clang-format on
 
 typedef const struct DisplayBox {
-  // const char direction_code;
+  const char direction_code;
   const int id;
   const int position;
-  const char *display_text;
 } DisplayBox;
 
 #ifdef CONFIG_DEBUG
@@ -108,11 +107,11 @@ static unsigned int minutes_to_departure(Departure *departure) {
 
 int get_display_address(
     const DisplayBox display_boxes[], const int route_id,
-    const char direction_code, const char *display_text
+    const char direction_code
 ) {
   for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
     if ((route_id == display_boxes[box].id) &&
-        !strcmp(display_boxes[box].display_text, display_text)) {
+        (display_boxes[box].direction_code == direction_code)) {
       return display_boxes[box].position;
     }
   }
@@ -143,14 +142,13 @@ int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
       LOG_INF("Minutes to departure: %d", min);
 
       display_address = get_display_address(
-          display_boxes, route_direction.id, route_direction.direction_code,
-          departure.display_text
+          display_boxes, route_direction.id, route_direction.direction_code
       );
 
       if (display_address != -1) {
         LOG_INF("Display address: %d", display_address);
         // There is currently no light sensor to adjust brightness
-        if (write_num_to_display(display_address, 0x7F, min)) {
+        if (write_num_to_display(display_address, 0xFF, min)) {
           return 1;
         }
       } else {
