@@ -1,0 +1,41 @@
+name: Build Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+jobs:
+  build_for_hw_test:
+    runs-on: ubuntu-latest
+
+    container:
+      image: zephyrprojectrtos/ci:v0.26.4
+
+    env:
+      ZEPHYR_SDK_INSTALL_DIR: /opt/toolchains/zephyr-sdk-0.16.1
+
+    steps:
+      - uses: actions/checkout@v3
+        # with:
+        #   path: app
+
+      - name: West init and update
+        run: west init && west update
+
+      - name: Build app circuitdojo_feather_nrf9160_ns
+        run: west build -b circuitdojo_feather_nrf9160_ns ./app -p
+
+      - name: Create build tarball
+        run: |
+          cd build
+          tar czf merged.tar.gz build/zephyr/merged.hex
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v3
+        with:
+          name: build.tar.gz
+          path: build/merged.tar.gz
