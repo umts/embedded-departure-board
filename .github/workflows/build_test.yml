@@ -7,7 +7,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_for_hw_test:
+  # zephyrprojectrtos_image:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v3
+
+  #     - run: mkdir -p ~/image_cache
+
+  #     - id: image-cache
+  #       uses: actions/cache@v3
+  #       with:
+  #           path: ~/image_cache
+  #           key: image-cache-${{ runner.os }}
+
+  #     - if: steps.image-cache.outputs.cache-hit != 'true'
+  #       run: |
+  #           docker pull zephyrprojectrtos/ci:v0.26.4
+  #           docker save zephyrprojectrtos/ci:v0.26.4 | gzip > ~/image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
+
+  #     - if: steps.image-cache.outputs.cache-hit == 'true'
+  #       run: docker load --input ~/image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
+
+  build_app_test:
+    # needs: zephyrprojectrtos_image
+
     runs-on: ubuntu-latest
 
     env:
@@ -16,21 +40,22 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - run: mkdir -p ~/image-cache
+      - run: mkdir -p ~/image_cache
 
       - id: image-cache
         uses: actions/cache@v3
         with:
-            path: ~/image-cache
+            path: ~/image_cache
             key: image-cache-${{ runner.os }}
 
       - if: steps.image-cache.outputs.cache-hit != 'true'
         run: |
             docker pull zephyrprojectrtos/ci:v0.26.4
-            docker save zephyrprojectrtos/ci:v0.26.4 | gzip > ~/image-cache/zephyrprojectrtos_ci_v0.26.4.tar.gz
+            docker save zephyrprojectrtos/ci:v0.26.4 | gzip > ~/image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
 
-      - if: steps.image-cache.outputs.cache-hit == 'true'
-        run: docker load -i ~/image-cache/zephyrprojectrtos_ci_v0.26.4.tar.gz
+      # - if: steps.image-cache.outputs.cache-hit == 'true'
+      - name: docker load
+        run: docker load --input ~/image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
 
       - name: West update
         run: west update
