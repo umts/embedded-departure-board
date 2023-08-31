@@ -3,8 +3,6 @@ name: Build Test
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
   workflow_dispatch:
 
@@ -12,19 +10,30 @@ jobs:
   build_for_hw_test:
     runs-on: ubuntu-latest
 
-    container:
-      image: zephyrprojectrtos/ci:v0.26.4
-
     env:
       ZEPHYR_SDK_INSTALL_DIR: /opt/toolchains/zephyr-sdk-0.16.1
 
     steps:
       - uses: actions/checkout@v3
-        # with:
-        #   path: app
 
-      - name: West init and update
-        run: west init && west update
+      - run: mkdir -p ~/image-cache
+
+      - id: image-cache
+        uses: actions/cache@v3
+        with:
+            path: ~/image-cache
+            key: image-cache-${{ runner.os }}
+
+      - if: steps.image-cache.outputs.cache-hit != 'true'
+        run: |
+            docker pull zephyrprojectrtos/ci:v0.26.4
+            docker save zephyrprojectrtos/ci:v0.26.4 | gzip > ~/image-cache/zephyrprojectrtos_ci_v0.26.4.tar.gz
+
+      - if: steps.image-cache.outputs.cache-hit == 'true'
+        run: docker load -i ~/image-cache/zephyrprojectrtos_ci_v0.26.4.tar.gz
+
+      - name: West update
+        run: west update
 
       - name: Build app circuitdojo_feather_nrf9160_ns
         run: west build -b circuitdojo_feather_nrf9160_ns ./app -p
