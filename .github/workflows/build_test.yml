@@ -8,7 +8,6 @@ on:
 
 jobs:
   get_zephyrprojectrtos_image:
-    - name: Run Cache Zephyr Docker Image Workflow
       uses: ./.github/workflows/cache_zephyr_image.yml
       # with:
       #   image: zephyrprojectrtos/ci:v0.26.4
