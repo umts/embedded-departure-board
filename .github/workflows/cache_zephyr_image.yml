@@ -1,0 +1,29 @@
+name: Cache Zephyr Docker Image
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  get_zephyrprojectrtos_image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Make Docker image cache path
+        run: mkdir -p ~/docker_image_cache
+
+      - id: docker-image-cache
+        uses: actions/cache@v3
+        with:
+            path: ~/docker_image_cache
+            key: docker-image-cache-${{ runner.os }}
+            restore-keys: docker-image-cache-${{ runner.os }}
+
+      - if: ${{ steps.docker-image-cache.outputs.cache-hit != 'true' }}
+        run: |
+            docker pull zephyrprojectrtos/ci:v0.26.4
+            docker save zephyrprojectrtos/ci:v0.26.4 | gzip > ~/docker_image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
+
+      - if: ${{ steps.docker-image-cache.outputs.cache-hit == 'true' }}
+        run: docker load --input ~/docker_image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
