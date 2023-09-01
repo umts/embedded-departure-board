@@ -13,6 +13,7 @@ jobs:
       #   image: zephyrprojectrtos/ci:v0.26.4
 
   build_app_test:
+    needs: get_zephyrprojectrtos_image
     runs-on: ubuntu-latest
     env:
       ZEPHYR_SDK_INSTALL_DIR: /opt/toolchains/zephyr-sdk-0.16.1
