@@ -7,16 +7,18 @@ on:
   workflow_dispatch:
 
 jobs:
+  get_zephyrprojectrtos_image:
+    - name: Run Cache Zephyr Docker Image Workflow
+      uses: ./.github/workflows/cache_zephyr_image.yml
+      # with:
+      #   image: zephyrprojectrtos/ci:v0.26.4
+
   build_app_test:
     runs-on: ubuntu-latest
     env:
       ZEPHYR_SDK_INSTALL_DIR: /opt/toolchains/zephyr-sdk-0.16.1
     steps:
       - uses: actions/checkout@v3
-
-      - uses: ./.github/workflows/cache_zephyr_image.yml
-        # with:
-        #   image: zephyrprojectrtos/ci:v0.26.4
 
       - uses: actions/cache/restore@v3
         id: docker-image-cache
