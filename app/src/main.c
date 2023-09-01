@@ -171,6 +171,10 @@ void main(void) {
   (void)log_reset_reason();
 #endif
 
+  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+    (void)turn_display_off(box);
+  }
+
   err = nrf_modem_lib_init(NORMAL_MODE);
   if (err) {
     LOG_ERR("Failed to initialize modem library!");

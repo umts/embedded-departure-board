@@ -9,8 +9,6 @@ on:
 jobs:
   get_zephyrprojectrtos_image:
       uses: ./.github/workflows/cache_zephyr_image.yml
-      # with:
-      #   image: zephyrprojectrtos/ci:v0.26.4
 
   build_app_test:
     needs: get_zephyrprojectrtos_image
