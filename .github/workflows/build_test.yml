@@ -7,55 +7,28 @@ on:
   workflow_dispatch:
 
 jobs:
-  # zephyrprojectrtos_image:
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - uses: actions/checkout@v3
-
-  #     - run: mkdir -p ~/image_cache
-
-  #     - id: image-cache
-  #       uses: actions/cache@v3
-  #       with:
-  #           path: ~/image_cache
-  #           key: image-cache-${{ runner.os }}
-
-  #     - if: steps.image-cache.outputs.cache-hit != 'true'
-  #       run: |
-  #           docker pull zephyrprojectrtos/ci:v0.26.4
-  #           docker save zephyrprojectrtos/ci:v0.26.4 | gzip > ~/image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
-
-  #     - if: steps.image-cache.outputs.cache-hit == 'true'
-  #       run: docker load --input ~/image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
-
   build_app_test:
-    # needs: zephyrprojectrtos_image
-
     runs-on: ubuntu-latest
-
     env:
       ZEPHYR_SDK_INSTALL_DIR: /opt/toolchains/zephyr-sdk-0.16.1
-
     steps:
       - uses: actions/checkout@v3
 
-      - run: mkdir -p ~/image_cache
+      - uses: ./.github/workflows/cache_zephyr_image.yml
+        # with:
+        #   image: zephyrprojectrtos/ci:v0.26.4
 
-      - id: image-cache
-        uses: actions/cache@v3
+      - uses: actions/cache/restore@v3
+        id: docker-image-cache
         with:
-            path: ~/image_cache
-            key: image-cache-${{ runner.os }}
+          path: ~/docker_image_cache
+          key: docker-image-cache-${{ runner.os }}
 
-      - if: steps.image-cache.outputs.cache-hit != 'true'
+      - name: Docker Load
+        if: ${{ steps.docker-image-cache.outputs.cache-hit == 'true' }}
         run: |
-            docker pull zephyrprojectrtos/ci:v0.26.4
-            docker save zephyrprojectrtos/ci:v0.26.4 | gzip > ~/image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
-
-      # - if: steps.image-cache.outputs.cache-hit == 'true'
-      - name: docker load
-        run: docker load --input ~/image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
+          docker load --input ~/docker_image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
+          docker image ls -a
 
       - name: West update
         run: west update
