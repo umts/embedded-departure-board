@@ -9,17 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/cache/restore@v3
+        id: docker-image-cache
+        with:
+          path: ~/docker_image_cache
+          key: docker-image-cache-${{ runner.os }}
 
-      - name: Make Docker image cache path
-        run: mkdir -p ~/docker_image_cache
+      - name: Update Docker Image Cache
+        if: ${{ steps.docker-image-cache.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p ~/docker_image_cache
+          docker system prune --volumes -a -f
+          docker pull ghcr.io/zephyrproject-rtos/ci:v0.26.4
+          docker save ghcr.io/zephyrproject-rtos/ci:v0.26.4 | gzip  > ~/docker_image_cache/zephyrprojectrtos-ci-v0-26-4.tgz
 
-      - id: docker-image-cache
-        uses: actions/cache/save@v3
+      - uses: actions/cache/save@v3
+        if: ${{ steps.docker-image-cache.outputs.cache-hit != 'true' }}
         with:
             path: ~/docker_image_cache
-            key: docker-image-cache-${{ runner.os }}
-
-      - if: ${{ steps.docker-image-cache.outputs.cache-hit != 'true' }}
-        run: |
-            docker pull zephyrprojectrtos/ci:v0.26.4
-            docker save zephyrprojectrtos/ci:v0.26.4 | gzip > ~/docker_image_cache/zephyrprojectrtos-ci-v0.26.4.tar.gz
+            key: ${{ steps.docker-image-cache.outputs.cache-primary-key }}
