@@ -4,7 +4,9 @@
     "log-*.txt": "ansi"
     // "*.overlay": "dts"
   },
-  "devicetree.defaultBoard": "circuitdojo_feather_nrf9160_ns",
+  "search.exclude": {
+    "**/build": true
+  },
   "python.defaultInterpreterPath": "${workspaceRoot}/.venv/bin/python",
   "python.terminal.activateEnvironment": true,
   "python.languageServer": "Jedi",
