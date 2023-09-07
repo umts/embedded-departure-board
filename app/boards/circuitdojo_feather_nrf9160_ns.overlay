@@ -22,13 +22,14 @@
 };
 
 &uart2 {
+  /* Cannot be used together with spi2. */
   status = "disabled";
 };
 
 &i2c2 {
+  /* Cannot be used together with spi2. */
   status = "disabled";
 };
-
 
 &pinctrl {
   spi_feather_default: spi_feather_default {
