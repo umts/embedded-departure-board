@@ -162,7 +162,7 @@ int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
   return 0;
 }
 
-void main(void) {
+int main(void) {
   int err;
   static Stop stop = {.last_updated = 0, .id = STOP_ID};
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
@@ -175,7 +175,7 @@ void main(void) {
     (void)turn_display_off(box);
   }
 
-  err = nrf_modem_lib_init(NORMAL_MODE);
+  err = nrf_modem_lib_init();
   if (err) {
     LOG_ERR("Failed to initialize modem library!");
     goto reset;
