@@ -10,21 +10,15 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/sntp.h>
+#include <zephyr/net/socket.h>
 #include <zephyr/posix/time.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/types.h>
 
 /* pcf85063a driver includes */
 #include <drivers/counter/pcf85063a.h>
-
-/* modem includes */
-#include <modem/lte_lc.h>
-#include <modem/nrf_modem_lib.h>
-#include <modem/modem_key_mgmt.h>
-
-#include <stdlib.h>
 #include <stdbool.h>
-#include <zephyr/net/socket.h>
+#include <stdlib.h>
 
 #define SNTP_SERVER "pool.ntp.org"
 #define SNTP_FALLBACK_SERVER "time.nist.gov"
@@ -81,12 +75,6 @@ retry:
     goto clean_up;
   }
 
-  err = lte_lc_init_and_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto clean_up;
-  }
-
   get_ntp_time(&ts);
 
   /* Convert time to struct tm */
@@ -110,7 +98,6 @@ clean_up:
     goto retry;
   }
 
-  lte_lc_power_off();
   return err;
 }
 

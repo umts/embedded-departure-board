@@ -1,7 +1,10 @@
 /* Zephyr includes */
+#include <stdlib.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/logging/log_backend.h>
+#include <zephyr/logging/log_ctrl.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/types.h>
 
@@ -12,10 +15,13 @@
 #include <custom_http_client.h>
 #include <jsmn_parse.h>
 #include <led_display.h>
+#include <modem_net_connect.h>
 #include <rtc.h>
 #include <stop.h>
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
+
+BUILD_ASSERT(IS_ENABLED(CONFIG_LOG_BACKEND_NET), "syslog backend not enabled");
 
 /** Specify the number of display boxes connected*/
 #define NUMBER_OF_DISPLAY_BOXES 5
@@ -30,6 +36,10 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
   { .id = 10029, .position = 4, .direction_code = 'S' }  \
 }
 // clang-format on
+
+#if defined(CONFIG_LOG_BACKEND_NET)
+extern const struct log_backend *log_backend_net_get(void);
+#endif
 
 typedef const struct DisplayBox {
   const char direction_code;
@@ -175,14 +185,19 @@ int main(void) {
     (void)turn_display_off(box);
   }
 
-  err = nrf_modem_lib_init();
-  if (err) {
-    LOG_ERR("Failed to initialize modem library!");
-    goto reset;
+  int modem_init_and_connect_to_network(void);
+
+  if (!IS_ENABLED(CONFIG_LOG_BACKEND_NET_AUTOSTART)) {
+    const struct log_backend *backend = log_backend_net_get();
+
+    if (!log_backend_is_active(backend)) {
+      log_backend_init(backend);
+      log_backend_enable(backend, backend->cb->ctx, CONFIG_LOG_MAX_LEVEL);
+    }
   }
 
   if (set_rtc_time() != 0) {
-    LOG_ERR("Failed to set rtc.");
+    // LOG_ERR("Failed to set rtc.");
     goto reset;
   }
 
