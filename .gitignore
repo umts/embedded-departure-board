@@ -18,3 +18,14 @@ app/keys/private/*
 
 # Cache
 .cache/
+
+# West deps
+mbedtls/
+nrf/
+nrfxlib/
+pcf85063a/
+tools/
+modules/
+bootloader/
+zephyr/
+
