@@ -29,3 +29,5 @@ modules/
 bootloader/
 zephyr/
 
+# Cortex debugging states
+.vscode/.cortex-debug.registers.state.json

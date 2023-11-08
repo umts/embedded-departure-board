@@ -28,23 +28,7 @@
     },
     {
       "type": "shell",
-      "label": "Bootloader mode",
-      "command": "zephyr-tools",
-      "args": [
-        "-b",
-        "--port",
-        "/dev/ttyUSB0"
-      ],
-      "options": {},
-      "group": "none",
-      "detail": "zephyr-tools -b",
-      "problemMatcher": []
-    },
-    {
-      "type": "shell",
       "label": "Load image via bootloader",
-      "dependsOn": "Bootloader mode",
-      "dependsOrder": "sequence",
       "command": "newtmgr",
       "args": [
         "-c",
@@ -66,11 +50,10 @@
         "${workspaceFolder}/.venv/bin/activate",
         "&&",
         "pyserial-miniterm",
+        "-f",
+        "colorize",
         "/dev/ttyUSB0",
-        "115200",
-        "-e",
-        ">",
-        "./test.log"
+        "115200"
       ],
       "options": {},
       "group": "test",
