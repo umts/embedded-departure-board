@@ -10,7 +10,7 @@ jobs:
       ZEPHYR_SDK_INSTALL_PATH: /opt/toolchains
       ZSDK_VERSION: 0.16.3
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.4
+      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.5
       env:
         ZEPHYR_TOOLCHAIN_VARIANT: zephyr
         ZEPHYR_SDK_INSTALL_DIR: ${ZEPHYR_SDK_INSTALL_PATH}/zephyr-sdk-${ZSDK_VERSION}
