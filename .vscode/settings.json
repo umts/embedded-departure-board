@@ -32,5 +32,6 @@
     ]
   },
   "cmake.sourceDirectory": "/home/jforgue/embedded-departure-board/app",
-  "kconfig.zephyr.base": "${zephyrBase}"
+  "kconfig.zephyr.base": "${zephyrBase}",
+  "cmake.configureOnOpen": false
 }
