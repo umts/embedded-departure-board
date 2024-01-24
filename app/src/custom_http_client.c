@@ -14,11 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* modem includes */
-#include <modem/lte_lc.h>
-#include <modem/nrf_modem_lib.h>
-#include <modem/modem_key_mgmt.h>
-
 LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 
 /** A macro that defines the HTTP request host name for the request headers. */
@@ -161,16 +156,9 @@ int http_request_json(void) {
     .ai_protocol = 0
   };
 
-  err = lte_lc_init_and_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    return err;;
-  }
-
   err = zsock_getaddrinfo(HTTP_REQUEST_HOSTNAME, NULL, &hints, &addr_inf);
   if (err) {
     LOG_ERR("getaddrinfo() failed, err %d\n", errno);
-    lte_lc_power_off();
     return errno;
   }
 
@@ -230,6 +218,5 @@ clean_up:
 
   zsock_freeaddrinfo(addr_inf);
 
-  lte_lc_power_off();
   return status;
 }

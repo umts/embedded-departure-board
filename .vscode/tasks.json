@@ -38,7 +38,10 @@
         "${workspaceFolder}/build/zephyr/app_update.bin"
       ],
       "options": {},
-      "group": "none",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
       "detail": "newtmgr image upload",
       "problemMatcher": []
     },
@@ -76,8 +79,7 @@
       ],
       "options": {},
       "group": {
-        "kind": "test",
-        "isDefault": true
+        "kind": "test"
       },
       "detail": "west flash -r nfrjprog",
       "problemMatcher": []

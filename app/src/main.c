@@ -1,11 +1,12 @@
 /* Zephyr includes */
-#include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/types.h>
 
 /* nrf lib includes */
+#include <modem/lte_lc.h>
+#include <modem/modem_key_mgmt.h>
 #include <modem/nrf_modem_lib.h>
 
 /* app includes */
@@ -14,6 +15,7 @@
 #include <led_display.h>
 #include <rtc.h>
 #include <stop.h>
+#include <sys_init.h>
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
@@ -36,69 +38,6 @@ typedef const struct DisplayBox {
   const int id;
   const int position;
 } DisplayBox;
-
-#ifdef CONFIG_DEBUG
-static void log_reset_reason(void) {
-  uint32_t cause;
-  int err = hwinfo_get_reset_cause(&cause);
-
-  if (err) {
-    LOG_ERR("Failed to get reset cause. Err: %d", err);
-  } else {
-    LOG_DBG("Reset Reason %d, Flags:", cause);
-    if (cause == 0) {
-      LOG_ERR("RESET_UNKNOWN");
-      return;
-    }
-    if (cause == RESET_PIN) {
-      LOG_DBG("RESET_PIN");
-    }
-    if (cause == RESET_SOFTWARE) {
-      LOG_DBG("RESET_SOFTWARE");
-    }
-    if (cause == RESET_BROWNOUT) {
-      LOG_DBG("RESET_BROWNOUT");
-    }
-    if (cause == RESET_POR) {
-      LOG_DBG("RESET_POR");
-    }
-    if (cause == RESET_WATCHDOG) {
-      LOG_DBG("RESET_WATCHDOG");
-    }
-    if (cause == RESET_DEBUG) {
-      LOG_DBG("RESET_DEBUG");
-    }
-    if (cause == RESET_SECURITY) {
-      LOG_DBG("RESET_SECURITY");
-    }
-    if (cause == RESET_LOW_POWER_WAKE) {
-      LOG_DBG("RESET_LOW_POWER_WAKE");
-    }
-    if (cause == RESET_CPU_LOCKUP) {
-      LOG_DBG("RESET_CPU_LOCKUP");
-    }
-    if (cause == RESET_PARITY) {
-      LOG_DBG("RESET_PARITY");
-    }
-    if (cause == RESET_PLL) {
-      LOG_DBG("RESET_PLL");
-    }
-    if (cause == RESET_CLOCK) {
-      LOG_DBG("RESET_CLOCK");
-    }
-    if (cause == RESET_HARDWARE) {
-      LOG_DBG("RESET_HARDWARE");
-    }
-    if (cause == RESET_USER) {
-      LOG_DBG("RESET_USER");
-    }
-    if (cause == RESET_TEMPERATURE) {
-      LOG_DBG("RESET_TEMPERATURE");
-    }
-    hwinfo_clear_reset_cause();
-  }
-}
-#endif
 
 static unsigned int minutes_to_departure(Departure *departure) {
   int edt_ms = departure->etd;
@@ -167,9 +106,7 @@ int main(void) {
   static Stop stop = {.last_updated = 0, .id = STOP_ID};
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
-#ifdef CONFIG_DEBUG
   (void)log_reset_reason();
-#endif
 
   for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
     (void)turn_display_off(box);
@@ -181,10 +118,16 @@ int main(void) {
     goto reset;
   }
 
-  if (set_rtc_time() != 0) {
-    LOG_ERR("Failed to set rtc.");
+  err = lte_lc_init_and_connect();
+  if (err < -1) {
+    LOG_ERR("LTE failed to connect. Err: %d", err);
     goto reset;
   }
+
+  // if (set_rtc_time() != 0) {
+  //   LOG_ERR("Failed to set rtc.");
+  //   goto reset;
+  // }
 
   while (1) {
     err = http_request_json();

@@ -1,8 +1,5 @@
 #include <rtc.h>
 
-/* Newlib C includes */
-#include <stdint.h>
-
 /* Zephyr includes */
 #include <zephyr/device.h>
 #include <zephyr/drivers/counter.h>
@@ -18,13 +15,10 @@
 #include <drivers/counter/pcf85063a.h>
 
 /* modem includes */
-#include <modem/lte_lc.h>
-#include <modem/nrf_modem_lib.h>
-#include <modem/modem_key_mgmt.h>
-
-#include <stdlib.h>
 #include <stdbool.h>
 #include <zephyr/net/socket.h>
+
+#include "zephyr/kernel.h"
 
 #define SNTP_SERVER "pool.ntp.org"
 #define SNTP_FALLBACK_SERVER "time.nist.gov"
@@ -33,6 +27,8 @@
 #define RTC DEVICE_DT_GET(DT_NODELABEL(pcf85063a))
 
 LOG_MODULE_REGISTER(get_rtc, LOG_LEVEL_INF);
+
+K_MUTEX_DEFINE(rtc_mutex);
 
 const struct device *const rtc = RTC;
 
@@ -65,12 +61,16 @@ static void get_ntp_time(struct sntp_time *ts) {
 
 int set_rtc_time(void) {
   struct sntp_time ts;
-  int retry_count = 0;
+  int err;
 
-retry:
-  int err = 0;
+  err = k_mutex_lock(&rtc_mutex, K_MSEC(100));
+  if (err) {
+    LOG_WRN("Cat set RTC, mutex locked");
+    return 1;
+  }
 
   if (!device_is_ready(rtc)) {
+    err = 1;
     LOG_WRN("pcf85063a isn't ready!");
     goto clean_up;
   }
@@ -78,12 +78,6 @@ retry:
   err = counter_start(rtc);
   if (err < -1) {
     LOG_WRN("Failed to start RTC. Err: %i", err);
-    goto clean_up;
-  }
-
-  err = lte_lc_init_and_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
     goto clean_up;
   }
 
@@ -104,13 +98,7 @@ retry:
           rtc_time.tm_isdst);
 
 clean_up:
-  if (retry_count == 0) {
-    retry_count++;
-    k_msleep(1000);
-    goto retry;
-  }
-
-  lte_lc_power_off();
+  k_mutex_unlock(&rtc_mutex);
   return err;
 }
 
@@ -118,10 +106,17 @@ clean_up:
 // Drifted by 1sec between [00:50:35.348,510] and [00:51:05.355,407]
 
 int get_rtc_time(void) {
+  int err = k_mutex_lock(&rtc_mutex, K_MSEC(100));
+  if (err) {
+    LOG_WRN("Cat set RTC, mutex locked");
+    return -1;
+  }
+
   struct tm rtc_time = {0};
 
   /* Get current time from device */
-  int err = pcf85063a_get_time(rtc, &rtc_time);
+  err = pcf85063a_get_time(rtc, &rtc_time);
+  k_mutex_unlock(&rtc_mutex);
   // int err = counter_get_value_64(rtc, &rtc_time);
   if (err) {
     LOG_ERR("Unable to get time from pcf85063a. Err: %i", err);
