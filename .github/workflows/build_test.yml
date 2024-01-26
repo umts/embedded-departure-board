@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ZEPHYR_SDK_INSTALL_PATH: /opt/toolchains
-      ZSDK_VERSION: 0.16.3
+      ZSDK_VERSION: 0.16.4
     container:
       image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.5
       env:
@@ -52,6 +52,15 @@ jobs:
 
       - name: West update
         run: west update
+
+      - name: Add secret key files
+        env:
+          BOOT_ECDSA_P256: ${{ secrets.BOOT_ECDSA_P256 }}
+        run: |
+          mkdir ./app/keys/private/
+          echo "$BOOT_ECDSA_P256" >> ./app/keys/private/boot-ecdsa-p256.pem
+          # echo "$ROOT_RSA_3072_NS" >> ./app/keys/private/root-rsa-3072_ns.pem
+          # echo "$ROOT_RSA_3072_S" >> ./app/keys/private/root-rsa-3072_s.pem
 
       - name: Build Zephyr app
         env:

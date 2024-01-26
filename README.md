@@ -1,22 +1,28 @@
 # embedded-departure-board
 
 ## Recomended
-Read the [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) to install the required development tools (system packages, Zephyr SDK, and udev rules).
+- Read the [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) to install the required development tools (system packages, Zephyr SDK, and udev rules).
 
-To save on space, you may want to intall a minimal bundle Zephyr SDK [release](https://github.com/zephyrproject-rtos/sdk-ng/releases) and the arm-zephyr-eabi toolchain. The full release includes all avaiable toolchains.
+- To save on space, you may want to intall a minimal bundle Zephyr SDK [release](https://github.com/zephyrproject-rtos/sdk-ng/releases) and the arm-zephyr-eabi toolchain. The full release includes all avaiable toolchains.
 
-Read the [Introduction to the nRF9160 Feather](https://docs.circuitdojo.com/nrf9160-introduction.html) to better understand the dev board we are using.
+- Read the [Introduction to the nRF9160 Feather](https://docs.circuitdojo.com/nrf9160-introduction.html) to better understand the dev board we are using.
+
+- If you plan making changes to the LTE modem configuration you should understand the various modes: [Maximizing battery lifetime in cellular IoT: An analysis of eDRX, PSM, and AS-RAI](https://devzone.nordicsemi.com/nordic/nordic-blog/b/blog/posts/maximizing-battery-lifetime-in-cellular-iot-an-analysis-of-edrx-psm-and-as-rai)
 
 ## Docker
 Zephyr supplies various [Docker images](https://github.com/zephyrproject-rtos/docker-image#zephyr-docker-images) for development.
 
 Our Github Actions [Build Test](https://github.com/umts/embedded-departure-board/blob/main/.github/workflows/build_test.yml) uses the Base Image (ci-base).
 
-## Setup
-1. Clone this repository
+## Development
+### Requirements
+- Python 3
+
+### Setup
+1. Clone and enter the repo
 2. Create a Python virtual environment
    ```sh
-   cd embedded-departure-board && python3 -m venv ./.venv
+   python3 -m venv ./.venv
    ```
 4. Activate your Python virtual environment
    ```sh
@@ -30,10 +36,16 @@ Our Github Actions [Build Test](https://github.com/umts/embedded-departure-board
    ```sh
    west update
    ```
+9. Install Python dependencies
+   ```sh
+   pip install -r zephyr/scripts/requirements.txt
+   pip install -r nrf/scripts/requirements.txt
+   pip install -r bootloader/mcuboot/scripts/requirements.txt
+   ```
 
 ## Build
 ```sh
-west build ./app
+west build ./app -b circuitdojo_feather_nrf9160_ns
 ```
 
 ## Programming
