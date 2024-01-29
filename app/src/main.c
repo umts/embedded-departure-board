@@ -11,9 +11,9 @@
 
 /* app includes */
 #include <custom_http_client.h>
+#include <external_rtc.h>
 #include <jsmn_parse.h>
 #include <led_display.h>
-#include <rtc.h>
 #include <stop.h>
 #include <sys_init.h>
 
@@ -41,7 +41,7 @@ typedef const struct DisplayBox {
 
 static unsigned int minutes_to_departure(Departure *departure) {
   int edt_ms = departure->etd;
-  return (unsigned int)(edt_ms - get_rtc_time()) / 60;
+  return (unsigned int)(edt_ms - get_external_rtc_time()) / 60;
 }
 
 int get_display_address(

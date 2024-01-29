@@ -1,4 +1,4 @@
-#include <rtc.h>
+#include <external_rtc.h>
 
 /* Zephyr includes */
 #include <zephyr/device.h>
@@ -44,12 +44,17 @@ static void get_ntp_time(struct sntp_time *ts) {
     }
 
     if (err && (rc == (RETRY_COUNT * 2) - 1)) {
-      LOG_ERR("Failed to get time from all NTP pools! Err: %i\n Check your network connection.",
-              err);
+      LOG_ERR(
+          "Failed to get time from all NTP pools! Err: %i\n Check your network "
+          "connection.",
+          err
+      );
     } else if (err && (rc == RETRY_COUNT - 1)) {
-      LOG_WRN("Unable to get time after 3 tries from NTP pool " SNTP_SERVER
-              " . Err: %i\n Attempting to use fallback NTP pool...",
-              err);
+      LOG_WRN(
+          "Unable to get time after 3 tries from NTP pool " SNTP_SERVER
+          " . Err: %i\n Attempting to use fallback NTP pool...",
+          err
+      );
     } else if (err) {
       LOG_WRN("Failed to get time using SNTP, Err: %i. Retrying...", err);
       k_msleep(100);
@@ -59,7 +64,7 @@ static void get_ntp_time(struct sntp_time *ts) {
   }
 }
 
-int set_rtc_time(void) {
+int set_external_rtc_time(void) {
   struct sntp_time ts;
   int err;
 
@@ -86,16 +91,18 @@ int set_rtc_time(void) {
   /* Convert time to struct tm */
   struct tm rtc_time = *gmtime(&ts.seconds);
 
-	/* Set rtc time */
+  /* Set rtc time */
   err = pcf85063a_set_time(rtc, &rtc_time);
   if (err) {
     LOG_WRN("Failed to set RTC counter. Err: %i", err);
     goto clean_up;
   }
 
-  LOG_INF("RTC time set to: %i:%i:%i %i/%i/%i - %i", rtc_time.tm_hour, rtc_time.tm_min,
-          rtc_time.tm_sec, rtc_time.tm_mon + 1, rtc_time.tm_mday, 1900 + rtc_time.tm_year,
-          rtc_time.tm_isdst);
+  LOG_INF(
+      "RTC time set to: %i:%i:%i %i/%i/%i - %i", rtc_time.tm_hour,
+      rtc_time.tm_min, rtc_time.tm_sec, rtc_time.tm_mon + 1, rtc_time.tm_mday,
+      1900 + rtc_time.tm_year, rtc_time.tm_isdst
+  );
 
 clean_up:
   k_mutex_unlock(&rtc_mutex);
@@ -105,10 +112,10 @@ clean_up:
 // TODO calculate and offset drift
 // Drifted by 1sec between [00:50:35.348,510] and [00:51:05.355,407]
 
-int get_rtc_time(void) {
+int get_external_rtc_time(void) {
   int err = k_mutex_lock(&rtc_mutex, K_MSEC(100));
   if (err) {
-    LOG_WRN("Cat set RTC, mutex locked");
+    LOG_WRN("Can't set RTC, mutex locked");
     return -1;
   }
 
