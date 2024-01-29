@@ -118,16 +118,23 @@ int main(void) {
     goto reset;
   }
 
-  err = lte_lc_init_and_connect();
+  err = lte_lc_init();
+  if (err < -1) {
+    LOG_ERR("LTE failed to init. Err: %d", err);
+    goto reset;
+  }
+
+  err = lte_lc_connect();
   if (err < -1) {
     LOG_ERR("LTE failed to connect. Err: %d", err);
     goto reset;
   }
 
-  // if (set_rtc_time() != 0) {
-  //   LOG_ERR("Failed to set rtc.");
-  //   goto reset;
-  // }
+  err = set_external_rtc_time();
+  if (err) {
+    LOG_ERR("Failed to set rtc.");
+    goto reset;
+  }
 
   while (1) {
     err = http_request_json();
