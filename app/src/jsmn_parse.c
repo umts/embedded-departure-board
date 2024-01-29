@@ -7,13 +7,12 @@
 #include <zephyr/types.h>
 
 /* Newlib C includes */
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
-#include <stdbool.h>
 
 /* app includes */
-#include <rtc.h>
+#include <external_rtc.h>
 #include <stop.h>
 
 LOG_MODULE_REGISTER(jsmn_parse, LOG_LEVEL_INF);
@@ -294,7 +293,7 @@ int parse_json_for_stop(char *json_ptr, Stop *stop) {
     return EXIT_FAILURE;
   }
 
-  int time_now = get_rtc_time();
+  int time_now = get_external_rtc_time();
   if (time_now == -1) {
     return 2;
   }

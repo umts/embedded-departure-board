@@ -1,40 +1,37 @@
 # Import requirements for nRF9160 Feather Examples and Drivers
 manifest:
   remotes:
-    - name: nrfconnect
+    - name: ncs
       url-base: https://github.com/nrfconnect
+
   projects:
     - name: nrf
       repo-path: sdk-nrf
-      remote: nrfconnect
-      revision: v2.4.2
+      remote: ncs
+      revision: v2.5.1
       import:
-        name-blocklist:
-          - ant
-          - azure-sdk-for-c
-          - babblesim
-          - cddl-gen
-          - cirrus
-          - cjson
-          - cmock
-          - dragoon
-          - fatfs
-          - find-my
-          - homekit
-          - loramac-node
-          - lvgl
-          - lz4
-          - matter
-          - mipi-sys-t
-          - nrf-802154
-          - openthread
-          - sdk-hostap
-          - unity
+         name-allowlist:
+          - cmsis
+          - cmsis-dsp
+          - cmsis-nn
+          - hal_nordic
+          - littlefs
+          - mbedtls
+          - mcuboot
+          - nrf_hw_models
+          - nrfxlib
+          - picolibc
+          - qcbor
+          - segger
+          - trusted-firmware-m
+          - zcbor
+          - zephyr
+
     # RTC Driver
     - name: pcf85063a
       url: https://github.com/circuitdojo/pcf85063a
       revision: master
       path: pcf85063a
+
   self:
-    # This repository should be cloned to nrf9160-feather
     path: app

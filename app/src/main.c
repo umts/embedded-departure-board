@@ -11,9 +11,9 @@
 
 /* app includes */
 #include <custom_http_client.h>
+#include <external_rtc.h>
 #include <jsmn_parse.h>
 #include <led_display.h>
-#include <rtc.h>
 #include <stop.h>
 #include <sys_init.h>
 
@@ -41,7 +41,7 @@ typedef const struct DisplayBox {
 
 static unsigned int minutes_to_departure(Departure *departure) {
   int edt_ms = departure->etd;
-  return (unsigned int)(edt_ms - get_rtc_time()) / 60;
+  return (unsigned int)(edt_ms - get_external_rtc_time()) / 60;
 }
 
 int get_display_address(
@@ -118,16 +118,23 @@ int main(void) {
     goto reset;
   }
 
-  err = lte_lc_init_and_connect();
+  err = lte_lc_init();
+  if (err < -1) {
+    LOG_ERR("LTE failed to init. Err: %d", err);
+    goto reset;
+  }
+
+  err = lte_lc_connect();
   if (err < -1) {
     LOG_ERR("LTE failed to connect. Err: %d", err);
     goto reset;
   }
 
-  // if (set_rtc_time() != 0) {
-  //   LOG_ERR("Failed to set rtc.");
-  //   goto reset;
-  // }
+  err = set_external_rtc_time();
+  if (err) {
+    LOG_ERR("Failed to set rtc.");
+    goto reset;
+  }
 
   while (1) {
     err = http_request_json();
