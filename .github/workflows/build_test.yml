@@ -10,7 +10,7 @@ jobs:
       ZEPHYR_SDK_INSTALL_PATH: /opt/toolchains
       ZSDK_VERSION: 0.16.4
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.5
+      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.7
       env:
         ZEPHYR_TOOLCHAIN_VARIANT: zephyr
         ZEPHYR_SDK_INSTALL_DIR: ${ZEPHYR_SDK_INSTALL_PATH}/zephyr-sdk-${ZSDK_VERSION}
@@ -18,7 +18,7 @@ jobs:
         OVMF_FD_PATH: /usr/share/ovmf/OVMF.fd
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Make ZEPHYR_SDK_INSTALL_PATH
         run: mkdir -p ${ZEPHYR_SDK_INSTALL_PATH}
@@ -67,13 +67,15 @@ jobs:
           BOARD: circuitdojo_feather_nrf9160_ns
         run: west build ./app -p
 
-      # - name: Create build tarball
-      #   run: |
-      #     cd build
-      #     tar czf merged.tar.gz build/zephyr/merged.hex
+      - name: Create build tarball
+        run: |
+          cd build
+          tar c -I"zstd -19 -T0" -f build.tar.zst build/zephyr/merged.hex build/zephyr/app_update.bin
 
-      # - name: Upload tarball
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: build.tar.gz
-      #     path: build/merged.tar.gz
+      - name: Upload build tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: build.tar.zst
+          path: build/build.tar.zst
+          compression-level: 0
+          overwrite: true
