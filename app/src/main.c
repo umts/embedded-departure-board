@@ -1,5 +1,6 @@
 /* Zephyr includes */
 #include <zephyr/drivers/hwinfo.h>
+#include <zephyr/drivers/watchdog.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
@@ -10,15 +11,11 @@
 #include <modem/modem_key_mgmt.h>
 #include <modem/nrf_modem_lib.h>
 
-/* nrf lib includes */
-#include <modem/lte_lc.h>
-#include <modem/modem_key_mgmt.h>
-#include <modem/nrf_modem_lib.h>
-
 /* app includes */
 #include <external_rtc.h>
 #include <led_display.h>
 #include <update_stop.h>
+#include <watchdog_app.h>
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
@@ -85,9 +82,22 @@ void log_reset_reason(void) {
 
 int main(void) {
   int err;
+  int wdt_channel_id;
 
   for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
     (void)turn_display_off(box);
+  }
+
+  wdt_channel_id = watchdog_init();
+  if (wdt_channel_id < 0) {
+    LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
+    goto reset;
+  }
+
+  err = wdt_feed(wdt, wdt_channel_id);
+  if (err) {
+    LOG_ERR("Failed to feed watchdog. Err: %d", err);
+    goto reset;
   }
 
   err = nrf_modem_lib_init();
@@ -137,6 +147,12 @@ int main(void) {
   while (1) {
     // led_test_patern();
     if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
+      err = wdt_feed(wdt, wdt_channel_id);
+      if (err) {
+        LOG_ERR("Failed to feed watchdog. Err: %d", err);
+        goto reset;
+      }
+
       if (update_stop()) {
         goto reset;
       }
