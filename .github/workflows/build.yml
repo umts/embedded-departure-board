@@ -66,12 +66,16 @@ jobs:
         run: west build ./app -p
 
       - name: Create build tarball
-        run: tar c -I"zstd -19 -T0" -f build/build.tar.zst build/zephyr/merged.hex build/zephyr/app_update.bin
+        run: |
+          cd build/zephyr/
+          tar cfJ merged.hex.tar.xz merged.hex
+          tar cfJ app_update.bin.tar.xz app_update.bin
+          tar cfJ build.tar.xz merged.hex.tar.xz app_update.bin.tar.xz
 
       - name: Upload build tarball
         uses: actions/upload-artifact@v4
         with:
-          name: build.tar.zst
-          path: build/build.tar.zst
+          name: build.tar.xz
+          path: build/zephyr/build.tar.xz
           compression-level: 0
           overwrite: true
