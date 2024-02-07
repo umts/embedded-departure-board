@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  release:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build.tar.zst
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Seperate build files
+        run: |
+          tar -xf build.tar.zst
+          tar c -I"zstd -19 -T0" -f merged.hex.tar.zst build/zephyr/merged.hex
+          tar c -I"zstd -19 -T0" -f app_update.bin.tar.zst build/zephyr/app_update.bin
+
+      - name: Upload merged.hex
+        uses: Shopify/upload-to-release@v2
+        with:
+          name: merged.hex.tar.zst
+          path: merged.hex.tar.zst
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload app_update.bin
+        uses: Shopify/upload-to-release@v2
+        with:
+          name: app_update.bin.tar.zst
+          path: app_update.bin.tar.zst
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
