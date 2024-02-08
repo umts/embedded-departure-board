@@ -118,4 +118,3 @@ jobs:
             build/zephyr/merged-${{ env.version }}.hex.tar.xz
             build/zephyr/app_update-${{ env.version }}.bin.tar.xz
           key: build-${{ env.version }}
-        run: ls build/zephyr
