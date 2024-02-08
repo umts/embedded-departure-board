@@ -44,14 +44,41 @@ jobs:
           cd ${ZEPHYR_SDK_INSTALL_PATH}
           zephyr-sdk-${ZSDK_VERSION}/setup.sh -h -c
 
-      - name: Clean up stale packages
+      - name: Clean up stale packages && install curl
         run: |
+          apt-get install curl
           apt-get clean -y
           apt-get autoremove --purge -y
           rm -rf /var/lib/apt/lists/*
 
+      - name: Restore west cache
+        id: west-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            bootloader/
+            modules/
+            nrf/
+            nrfxlib/
+            pcf85063a/
+            zephyr/
+          key: ${{ runner.os }}-west-cache-${{ hashFiles('app/west.yml') }}
+
       - name: West update
         run: west update
+
+      - name: Create west cache
+        if: steps.west-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            bootloader/
+            modules/
+            nrf/
+            nrfxlib/
+            pcf85063a/
+            zephyr/
+          key: ${{ runner.os }}-west-cache-${{ hashFiles('app/west.yml') }}
 
       - name: Add secret key files
         env:
