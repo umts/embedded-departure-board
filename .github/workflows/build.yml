@@ -114,6 +114,6 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: |
-            build/zephyr/merged-${{version}}.hex.tar.xz
-            build/zephyr/app_update-${{version}}.bin.tar.xz
-          key: build-${{version}}
+            build/zephyr/merged-${{ env.version }}.hex.tar.xz
+            build/zephyr/app_update-${{ env.version }}.bin.tar.xz
+          key: build-${{ env.version }}
