@@ -65,17 +65,26 @@ jobs:
           BOARD: circuitdojo_feather_nrf9160_ns
         run: west build ./app -p
 
-      - name: Create build tarball
+      - name: Tag and compress build files
         run: |
           echo "version=v$(awk 'NR<4{printf "%s%s", sep, $3; sep="."} END{print ""}' app/VERSION)" >> "$GITHUB_ENV"
           cd build/zephyr/
-          tar cfJ merged.hex.tar.xz merged.hex
-          tar cfJ app_update.bin.tar.xz app_update.bin
-          tar cfJ build-${version}.tar.xz merged.hex.tar.xz app_update.bin.tar.xz
-          mv build-${version}.tar.xz ../../.
+          tar cfJ merged-${version}.hex.tar.xz merged.hex
+          tar cfJ app_update-${version}.bin.tar.xz app_update.bin
 
-      - name: Upload build tarball
+      - name: Delete old build cache
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          gh extension install actions/gh-actions-cache
+          echo "Deleting cache with key 'build-${version}'"
+          gh actions-cache delete build-${version}.tar.xz -B main --confirm
+
+      - name: Cache build tarball
         uses: actions/cache/save@v4
         with:
-          path: build-${version}.tar.xz
-          key: build-${version}.tar.xz
+          path: |
+            build/zephyr/merged-${version}.hex.tar.xz
+            build/zephyr/app_update-${version}.bin.tar.xz
+          key: build-${version}

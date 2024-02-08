@@ -18,26 +18,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Load matching build tarball from cache
+      - name: Load build cache
         uses: actions/cache/restore@v4
         with:
-          path: build-${version_tag}.tar.xz
-          key: build-${version_tag}.tar.xz
+          path: |
+            build/zephyr/merged-${version_tag}.hex.tar.xz
+            build/zephyr/app_update-${version_tag}.bin.tar.xz
+          key: build-${version_tag}
+          fail-on-cache-miss: true
 
-      - name: Seperate build files
-        run: |
-          tar -xf build-${version_tag}.tar.xz
-
-      - name: Upload merged.hex.tar.xz
+      - name: Upload merged.hex
         uses: Shopify/upload-to-release@v2.0.0
         with:
-          name: merged.hex.tar.xz
-          path: merged.hex.tar.xz
+          name: merged-${version_tag}.hex.tar.xz
+          path: build/zephyr/merged-${version_tag}.hex.tar.xz
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload app_update.bin.tar.xz
+      - name: Upload app_update.bin
         uses: Shopify/upload-to-release@v2.0.0
         with:
-          name: app_update.bin.tar.xz
-          path: app_update.bin.tar.xz
+          name: app_update-${version_tag}.bin.tar.xz
+          path: build/zephyr/app_update-${version_tag}.bin.tar.xz
           repo-token: ${{ secrets.GITHUB_TOKEN }}
