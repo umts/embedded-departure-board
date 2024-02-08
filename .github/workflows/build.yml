@@ -93,9 +93,8 @@ jobs:
         run: |
           echo "version=v$(awk 'NR<4{printf "%s%s", sep, $3; sep="."} END{print ""}' app/VERSION)" >> "$GITHUB_ENV"
           cd build/zephyr/
-          tar cfJ merged-${version}.hex.tar.xz merged.hex
-          tar cfJ app_update-${version}.bin.tar.xz app_update.bin
-          ls
+          tar cfJ merged-${{ env.version }}.hex.tar.xz merged.hex
+          tar cfJ app_update-${{ env.version }}.bin.tar.xz app_update.bin
 
       - name: Delete old build cache if present
         env:
@@ -104,15 +103,17 @@ jobs:
           REPO: ${{ github.event.repository.name }}
           BRANCH: ${{ github.ref_name }}
         run: |
-          curl -L \
+          curl -Lv \
           -X DELETE \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer $GH_TOKEN" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          "https://api.github.com/repos/'$OWNER'/'$REPO'/actions/caches?key=build-'$version'"
+          "https://api.github.com/repos/${OWNER}/${REPO}/actions/caches?key=build-${{ env.version }}"
 
       - name: Cache build tarball
         uses: actions/cache/save@v4
         with:
-          path: build/zephyr/*${{ env.version }}*.tar.xz
+          path: |
+            build/zephyr/merged-${{ env.version }}.hex.tar.xz
+            build/zephyr/app_update-${{ env.version }}.bin.tar.xz
           key: build-${{ env.version }}
