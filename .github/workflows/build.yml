@@ -67,15 +67,15 @@ jobs:
 
       - name: Create build tarball
         run: |
+          echo "version=v$(awk 'NR<4{printf "%s%s", sep, $3; sep="."} END{print ""}' app/VERSION)" >> "$GITHUB_ENV"
           cd build/zephyr/
           tar cfJ merged.hex.tar.xz merged.hex
           tar cfJ app_update.bin.tar.xz app_update.bin
-          tar cfJ build.tar.xz merged.hex.tar.xz app_update.bin.tar.xz
+          tar cfJ build-${version}.tar.xz merged.hex.tar.xz app_update.bin.tar.xz
+          mv build-${version}.tar.xz ../../.
 
       - name: Upload build tarball
-        uses: actions/upload-artifact@v4
+        uses: actions/cache/save@v4
         with:
-          name: build.tar.xz
-          path: build/zephyr/build.tar.xz
-          compression-level: 0
-          overwrite: true
+          path: build-${version}.tar.xz
+          key: build-${version}.tar.xz

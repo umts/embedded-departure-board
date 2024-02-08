@@ -2,22 +2,31 @@ name: Release
 
 on:
   release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag'
+        required: true
+        type: string
+
+env:
+  version_tag: ${{ inputs.version_tag || GITHUB_REF_NAME }}
 
 jobs:
   release:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Load matching build tarball from cache
+        uses: actions/cache/restore@v4
         with:
-          name: build.tar.xz
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: build-${version_tag}.tar.xz
+          key: build-${version_tag}.tar.xz
 
       - name: Seperate build files
         run: |
-          tar -xf build.tar.xz
+          tar -xf build-${version_tag}.tar.xz
 
       - name: Upload merged.hex.tar.xz
         uses: Shopify/upload-to-release@v2.0.0
