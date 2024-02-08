@@ -10,11 +10,10 @@ on:
         required: true
         type: string
 
-env:
-  version_tag: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version_tag }}
-
 jobs:
   release:
+    env:
+      version_tag: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version_tag }}
     runs-on: ubuntu-latest
 
     steps:
@@ -22,21 +21,21 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            build/zephyr/merged-${version_tag}.hex.tar.xz
-            build/zephyr/app_update-${version_tag}.bin.tar.xz
-          key: build-${version_tag}
+            build/zephyr/merged-${{ env.version_tag }}.hex.tar.xz
+            build/zephyr/app_update-${{ env.version_tag }}.bin.tar.xz
+          key: build-${{ env.version_tag }}
           fail-on-cache-miss: true
 
       - name: Upload merged.hex
         uses: Shopify/upload-to-release@v2.0.0
         with:
-          name: merged-${version_tag}.hex.tar.xz
-          path: build/zephyr/merged-${version_tag}.hex.tar.xz
+          name: merged-${{ env.version_tag }}.hex.tar.xz
+          path: build/zephyr/merged-${{ env.version_tag }}.hex.tar.xz
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload app_update.bin
         uses: Shopify/upload-to-release@v2.0.0
         with:
-          name: app_update-${version_tag}.bin.tar.xz
-          path: build/zephyr/app_update-${version_tag}.bin.tar.xz
+          name: app_update-${{ env.version_tag }}.bin.tar.xz
+          path: build/zephyr/app_update-${{ env.version_tag }}.bin.tar.xz
           repo-token: ${{ secrets.GITHUB_TOKEN }}
