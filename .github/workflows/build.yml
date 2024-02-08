@@ -96,7 +96,6 @@ jobs:
           cd build/zephyr/
           tar cfJ merged-${version}.hex.tar.xz merged.hex
           tar cfJ app_update-${version}.bin.tar.xz app_update.bin
-          ls
 
       - name: Delete old build cache if present
         env:

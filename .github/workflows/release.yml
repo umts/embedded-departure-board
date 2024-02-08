@@ -21,8 +21,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            build/zephyr/merged-${{ env.version_tag }}.hex.tar.xz
-            build/zephyr/app_update-${{ env.version_tag }}.bin.tar.xz
+            **/merged-${{ env.version_tag }}.hex.tar.xz
+            **/app_update-${{ env.version_tag }}.bin.tar.xz
           key: build-${{ env.version_tag }}
           fail-on-cache-miss: true
 
