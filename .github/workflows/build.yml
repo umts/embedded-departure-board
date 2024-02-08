@@ -73,13 +73,15 @@ jobs:
           tar cfJ app_update-${version}.bin.tar.xz app_update.bin
 
       - name: Delete old build cache
+        run: |
+          gh extension install actions/gh-actions-cache
+          set +e
+          echo "Deleting cache with key 'build-${version}'"
+          gh actions-cache delete build-${version} -R $REPO -B $BRANCH --confirm
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set +e
-          gh extension install actions/gh-actions-cache
-          echo "Deleting cache with key 'build-${version}'"
-          gh actions-cache delete build-${version}.tar.xz -B main --confirm
+          REPO: ${{ github.event.repository.name }}
+          BRANCH: ${{ github.ref_name }}
 
       - name: Cache build tarball
         uses: actions/cache/save@v4

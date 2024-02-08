@@ -11,7 +11,7 @@ on:
         type: string
 
 env:
-  version_tag: ${{ inputs.version_tag || GITHUB_REF_NAME }}
+  version_tag: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version_tag }}
 
 jobs:
   release:
