@@ -93,8 +93,9 @@ jobs:
         run: |
           echo "version=v$(awk 'NR<4{printf "%s%s", sep, $3; sep="."} END{print ""}' app/VERSION)" >> "$GITHUB_ENV"
           cd build/zephyr/
-          tar cfJ merged-${{ env.version }}.hex.tar.xz merged.hex
-          tar cfJ app_update-${{ env.version }}.bin.tar.xz app_update.bin
+          tar cfJ -v "merged-$version.hex.tar.xz" merged.hex
+          tar cfJ -v "app_update-$version.bin.tar.xz" app_update.bin
+          ls
 
       - name: Delete old build cache if present
         env:
@@ -103,7 +104,7 @@ jobs:
           REPO: ${{ github.event.repository.name }}
           BRANCH: ${{ github.ref_name }}
         run: |
-          curl -Lv \
+          curl -L \
           -X DELETE \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer $GH_TOKEN" \
@@ -117,3 +118,4 @@ jobs:
             build/zephyr/merged-${{ env.version }}.hex.tar.xz
             build/zephyr/app_update-${{ env.version }}.bin.tar.xz
           key: build-${{ env.version }}
+        run: ls build/zephyr
