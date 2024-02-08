@@ -20,6 +20,15 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v4
 
+      - name: Install Github CLI
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+
       - name: Make ZEPHYR_SDK_INSTALL_PATH
         run: mkdir -p ${ZEPHYR_SDK_INSTALL_PATH}
 
@@ -43,13 +52,6 @@ jobs:
         run: |
           cd ${ZEPHYR_SDK_INSTALL_PATH}
           zephyr-sdk-${ZSDK_VERSION}/setup.sh -h -c
-
-      - name: Clean up stale packages && install curl
-        run: |
-          apt-get install curl
-          apt-get clean -y
-          apt-get autoremove --purge -y
-          rm -rf /var/lib/apt/lists/*
 
       - name: Restore west cache
         id: west-cache
@@ -99,20 +101,16 @@ jobs:
           tar cfJ merged-${version}.hex.tar.xz merged.hex
           tar cfJ app_update-${version}.bin.tar.xz app_update.bin
 
-      - name: Delete old build cache
-        run: |
-          set +e
-          curl -L \
-          -X DELETE \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GH_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          "https://api.github.com/repos/${OWNER}/${REPO}/actions/caches?key=build-${version}"
+      - name: Delete old build cache if present
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
           BRANCH: ${{ github.ref_name }}
+        run: |
+          set +e
+          gh extension install actions/gh-actions-cache
+          echo "Deleting cache with key 'build-${version}'"
+          gh actions-cache delete build-${version} -R $REPO -B $BRANCH --confirm
 
       - name: Cache build tarball
         uses: actions/cache/save@v4
