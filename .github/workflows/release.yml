@@ -11,23 +11,36 @@ on:
         type: string
 
 jobs:
-  release:
+  build:
     uses: ./.github/workflows/build.yml
+
+  release:
+    runs-on: ubuntu-latest
 
     env:
       version_tag: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version_tag }}
 
     steps:
+      - name: Download merged.hex
+        uses: actions/download-artifact@v4
+        with:
+          name: merged.hex
+
+      - name: Download app_update.bin
+        uses: actions/download-artifact@v4
+        with:
+          name: app_update.bin
+
       - name: Upload merged.hex
         uses: Shopify/upload-to-release@v2.0.0
         with:
           name: merged-${{ env.version_tag }}.hex
-          path: build/zephyr/merged.hex
+          path: merged.hex
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload app_update.bin
         uses: Shopify/upload-to-release@v2.0.0
         with:
           name: app_update-${{ env.version_tag }}.bin
-          path: build/zephyr/app_update.bin
+          path: app_update.bin
           repo-token: ${{ secrets.GITHUB_TOKEN }}

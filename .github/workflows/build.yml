@@ -87,3 +87,15 @@ jobs:
         env:
           BOARD: circuitdojo_feather_nrf9160_ns
         run: west build ./app -p
+
+      - name: Upload merged.hex
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged.hex
+          path: build/zephyr/merged.hex
+
+      - name: Upload app_update.bin
+        uses: actions/upload-artifact@v4
+        with:
+          name: app_update.bin
+          path: build/zephyr/app_update.bin
