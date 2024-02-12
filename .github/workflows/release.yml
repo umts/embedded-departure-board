@@ -34,15 +34,17 @@ jobs:
           name: app_update.bin
 
       - name: Upload merged.hex
-        uses: Shopify/upload-to-release@v2.0.0
+        uses: svenstaro/upload-release-action@2.7.0
         with:
-          name: merged-${{ env.version_tag }}.hex
-          path: merged.hex
+          tag: ${{ env.version_tag }}
+          asset_name: merged-${{ env.version_tag }}.hex
+          file: merged.hex
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload app_update.bin
-        uses: Shopify/upload-to-release@v2.0.0
+        uses: svenstaro/upload-release-action@2.7.0
         with:
-          name: app_update-${{ env.version_tag }}.bin
-          path: app_update.bin
+          tag: ${{ env.version_tag }}
+          asset_name: app_update-${{ env.version_tag }}.bin
+          file: app_update.bin
           repo-token: ${{ secrets.GITHUB_TOKEN }}
