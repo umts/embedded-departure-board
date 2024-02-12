@@ -95,3 +95,8 @@ This repo includes `.vscode/tasks.json` to make develpoment easier. The included
 - Build AT Client
   - Builds the At Client sample provided by nrf.
   - Useful for debugging via AT commands. Use the "LTE Link Monitor" app from [nRF Connect for Desktop](https://www.nordicsemi.com/Products/Development-tools/nRF-Connect-for-desktop) to send AT commands
+
+## Creating a Release
+1. Update the [VERSION file](https://github.com/umts/embedded-departure-board/blob/main/app/VERSION)
+
+2. Create a new release tag, `v[major].[minor].[patch]`, and generate the release notes.

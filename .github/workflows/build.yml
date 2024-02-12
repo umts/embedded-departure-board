@@ -21,9 +21,6 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v4
 
-      - name: Install curl
-        run: type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install curl -y)
-
       - name: Make ZEPHYR_SDK_INSTALL_PATH
         run: mkdir -p ${ZEPHYR_SDK_INSTALL_PATH}
 
