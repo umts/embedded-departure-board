@@ -12,53 +12,22 @@ on:
 
 jobs:
   release:
+    uses: ./.github/workflows/build.yml
+
     env:
       version_tag: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version_tag }}
 
-    runs-on: ubuntu-latest
-
     steps:
-      - name: Git checkout
-        uses: actions/checkout@v4
-
-      - name: Create build dir
-        run: mkdir -p build/zephyr/
-
-      # - name: Install curl
-      #   run: |
-      #     type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install curl -y)
-
-      # - name: List caches present
-      #   env:
-      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     OWNER: ${{ github.repository_owner }}
-      #     REPO: ${{ github.event.repository.name }}
-      #     BRANCH: main
-      #   run: |
-      #     curl -L \
-      #     -H "Accept: application/vnd.github+json" \
-      #     -H "Authorization: Bearer $GH_TOKEN" \
-      #     -H "X-GitHub-Api-Version: 2022-11-28" \
-      #     "https://api.github.com/repos/${OWNER}/${REPO}/actions/caches"
-
-      - name: Load build cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            build/zephyr/merged.hex
-            build/zephyr/app_update.bin
-          key: build-${{ hashFiles('app/VERSION') }}
-
       - name: Upload merged.hex
         uses: Shopify/upload-to-release@v2.0.0
         with:
-          name: merged-${{ env.version_tag }}.hex.tar.xz
-          path: build/zephyr/merged-${{ env.version_tag }}.hex.tar.xz
+          name: merged-${{ env.version_tag }}.hex
+          path: build/zephyr/merged.hex
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload app_update.bin
         uses: Shopify/upload-to-release@v2.0.0
         with:
-          name: app_update-${{ env.version_tag }}.bin.tar.xz
-          path: build/zephyr/app_update-${{ env.version_tag }}.bin.tar.xz
+          name: app_update-${{ env.version_tag }}.bin
+          path: build/zephyr/app_update.bin
           repo-token: ${{ secrets.GITHUB_TOKEN }}

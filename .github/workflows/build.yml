@@ -87,32 +87,3 @@ jobs:
         env:
           BOARD: circuitdojo_feather_nrf9160_ns
         run: west build ./app -p
-
-      # - name: Tag and compress build files
-      #   run: |
-      #     version=v$(awk 'NR<4{printf "%s%s", sep, $3; sep="."} END{print ""}' app/VERSION)
-      #     echo "version=$version" >> "$GITHUB_ENV"
-      #     tar cfJ build/zephyr/merged-${version}.hex.tar.xz  build/zephyr/merged.hex
-      #     tar cfJ build/zephyr/app_update-${version}.bin.tar.xz  build/zephyr/app_update.bin
-
-      - name: Delete old build cache if present
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
-          BRANCH: ${{ github.ref_name }}
-        run: |
-          curl -L \
-          -X DELETE \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GH_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          "https://api.github.com/repos/${OWNER}/${REPO}/actions/caches?key=build-${{ hashFiles('app/VERSION') }}"
-
-      - name: Cache build tarball
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            build/zephyr/merged.hex
-            build/zephyr/app_update.bin
-          key: build-${{ hashFiles('app/VERSION') }}
