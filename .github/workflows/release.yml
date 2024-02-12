@@ -14,15 +14,19 @@ jobs:
   release:
     env:
       version_tag: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version_tag }}
+
     runs-on: ubuntu-latest
 
     steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
       - name: Load build cache
         uses: actions/cache/restore@v4
         with:
           path: |
-            **/merged-${{ env.version_tag }}.hex.tar.xz
-            **/app_update-${{ env.version_tag }}.bin.tar.xz
+            build/zephyr/merged-${{ env.version_tag }}.hex.tar.xz
+            build/zephyr/app_update-${{ env.version_tag }}.bin.tar.xz
           key: build-${{ env.version_tag }}
           fail-on-cache-miss: true
 
