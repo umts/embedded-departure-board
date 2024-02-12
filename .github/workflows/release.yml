@@ -43,20 +43,11 @@ jobs:
 
       - name: Load build cache
         uses: actions/cache/restore@v4
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
-          BRANCH: main
         with:
           path: |
-            build/zephyr/merged-${{ env.version_tag }}.hex.tar.xz
-            build/zephyr/app_update-${{ env.version_tag }}.bin.tar.xz
+            build/zephyr/merged.hex
+            build/zephyr/app_update.bin
           key: build-${{ hashFiles('app/VERSION') }}
-          restore-keys: |
-            build-${{ env.version_tag }}
-            build-
-          # fail-on-cache-miss: true
 
       - name: Upload merged.hex
         uses: Shopify/upload-to-release@v2.0.0
