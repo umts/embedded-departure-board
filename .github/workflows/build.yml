@@ -21,8 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install curl
-        run: |
-          type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install curl -y)
+        run: type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install curl -y)
 
       - name: Make ZEPHYR_SDK_INSTALL_PATH
         run: mkdir -p ${ZEPHYR_SDK_INSTALL_PATH}
@@ -93,9 +92,8 @@ jobs:
         run: |
           version=v$(awk 'NR<4{printf "%s%s", sep, $3; sep="."} END{print ""}' app/VERSION)
           echo "version=$version" >> "$GITHUB_ENV"
-          cd build/zephyr/
-          tar cfJ merged-${version}.hex.tar.xz merged.hex
-          tar cfJ app_update-${version}.bin.tar.xz app_update.bin
+          tar cfJ build/zephyr/merged-${version}.hex.tar.xz merged.hex
+          tar cfJ build/zephyr/app_update-${version}.bin.tar.xz app_update.bin
 
       - name: Delete old build cache if present
         env:
