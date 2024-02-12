@@ -52,7 +52,7 @@ jobs:
           path: |
             build/zephyr/merged-${{ env.version_tag }}.hex.tar.xz
             build/zephyr/app_update-${{ env.version_tag }}.bin.tar.xz
-          key: build-${{ env.version_tag }}
+          key: build-${{ hashFiles('app/VERSION') }}
           restore-keys: |
             build-${{ env.version_tag }}
             build-

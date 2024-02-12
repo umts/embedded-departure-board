@@ -92,8 +92,8 @@ jobs:
         run: |
           version=v$(awk 'NR<4{printf "%s%s", sep, $3; sep="."} END{print ""}' app/VERSION)
           echo "version=$version" >> "$GITHUB_ENV"
-          tar cfJ build/zephyr/merged-${version}.hex.tar.xz merged.hex
-          tar cfJ build/zephyr/app_update-${version}.bin.tar.xz app_update.bin
+          tar cfJ build/zephyr/merged-${version}.hex.tar.xz  build/zephyr/merged.hex
+          tar cfJ build/zephyr/app_update-${version}.bin.tar.xz  build/zephyr/app_update.bin
 
       - name: Delete old build cache if present
         env:
@@ -115,4 +115,4 @@ jobs:
           path: |
             build/zephyr/merged-${{ env.version }}.hex.tar.xz
             build/zephyr/app_update-${{ env.version }}.bin.tar.xz
-          key: build-${{ env.version }}
+          key: build-${{ hashFiles('app/VERSION') }}
