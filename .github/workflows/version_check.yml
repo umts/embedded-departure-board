@@ -2,7 +2,6 @@ name: Version Check
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
 jobs:
   version_check:
     runs-on: ubuntu-latest
@@ -31,15 +30,15 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
   release:
-    if: ${{ jobs.version_check.outputs.version_up == 'true' }}
+    if: needs.version_check.outputs.version_up == 'true'
     needs: version_check
     uses: ./.github/workflows/release.yml
     with:
-      version_tag: ${{ jobs.version_check.outputs.version_tag }}
+      version_tag: ${{ needs.version_check.outputs.version_tag }}
     secrets: inherit
 
   build:
-    if: ${{ jobs.version_check.outputs.version_up == 'false' }}
+    if: needs.version_check.outputs.version_up == 'false'
     needs: version_check
     uses: ./.github/workflows/build.yml
     secrets: inherit
