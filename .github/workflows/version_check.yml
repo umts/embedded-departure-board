@@ -1,0 +1,45 @@
+name: Version Check
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  version_check:
+    runs-on: ubuntu-latest
+    outputs:
+      version_increased: ${{ steps.version_up.outputs.vup }}
+      version_tag: ${{ steps.version_tag.outputs.tag }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: 'app/VERSION'
+          fetch-depth: '2'
+
+      - name: Check for version update
+        id: version_up
+        run: |
+          vers=$(git show HEAD~:app/VERSION | awk 'ORS=" "{print $3}' - app/VERSION)
+          vup=$(echo $vers | awk '{print (($6 > $1) || ($7 > $2) || ($8 > $3)) ? "true" : "false"}')
+          echo "vup=$vup" >> "$GITHUB_OUTPUT"
+
+      - name: Create version tag
+        if: steps.version_up.outputs.version_up == 'true'
+        id: version_tag
+        run: |
+          tag=v$(awk 'NR<4{printf "%s%s", sep, $3; sep="."} END{print ""}' app/VERSION)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  release:
+    if: jobs.version_check.outputs.version_up == 'true'
+    needs: version_check
+    uses: ./.github/workflows/release.yml
+    with:
+      version_tag: ${{ jobs.version_check.outputs.version_tag }}
+    secrets: inherit
+
+  build:
+    if: jobs.version_check.outputs.version_up == 'false'
+    needs: version_check
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
