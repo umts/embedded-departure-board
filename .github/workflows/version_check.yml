@@ -44,4 +44,6 @@ jobs:
     if: ${{ ! needs.version_check.outputs.version_up }}
     needs: version_check
     uses: ./.github/workflows/build.yml
+    with:
+      upload_artifacts: false
     secrets: inherit

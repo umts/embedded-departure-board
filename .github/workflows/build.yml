@@ -1,7 +1,15 @@
 name: Build
 on:
   workflow_call:
+    inputs:
+      upload_artifacts:
+        description: 'Are artifacts required to be uploaded?'
+        type: boolean
   workflow_dispatch:
+    inputs:
+      upload_artifacts:
+        description: 'Are artifacts required to be uploaded?'
+        type: boolean
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -85,12 +93,14 @@ jobs:
         run: west build ./app -p
 
       - name: Upload merged.hex
+        if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v4
         with:
           name: merged.hex
           path: build/zephyr/merged.hex
 
       - name: Upload app_update.bin
+        if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v4
         with:
           name: app_update.bin
