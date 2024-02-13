@@ -31,7 +31,7 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
   release:
-    if: jobs.version_check.outputs.version_up == 'true'
+    if: ${{ jobs.version_check.outputs.version_up == 'true' }}
     needs: version_check
     uses: ./.github/workflows/release.yml
     with:
@@ -39,7 +39,7 @@ jobs:
     secrets: inherit
 
   build:
-    if: jobs.version_check.outputs.version_up == 'false'
+    if: ${{ jobs.version_check.outputs.version_up == 'false' }}
     needs: version_check
     uses: ./.github/workflows/build.yml
     secrets: inherit
