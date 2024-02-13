@@ -9,6 +9,12 @@ on:
         description: 'Version tag'
         required: true
         type: string
+  workflow_call:
+    inputs:
+      version_tag:
+        description: 'Version tag'
+        required: true
+        type: string
 
 jobs:
   build:
