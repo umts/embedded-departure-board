@@ -25,7 +25,7 @@ jobs:
 
 
       - name: Create version tag
-        if: ${{ steps.version_up.outputs.version_up == 'true' }}
+        if: ${{ steps.version_up.outputs.version_up }}
         id: version_tag
         run: |
           tag=v$(awk 'NR<4{printf "%s%s", sep, $3; sep="."} END{print ""}' app/VERSION)
@@ -33,7 +33,7 @@ jobs:
           echo "Version tag: $tag" >> $GITHUB_STEP_SUMMARY
 
   release:
-    if: ${{ needs.version_check.outputs.version_up == 'true' }}
+    if: ${{ needs.version_check.outputs.version_up }}
     needs: version_check
     uses: ./.github/workflows/release.yml
     with:
@@ -41,7 +41,7 @@ jobs:
     secrets: inherit
 
   build:
-    if: ${{ needs.version_check.outputs.version_up == 'false' }}
+    if: ${{ ! needs.version_check.outputs.version_up }}
     needs: version_check
     uses: ./.github/workflows/build.yml
     secrets: inherit
