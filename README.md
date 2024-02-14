@@ -1,22 +1,8 @@
 # embedded-departure-board
-
-## Recomended
-- Read the [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) to install the required development tools (system packages, Zephyr SDK, and udev rules).
-
-- To save on space, you may want to intall a minimal bundle Zephyr SDK [release](https://github.com/zephyrproject-rtos/sdk-ng/releases) and the arm-zephyr-eabi toolchain. The full release includes all avaiable toolchains.
-
-- Read the [Introduction to the nRF9160 Feather](https://docs.circuitdojo.com/nrf9160-introduction.html) to better understand the dev board we are using.
-
-- If you plan making changes to the LTE modem configuration you should understand the various modes: [Maximizing battery lifetime in cellular IoT: An analysis of eDRX, PSM, and AS-RAI](https://devzone.nordicsemi.com/nordic/nordic-blog/b/blog/posts/maximizing-battery-lifetime-in-cellular-iot-an-analysis-of-edrx-psm-and-as-rai)
-
-## Docker
-Zephyr supplies various [Docker images](https://github.com/zephyrproject-rtos/docker-image#zephyr-docker-images) for development.
-
-Our Github Actions [build workflow](https://github.com/umts/embedded-departure-board/blob/main/.github/workflows/build_test.yml) uses the Base Image (ci-base).
-
 ## Development
 ### Requirements
 - Python 3
+- [Zephyr SDK](https://github.com/zephyrproject-rtos/sdk-ng/releases)
 
 ### Setup
 1. Clone and enter the repo
@@ -46,6 +32,21 @@ Our Github Actions [build workflow](https://github.com/umts/embedded-departure-b
    pip install -r bootloader/mcuboot/scripts/requirements.txt
    ```
 
+### Recomended
+- Read the [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) to install the required development tools (system packages, Zephyr SDK, and udev rules).
+
+- To save on space, you may want to intall a minimal bundle Zephyr SDK [release](https://github.com/zephyrproject-rtos/sdk-ng/releases) and the arm-zephyr-eabi toolchain. The full release includes all avaiable toolchains.
+
+- Read the [Introduction to the nRF9160 Feather](https://docs.circuitdojo.com/nrf9160-introduction.html) to better understand the dev board we are using.
+
+- If you plan making changes to the LTE modem configuration you should understand the various modes: [Maximizing battery lifetime in cellular IoT: An analysis of eDRX, PSM, and AS-RAI](https://devzone.nordicsemi.com/nordic/nordic-blog/b/blog/posts/maximizing-battery-lifetime-in-cellular-iot-an-analysis-of-edrx-psm-and-as-rai)
+
+### Docker
+Zephyr supplies various [Docker images](https://github.com/zephyrproject-rtos/docker-image#zephyr-docker-images) for development.
+
+Our Github Actions [build workflow](https://github.com/umts/embedded-departure-board/blob/main/.github/workflows/build_test.yml) uses the Base Image (ci-base).
+
+
 ## Build
 ```sh
 west build ./app -b circuitdojo_feather_nrf9160_ns
@@ -71,7 +72,7 @@ Currently we are not using a bootloader, but it will be required for OTA firmwar
 
 #### Requirements
 - [Newtmgr](https://mynewt.apache.org/latest/newtmgr/install/index.html)
-- Set `CONFIG_BOOTLOADER_MCUBOOT=y` in `app/prj.conf`
+- Ensure `CONFIG_BOOTLOADER_MCUBOOT=y` is set in `app/prj.conf`
 
 #### Setup
 1. Create a "serial" profile in newtmgr:
