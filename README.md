@@ -27,6 +27,9 @@ Our Github Actions [build workflow](https://github.com/umts/embedded-departure-b
 4. Activate your Python virtual environment
    ```sh
    source .venv/bin/activate
+   # Or, if you're a direnv user, leave and come back
+   cd
+   cd -
    ```
 6. Install West
    ```sh
