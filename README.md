@@ -12,7 +12,7 @@
 ## Docker
 Zephyr supplies various [Docker images](https://github.com/zephyrproject-rtos/docker-image#zephyr-docker-images) for development.
 
-Our Github Actions [Build Test](https://github.com/umts/embedded-departure-board/blob/main/.github/workflows/build_test.yml) uses the Base Image (ci-base).
+Our Github Actions [build workflow](https://github.com/umts/embedded-departure-board/blob/main/.github/workflows/build_test.yml) uses the Base Image (ci-base).
 
 ## Development
 ### Requirements
@@ -97,6 +97,5 @@ This repo includes `.vscode/tasks.json` to make develpoment easier. The included
   - Useful for debugging via AT commands. Use the "LTE Link Monitor" app from [nRF Connect for Desktop](https://www.nordicsemi.com/Products/Development-tools/nRF-Connect-for-desktop) to send AT commands
 
 ## Creating a Release
-1. Update the [VERSION file](https://github.com/umts/embedded-departure-board/blob/main/app/VERSION)
-
-2. Create a new release tag, `v[major].[minor].[patch]`, and generate the release notes.
+Update the [VERSION file](https://github.com/umts/embedded-departure-board/blob/main/app/VERSION).
+On a successful push to the main branch the [release workflow](https://github.com/umts/embedded-departure-board/blob/main/.github/workflows/release.yml) will; create a new release, generate release notes, and upload the freshly built hex/bin files to the release.

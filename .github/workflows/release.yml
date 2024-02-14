@@ -44,11 +44,12 @@ jobs:
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer $GH_TOKEN" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          "https://api.github.com/repos/${OWNER}/${REPO}/releases" \
-          -d '{"tag_name":"${{ env.version }}","target_commitish":"${BRANCH}","draft":false,"prerelease":false,"generate_release_notes":true}' \
+          "https://api.github.com/repos/${{ env.OWNER }}/${{ env.REPO }}/releases" \
+          -d '{"tag_name":"${{ env.version_tag }}","target_commitish":"${{ env.BRANCH }}","draft":false,"prerelease":false,"generate_release_notes":true}' \
           -o release.json
-          echo "release_id=$(grep -Po '"id":.*?[^\\]",' release.json)" >> "$GITHUB_ENV"
-          echo "upload_url=$(grep -Po '"upload_url":.*?[^\\]",' release.json)" >> "$GITHUB_ENV"
+          echo "upload_url=$(grep -Po '(?:\G(?!^)",|"upload_url":\s*)\s*"\K[^"{]+' release.json)" >> "$GITHUB_ENV"
+          html_url=$(grep -Po -m 1 '(?:\G(?!^)",|"html_url":\s*)\s*"\K[^"]+' release.json)
+          echo 'Created release [${{ env.version_tag }}]("$html_url")' >> $GITHUB_STEP_SUMMARY
 
       - name: Download merged.hex
         uses: actions/download-artifact@v4
@@ -73,7 +74,8 @@ jobs:
           -H "X-GitHub-Api-Version: 2022-11-28" \
           -H "Content-Type: application/octet-stream" \
           "${{ env.upload_url }}?name=merged-${{ env.version_tag }}.hex" \
-          --data-binary "merged.hex"
+          --data-binary "@merged.hex"
+          echo 'Uploaded asset merged.hex as "merged-${{ env.version_tag }}.hex" to release' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload app_update.bin
         env:
@@ -88,4 +90,5 @@ jobs:
           -H "X-GitHub-Api-Version: 2022-11-28" \
           -H "Content-Type: application/octet-stream" \
           "${{ env.upload_url }}?name=app_update-${{ env.version_tag }}.bin" \
-          --data-binary "app_update.bin"
+          --data-binary "@app_update.bin"
+          echo 'Uploaded asset app_update.bin as "app_update-${{ env.version_tag }}.bin" to release' >> $GITHUB_STEP_SUMMARY

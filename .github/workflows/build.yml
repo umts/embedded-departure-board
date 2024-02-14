@@ -68,7 +68,7 @@ jobs:
         run: west update
 
       - name: Create west cache
-        if: ${{ steps.west-cache.outputs.cache-hit != 'true' }}
+        if: steps.west-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
