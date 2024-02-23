@@ -19,5 +19,5 @@ extern char recv_body_buf[RECV_BODY_BUF_SIZE];
 /** @fn char* http_get_request(void)
  *  @brief Makes an HTTP GET request and returns a char pointer to the HTTP response body buffer.
  */
-int http_request_json(void);
+int http_request_stop_json(void);
 #endif

@@ -13,6 +13,7 @@
 
 /* app includes */
 #include <external_rtc.h>
+#include <fota.h>
 #include <led_display.h>
 #include <update_stop.h>
 #include <watchdog_app.h>
@@ -81,83 +82,101 @@ void log_reset_reason(void) {
 }
 
 int main(void) {
-  int err;
-  int wdt_channel_id;
+  // int err;
+  // int wdt_channel_id;
 
-  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
-    (void)turn_display_off(box);
-  }
+  // for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+  //   (void)turn_display_off(box);
+  // }
 
-  wdt_channel_id = watchdog_init();
-  if (wdt_channel_id < 0) {
-    LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
-    goto reset;
-  }
+  LOG_WRN("THIS IS AN NEW IMAGE!");
+  (void)log_reset_reason();
 
-  err = wdt_feed(wdt, wdt_channel_id);
-  if (err) {
-    LOG_ERR("Failed to feed watchdog. Err: %d", err);
-    goto reset;
-  }
+  // err = mcumgr_init();
+  // if (err) {
+  //   LOG_ERR("Failed to start mcumgr smp server. Err: %d", err);
+  //   goto reset;
+  // }
 
-  err = nrf_modem_lib_init();
-  if (err) {
-    LOG_ERR("Failed to initialize modem library!");
-    goto reset;
-  }
+  (void)image_validation();
 
-  err = lte_lc_init();
-  if (err < -1) {
-    LOG_ERR("LTE failed to init. Err: %d", err);
-    goto reset;
-  }
+  // wdt_channel_id = watchdog_init();
+  // if (wdt_channel_id < 0) {
+  //   LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
+  //   goto reset;
+  // }
 
-  err = lte_lc_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto reset;
-  }
+  // err = wdt_feed(wdt, wdt_channel_id);
+  // if (err) {
+  //   LOG_ERR("Failed to feed watchdog. Err: %d", err);
+  //   goto reset;
+  // }
 
-  err = set_external_rtc_time();
-  if (err) {
-    LOG_ERR("Failed to set rtc.");
-    goto reset;
-  }
+  // err = nrf_modem_lib_init();
+  // if (err) {
+  //   LOG_ERR("Failed to initialize modem library!");
+  //   goto reset;
+  // }
 
-  err = lte_lc_init();
-  if (err < -1) {
-    LOG_ERR("LTE failed to init. Err: %d", err);
-    goto reset;
-  }
+  // err = lte_lc_init();
+  // if (err < -1) {
+  //   LOG_ERR("LTE failed to init. Err: %d", err);
+  //   goto reset;
+  // }
 
-  err = lte_lc_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto reset;
-  }
+  // err = lte_lc_connect();
+  // if (err < -1) {
+  //   LOG_ERR("LTE failed to connect. Err: %d", err);
+  //   goto reset;
+  // }
 
-  err = set_external_rtc_time();
-  if (err) {
-    LOG_ERR("Failed to set rtc.");
-    goto reset;
-  }
+  // err = set_external_rtc_time();
+  // if (err) {
+  //   LOG_ERR("Failed to set rtc.");
+  //   goto reset;
+  // }
 
-  (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
+  // err = lte_lc_init();
+  // if (err < -1) {
+  //   LOG_ERR("LTE failed to init. Err: %d", err);
+  //   goto reset;
+  // }
+
+  // err = lte_lc_connect();
+  // if (err < -1) {
+  //   LOG_ERR("LTE failed to connect. Err: %d", err);
+  //   goto reset;
+  // }
+
+  // err = set_external_rtc_time();
+  // if (err) {
+  //   LOG_ERR("Failed to set rtc.");
+  //   goto reset;
+  // }
+
+  // (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
+  // LOG_INF("update_stop_timer started");
 
   while (1) {
     // led_test_patern();
-    if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
-      err = wdt_feed(wdt, wdt_channel_id);
-      if (err) {
-        LOG_ERR("Failed to feed watchdog. Err: %d", err);
-        goto reset;
-      }
+    // if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
+    //   err = wdt_feed(wdt, wdt_channel_id);
+    //   if (err) {
+    //     LOG_ERR("Failed to feed watchdog. Err: %d", err);
+    //     goto reset;
+    //   }
 
-      if (update_stop()) {
-        goto reset;
-      }
-    }
-    k_cpu_idle();
+    //   if (update_stop()) {
+    //     goto reset;
+    //   }
+    // }
+
+    /* The system work queue handles all incoming mcumgr requests.  Let the
+     * main thread idle while the mcumgr server runs.
+     */
+    // STATS_INC(smp_svr_stats, ticks);
+    // k_cpu_idle();
+    k_sleep(K_MSEC(10000));
   }
 
 reset:
