@@ -1,27 +1,24 @@
 /** @headerfile custom_http_client.h */
 #include <custom_http_client.h>
-
-/* Zephyr includes */
-#include <zephyr/kernel.h>
-// #include <zephyr/net/net_ip.h>
-#include <zephyr/net/socket.h>
-// #include <zephyr/net/tls_credentials.h>
-
-#include <zephyr/logging/log.h>
-
-/* Newlib C includes */
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/net/socket.h>
+#include <zephyr/net/tls_credentials.h>
 
 LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 
+/* Macros used to subscribe to specific Zephyr NET management events. */
+#define L4_EVENT_MASK (NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED)
+#define CONN_LAYER_EVENT_MASK (NET_EVENT_CONN_IF_FATAL_ERROR)
+static K_SEM_DEFINE(network_connected_sem, 0, 1);
+
 /** A macro that defines the HTTP request host name for the request headers. */
-#define HTTP_REQUEST_HOSTNAME "bustracker.pvta.com"
+#define STOP_REQUEST_HOSTNAME "bustracker.pvta.com"
 
 /** A macro that defines the HTTP file path for the request headers. */
-#define HTTP_REQUEST_PATH \
-  "/InfoPoint/rest/SignageStopDepartures/GetSignageDeparturesByStopId?stopId=" STOP_ID
+#define HTTP_REQUEST_PATH "/stop/" STOP_ID
 
 /** A macro that defines the HTTP port for the request headers. */
 #if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
@@ -30,19 +27,22 @@ LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 #define HTTP_PORT "80"
 #endif
 
+#define TLS_SEC_TAG 42
+
 /** @def HTTP_REQUEST_HEADERS
  *  @brief A macro that defines the HTTP request headers for the GET request.
  */
 #define HTTP_REQUEST_HEADERS                   \
   "GET " HTTP_REQUEST_PATH                     \
   " HTTP/1.1\r\n"                              \
-  "Host: " HTTP_REQUEST_HOSTNAME ":" HTTP_PORT \
+  "Host: " STOP_REQUEST_HOSTNAME ":" HTTP_PORT \
   "\r\n"                                       \
   "Accept: application/json\r\n"               \
   "Connection: close\r\n\r\n"
 
 /** @def RECV_HEADER_BUF_SIZE
- *  @brief A macro that defines the max size for HTTP response headers receive buffer.
+ *  @brief A macro that defines the max size for HTTP response headers receive
+ * buffer.
  *
  *  Seems to be ~320 bytes, size ~doubled for safety.
  */
@@ -53,18 +53,13 @@ LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 /** HTTP send buffer defined by the HTTP_REQUEST_HEADERS macro. */
 static const char send_buf[] = HTTP_REQUEST_HEADERS;
 
-/** HTTP response headers buffer with size defined by the RECV_HEADER_BUF_SIZE macro. */
+/** HTTP response headers buffer with size defined by the RECV_HEADER_BUF_SIZE
+ * macro. */
 static char recv_headers_buf[RECV_HEADER_BUF_SIZE] = "\0";
 
-/** HTTP response body buffer with size defined by the RECV_BODY_BUF_SIZE macro. */
+/** HTTP response body buffer with size defined by the RECV_BODY_BUF_SIZE macro.
+ */
 char recv_body_buf[RECV_BODY_BUF_SIZE] = "\0";
-
-#if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
-/** Godaddy server ca certificate */
-static const char ca_certificate[] = {
-	#include "../cert/gdig2.crt.pem"
-};
-#endif
 
 static int parse_status(void) {
   char *ptr;
@@ -119,7 +114,9 @@ static int separate_headers(int *sock) {
         state = 0;
       }
     } else {
-      bytes = zsock_recv(*sock, &recv_body_buf[offset], RECV_BODY_BUF_SIZE - offset, 0);
+      bytes = zsock_recv(
+          *sock, &recv_body_buf[offset], RECV_BODY_BUF_SIZE - offset, 0
+      );
       if (bytes < 0) {
         LOG_ERR("recv() body failed, err %d\n", errno);
         return bytes;
@@ -140,39 +137,109 @@ static int separate_headers(int *sock) {
   return 0;
 }
 
-int http_request_stop_json(void) {
+/* Setup TLS options on a given socket */
+int tls_setup(int fd) {
+  int err;
+  int verify;
+
+  /* Security tag that we have provisioned the certificate with */
+  const sec_tag_t tls_sec_tag[] = {
+      TLS_SEC_TAG,
+  };
+
+  /* Set up TLS peer verification */
+  enum {
+    NONE = 0,
+    OPTIONAL = 1,
+    REQUIRED = 2,
+  };
+
+  verify = REQUIRED;
+
+  err = setsockopt(fd, SOL_TLS, TLS_PEER_VERIFY, &verify, sizeof(verify));
+  if (err) {
+    LOG_ERR("Failed to setup peer verification, err %d\n", errno);
+    return err;
+  }
+
+  /* Associate the socket with the security tag
+   * we have provisioned the certificate with.
+   */
+  err = setsockopt(
+      fd, SOL_TLS, TLS_SEC_TAG_LIST, tls_sec_tag, sizeof(tls_sec_tag)
+  );
+  if (err) {
+    LOG_ERR("Failed to setup TLS sec tag, err %d\n", errno);
+    return err;
+  }
+
+  err = setsockopt(
+      fd, SOL_TLS, TLS_HOSTNAME, STOP_REQUEST_HOSTNAME,
+      sizeof(STOP_REQUEST_HOSTNAME) - 1
+  );
+  if (err) {
+    LOG_ERR("Failed to setup TLS hostname, err %d\n", errno);
+    return err;
+  }
+  return 0;
+}
+
+static int send_http_request(void) {
   int attempt = 0;
   int bytes;
   int err;
+  int fd;
   size_t offset;
   int sock = -1;
   int status = -1;
 
-  struct zsock_addrinfo *addr_inf;
-  static struct zsock_addrinfo hints = {
-    .ai_family = AF_UNSPEC,
-    .ai_socktype = SOCK_STREAM,
-    .ai_flags = 0,
-    .ai_protocol = 0
+  struct addrinfo *addr_inf;
+  static struct addrinfo hints = {
+      .ai_socktype = SOCK_STREAM, .ai_flags = AI_NUMERICSERV
   };
 
-  err = zsock_getaddrinfo(HTTP_REQUEST_HOSTNAME, NULL, &hints, &addr_inf);
+  err = getaddrinfo(STOP_REQUEST_HOSTNAME, NULL, &hints, &addr_inf);
   if (err) {
     LOG_ERR("getaddrinfo() failed, err %d\n", errno);
     return errno;
   }
 
-  ((struct sockaddr_in *)addr_inf->ai_addr)->sin_port = htons(80);
+  // ((struct sockaddr_in *)addr_inf->ai_addr)->sin_port = htons(HTTP_PORT);
+
+  char peer_addr[INET6_ADDRSTRLEN];
+
+  inet_ntop(
+      addr_inf->ai_family,
+      &((struct sockaddr_in *)(addr_inf->ai_addr))->sin_addr, peer_addr,
+      INET6_ADDRSTRLEN
+  );
+
+  if (IS_ENABLED(CONFIG_MBEDTLS)) {
+    fd = socket(
+        addr_inf->ai_family, SOCK_STREAM | SOCK_NATIVE_TLS, IPPROTO_TLS_1_2
+    );
+  } else {
+    fd = socket(addr_inf->ai_family, SOCK_STREAM, IPPROTO_TLS_1_2);
+  }
+  if (fd == -1) {
+    LOG_ERR("Failed to open socket!\n");
+    goto clean_up;
+  }
 
 retry:
   sock = zsock_socket(AF_INET, SOCK_STREAM, addr_inf->ai_protocol);
-
   if (sock == -1) {
     LOG_ERR("Failed to open socket!\n");
     goto clean_up;
   }
 
-  err = zsock_connect(sock, addr_inf->ai_addr, sizeof(struct sockaddr_in));
+  /* Setup TLS socket options */
+  err = tls_setup(fd);
+  if (err) {
+    goto clean_up;
+  }
+
+  err = connect(fd, addr_inf->ai_addr, addr_inf->ai_addrlen);
   if (err) {
     LOG_ERR("connect() failed, err: %d\n", errno);
     goto clean_up;
@@ -180,7 +247,7 @@ retry:
 
   offset = 0;
   do {
-    bytes = zsock_send(sock, &send_buf[offset], HTTP_REQUEST_HEAD_LEN - offset, 0);
+    bytes = send(sock, &send_buf[offset], HTTP_REQUEST_HEAD_LEN - offset, 0);
     if (bytes < 0) {
       LOG_ERR("send() failed, err %d.", errno);
       attempt++;
@@ -219,4 +286,24 @@ clean_up:
   zsock_freeaddrinfo(addr_inf);
 
   return status;
+}
+
+int http_request_stop_json(void) {
+  return send_http_request();
+
+  // /* A small delay for the TCP connection teardown */
+  // k_sleep(K_SECONDS(1));
+
+  // /* The HTTP transaction is done, take the network connection down */
+  // err = conn_mgr_all_if_disconnect(true);
+  // if (err) {
+  //   LOG_INF("conn_mgr_all_if_disconnect, error: %d\n", err);
+  // }
+
+  // err = conn_mgr_all_if_down(true);
+  // if (err) {
+  //   LOG_INF("conn_mgr_all_if_down, error: %d\n", err);
+  // }
+
+  // return 0;
 }
