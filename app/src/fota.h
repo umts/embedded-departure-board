@@ -22,4 +22,6 @@
 
 void image_validation(void);
 
+void download_update(void);
+
 #endif

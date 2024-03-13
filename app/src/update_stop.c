@@ -90,15 +90,15 @@ int update_stop(void) {
     return 1;
   }
 
-  err = parse_json_for_stop(recv_body_buf, &stop);
-  if (err) {
-    LOG_DBG(
-        "recv_body_buf size: %d, recv_body strlen: %d", sizeof(recv_body_buf),
-        strlen(recv_body_buf)
-    );
-    LOG_DBG("recv_body_buf:\n%s", recv_body_buf);
-    return 1;
-  }
+  // err = parse_json_for_stop(recv_body_buf, &stop);
+  // if (err) {
+  //   LOG_DBG(
+  //       "recv_body_buf size: %d, recv_body strlen: %d",
+  //       sizeof(recv_body_buf), strlen(recv_body_buf)
+  //   );
+  //   LOG_DBG("recv_body_buf:\n%s", recv_body_buf);
+  //   return 1;
+  // }
 
   LOG_DBG(
       "Stop ID: %s\nStop routes size: %d\nLast updated: %lld\n", stop.id,

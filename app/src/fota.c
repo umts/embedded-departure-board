@@ -1,12 +1,14 @@
+#include <custom_http_client.h>
 #include <fota.h>
 #include <pm_config.h>
 #include <zephyr/dfu/mcuboot.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/stats/stats.h>
-#include <zephyr/usb/usb_device.h>
 
 LOG_MODULE_REGISTER(fota, CONFIG_LOG_DEFAULT_LEVEL);
+
+void download_update(void) { (void)http_get_firmware(); }
 
 /*
  * Copyright (c) 2023 Nordic Semiconductor ASA
