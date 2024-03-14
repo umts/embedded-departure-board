@@ -121,22 +121,22 @@ int main(void) {
   (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
   LOG_INF("update_stop_timer started");
 
-  download_update();
+  // download_update();
 
-  // while (1) {
-  //   // led_test_patern();
-  //   if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
-  //     err = wdt_feed(wdt, wdt_channel_id);
-  //     if (err) {
-  //       LOG_ERR("Failed to feed watchdog. Err: %d", err);
-  //       goto reset;
-  //     }
+  while (1) {
+    // led_test_patern();
+    if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
+      err = wdt_feed(wdt, wdt_channel_id);
+      if (err) {
+        LOG_ERR("Failed to feed watchdog. Err: %d", err);
+        goto reset;
+      }
 
-  //     if (update_stop()) {
-  //       goto reset;
-  //     }
-  //   }
-  // }
+      if (update_stop()) {
+        goto reset;
+      }
+    }
+  }
 
 reset:
   lte_disconnect();

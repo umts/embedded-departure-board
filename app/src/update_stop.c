@@ -85,7 +85,7 @@ int update_stop(void) {
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
   err = http_request_stop_json();
-  if (err != 200) {
+  if (err) {
     LOG_ERR("HTTP GET request for JSON failed; cleaning up. ERR: %d", err);
     return 1;
   }

@@ -12,9 +12,9 @@
 
 LOG_MODULE_REGISTER(lte_manager, LOG_LEVEL_DBG);
 
-// static const char jes_cert[] = {
-// #include "../keys/public/jes-contact.pem"
-// };
+static const char jes_cert[] = {
+#include "../keys/public/jes-contact.pem"
+};
 
 static const char github_cert[] = {
 #include "../keys/public/github-com.pem"
@@ -22,9 +22,9 @@ static const char github_cert[] = {
 
 #define CERT_LEN(c_) sizeof(c_)
 
-// BUILD_ASSERT(
-//     (sizeof(jes_cert) + sizeof(github_cert)) < KB(4), "Certificate too large"
-// );
+BUILD_ASSERT(
+    (sizeof(jes_cert) + sizeof(github_cert)) < KB(4), "Certificate too large"
+);
 
 BUILD_ASSERT(sizeof(github_cert) < KB(4), "Certificate too large");
 
@@ -101,13 +101,13 @@ int lte_connect(void) {
 #endif
 
   /* Provision certificates before connecting to the network */
-  // err = provision_cert(JES_SEC_TAG, jes_cert, sizeof(jes_cert));
-  // if (err) {
-  //   LOG_ERR(
-  //       "Failed to provision TLS certificate. TLS_SEC_TAG: %d", JES_SEC_TAG
-  //   );
-  //   return err;
-  // }
+  err = provision_cert(JES_SEC_TAG, jes_cert, sizeof(jes_cert));
+  if (err) {
+    LOG_ERR(
+        "Failed to provision TLS certificate. TLS_SEC_TAG: %d", JES_SEC_TAG
+    );
+    return err;
+  }
 
   err = provision_cert(GITHUB_SEC_TAG, github_cert, sizeof(github_cert));
   if (err) {

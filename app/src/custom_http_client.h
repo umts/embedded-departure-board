@@ -6,6 +6,15 @@
 #define CUSTOM_HTTP_CLIENT_H
 #include <stop.h>
 
+enum response_code {
+  HTTP_NULL,
+  HTTP_INFO,
+  HTTP_SUCCESS,
+  HTTP_REDIRECT,
+  HTTP_CLIENT_ERROR,
+  HTTP_SERVER_ERROR
+};
+
 /** @def RECV_BODY_BUF_SIZE
  *  @brief A macro that defines the max size for HTTP response body receive buffer.
  *
