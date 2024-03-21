@@ -88,6 +88,8 @@ int main(void) {
     (void)turn_display_off(box);
   }
 
+  (void)log_reset_reason();
+
   wdt_channel_id = watchdog_init();
   if (wdt_channel_id < 0) {
     LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
@@ -143,6 +145,7 @@ int main(void) {
   }
 
   (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
+  LOG_INF("update_stop_timer started");
 
   while (1) {
     // led_test_patern();

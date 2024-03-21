@@ -140,7 +140,7 @@ static int separate_headers(int *sock) {
   return 0;
 }
 
-int http_request_json(void) {
+int http_request_stop_json(void) {
   int attempt = 0;
   int bytes;
   int err;
