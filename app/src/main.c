@@ -13,7 +13,6 @@
 
 /* app includes */
 #include <external_rtc.h>
-#include <fota.h>
 #include <led_display.h>
 #include <update_stop.h>
 #include <watchdog_app.h>
@@ -89,10 +88,7 @@ int main(void) {
     (void)turn_display_off(box);
   }
 
-  LOG_WRN("THIS IS AN NEW IMAGE!");
   (void)log_reset_reason();
-
-  (void)image_validation();
 
   wdt_channel_id = watchdog_init();
   if (wdt_channel_id < 0) {
