@@ -160,6 +160,7 @@ int main(void) {
         goto reset;
       }
     }
+    k_cpu_idle();
   }
 
 reset:
