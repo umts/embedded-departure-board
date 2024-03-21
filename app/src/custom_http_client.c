@@ -1,4 +1,5 @@
 /** @headerfile custom_http_client.h */
+#include <app_version.h>
 #include <custom_http_client.h>
 #include <lte_manager.h>
 #include <stdlib.h>
@@ -12,20 +13,16 @@
 LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 
 /** A macro that defines the HTTP request host name for the request headers. */
-#define STOP_REQUEST_HOSTNAME "nidd.jes.contact"
+#define STOP_REQUEST_HOSTNAME "iot.jes.contact"
 
 /** A macro that defines the HTTP file path for the request headers. */
 #define STOP_REQUEST_PATH "/stop/" STOP_ID
 
 /** A macro that defines the HTTP request host name for the request headers. */
-#define FIRMWARE_REQUEST_HOSTNAME "api.github.com"
-
-// TEMP
-#define ASSET_ID "151564620"
+#define FIRMWARE_REQUEST_HOSTNAME "iot.jes.contact"
 
 /** A macro that defines the HTTP file path for the request headers. */
-#define FIRMWARE_REQUEST_PATH \
-  "/repos/umts/embedded-departure-board/releases/assets/" ASSET_ID
+#define FIRMWARE_REQUEST_PATH "/firware/update"
 
 /** @def RECV_HEADER_BUF_SIZE
  *  @brief A macro that defines the max size for HTTP headers
@@ -235,6 +232,8 @@ static int send_http_request(
   LOG_DBG("SEC_TAG: %d", sec_tag);
 
 retry:
+  redirect = 0;
+
   ptr = stpcpy(&headers_buf[0], "GET ");
   ptr = stpcpy(ptr, path);
   ptr = stpcpy(ptr, " HTTP/1.1\r\n");
@@ -245,6 +244,10 @@ retry:
   } else {
     ptr = stpcpy(ptr, ":443\r\n");
   }
+  // TODO: Change APP_VERSION_STRING to APP_VERSION_TWEAK_STRING when possible
+  ptr = stpcpy(
+      ptr, "User-Agent: EDB/" APP_VERSION_STRING " Stop-ID/" STOP_ID "\r\n"
+  );
   ptr = stpcpy(ptr, "Accept: ");
   ptr = stpcpy(ptr, accept);
   ptr = stpcpy(ptr, "\r\nConnection: close\r\n\r\n");
@@ -276,22 +279,26 @@ retry:
 
   LOG_INF("Resolved %s (%s)", peer_addr, net_family2str(addr_inf->ai_family));
 
-  if (IS_ENABLED(CONFIG_MBEDTLS)) {
+  if (sec_tag == NO_SEC_TAG) {
+    sock = socket(addr_inf->ai_family, SOCK_STREAM, addr_inf->ai_protocol);
+  } else if (IS_ENABLED(CONFIG_MBEDTLS)) {
     sock = socket(
         addr_inf->ai_family, SOCK_STREAM | SOCK_NATIVE_TLS, IPPROTO_TLS_1_2
     );
   } else {
     sock = socket(addr_inf->ai_family, SOCK_STREAM, IPPROTO_TLS_1_2);
   }
+
   if (sock == -1) {
     LOG_ERR("Failed to open socket!\n");
     goto clean_up;
   }
 
-  /* Setup TLS socket options */
-  err = tls_setup(sock, hostname, sec_tag);
-  if (err) {
-    goto clean_up;
+  if (sec_tag != NO_SEC_TAG) {
+    err = tls_setup(sock, hostname, sec_tag);
+    if (err) {
+      goto clean_up;
+    }
   }
 
   LOG_DBG(
@@ -349,7 +356,7 @@ clean_up:
 
 redirect:
   ptr = get_redirect_location();
-  LOG_DBG("redirect ptr: %s", ptr);
+  LOG_INF("Redirect location: %s", ptr);
 
   /* Assume the host is the same */
   if (*ptr == '/') {
@@ -358,6 +365,14 @@ redirect:
     /* Assume we're dealing with a url */
   } else if (*ptr == 'h') {
     if (strncmp(ptr, "https", 5) == 0) {
+      if (sec_tag == NO_SEC_TAG) {
+        LOG_ERR(
+            "Redirect requires TLS, but a TLS sec_tag was assigned. Assign "
+            "correct sec_tag in the code "
+            "Aborting."
+        );
+        return 1;
+      }
       ptr += 8;
     } else {
       ptr += 7;
@@ -406,7 +421,7 @@ int http_get_firmware(void) {
   } else {
     err = send_http_request(
         FIRMWARE_REQUEST_HOSTNAME, FIRMWARE_REQUEST_PATH,
-        "application/octet-stream,text/html;charset=utf-8", GITHUB_SEC_TAG
+        "application/octet-stream", JES_SEC_TAG
     );
     k_sem_give(&lte_connected_sem);
   }

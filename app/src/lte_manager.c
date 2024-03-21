@@ -16,17 +16,11 @@ static const char jes_cert[] = {
 #include "../keys/public/jes-contact.pem"
 };
 
-static const char github_cert[] = {
-#include "../keys/public/github-com.pem"
-};
-
 #define CERT_LEN(c_) sizeof(c_)
 
-BUILD_ASSERT(
-    (sizeof(jes_cert) + sizeof(github_cert)) < KB(4), "Certificate too large"
-);
-
-BUILD_ASSERT(sizeof(github_cert) < KB(4), "Certificate too large");
+#if CONFIG_MODEM_KEY_MGMT
+BUILD_ASSERT(sizeof(jes_cert) < KB(4), "Certificates too large");
+#endif
 
 K_SEM_DEFINE(lte_connected_sem, 1, 1);
 
@@ -105,14 +99,6 @@ int lte_connect(void) {
   if (err) {
     LOG_ERR(
         "Failed to provision TLS certificate. TLS_SEC_TAG: %d", JES_SEC_TAG
-    );
-    return err;
-  }
-
-  err = provision_cert(GITHUB_SEC_TAG, github_cert, sizeof(github_cert));
-  if (err) {
-    LOG_ERR(
-        "Failed to provision TLS certificate. TLS_SEC_TAG: %d", GITHUB_SEC_TAG
     );
     return err;
   }
