@@ -9,11 +9,11 @@
 /** Specify the route, display text, and position for each display box */
 // clang-format off
 #define DISPLAY_BOXES {                                  \
-  { .id = 20038, .position = 0, .direction_code = 'S' }, \
-  { .id = 30043, .position = 1, .direction_code = 'E' }, \
-  { .id = 30043, .position = 2, .direction_code = 'W' }, \
-  { .id = 30943, .position = 3, .direction_code = 'W' }, \
-  { .id = 10029, .position = 4, .direction_code = 'S' }  \
+  { .id = 30038, .position = 0, .direction_code = 'S' }, \
+  { .id = 10043, .position = 1, .direction_code = 'E' }, \
+  { .id = 10043, .position = 2, .direction_code = 'W' }, \
+  { .id = 10943, .position = 3, .direction_code = 'W' }, \
+  { .id = 20029, .position = 4, .direction_code = 'S' }  \
 }
 // clang-format on
 
