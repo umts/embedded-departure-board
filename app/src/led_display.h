@@ -4,14 +4,15 @@
 
 #ifndef LED_DISPLAY_H
 #define LED_DISPLAY_H
-#include <sys/_stdint.h>
-#include <sys/_types.h>
+#include <zephyr/kernel.h>
 
-int write_num_to_display(size_t display, uint8_t brightness, unsigned int num);
+int write_num_to_display(
+    unsigned int display, unsigned int num, const uint32_t *color, int invert_y
+);
 
-int turn_display_off(size_t display);
+int turn_display_off(unsigned int display);
 
 #ifdef CONFIG_DEBUG
-void led_test_patern();
+void led_test_pattern();
 #endif
 #endif

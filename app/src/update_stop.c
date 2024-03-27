@@ -22,21 +22,20 @@ static unsigned int minutes_to_departure(Departure* departure) {
   return (unsigned int)(edt_ms - get_external_rtc_time()) / 60;
 }
 
-static int get_display_address(
+static DisplayBox* get_display_address(
     const DisplayBox display_boxes[], const int route_id,
     const char direction_code
 ) {
   for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
     if ((route_id == display_boxes[box].id) &&
         (display_boxes[box].direction_code == direction_code)) {
-      return display_boxes[box].position;
+      return &display_boxes[box];
     }
   }
-  return -1;
+  return NULL;
 }
 
 static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
-  int display_address;
   unsigned int min = 0;
 
   for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
@@ -58,21 +57,23 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
       LOG_INF("Display text: %s", departure.display_text);
       LOG_INF("Minutes to departure: %d", min);
 
-      display_address = get_display_address(
+      DisplayBox* display_box = get_display_address(
           display_boxes, route_direction.id, route_direction.direction_code
       );
 
-      if (display_address != -1) {
-        LOG_INF("Display address: %d", display_address);
-        // There is currently no light sensor to adjust brightness
-        if (write_num_to_display(display_address, 0x33, min)) {
-          return 1;
-        }
-      } else {
+      if (display_box == NULL) {
         LOG_WRN(
             "Display address for Route: %d, Direction Code: %c not found.",
             route_direction.id, route_direction.direction_code
         );
+      } else {
+        //  LOG_INF("Display address: %d", display_address);
+        // There is currently no light sensor to adjust brightness
+        if (write_num_to_display(
+                display_box->position, min, &display_box->color, 0
+            )) {
+          return 1;
+        }
       }
     }
   }

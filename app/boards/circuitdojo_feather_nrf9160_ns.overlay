@@ -1,19 +1,5 @@
 #include <zephyr/dt-bindings/led/led.h>
 
-&i2c1 {
-  compatible = "nordic,nrf-twim";
-	status = "okay";
-  zephyr,concat-buf-size = <256>;
-
-	pinctrl-0 = <&i2c1_default>;
-	pinctrl-1 = <&i2c1_sleep>;
-	pinctrl-names = "default", "sleep";
-	pcf85063a: pcf85063a@51 {
-		compatible = "nxp,pcf85063a";
-		reg = <0x51>;
-};
-};
-
 &uart0 {
   status = "okay";
   compatible = "nordic,nrf-uarte";
@@ -24,57 +10,36 @@
   hw-flow-control;
 };
 
-&uart2 {
-  /* Cannot be used together with spi2. */
+&uart1 {
+  /* Cannot be used together with i2c1. */
   status = "disabled";
 };
 
-&i2c2 {
-  /* Cannot be used together with spi2. */
+&spi1 {
+  /* Cannot be used together with i2c1. */
   status = "disabled";
 };
 
-&pinctrl {
-  spi_feather_default: spi_feather_default {
-    group1 {
-      psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
-              <NRF_PSEL(SPIM_MOSI, 0, 21)>,
-              <NRF_PSEL(SPIM_MISO, 0, 22)>;
-    };
+&i2c1 {
+  compatible = "nordic,nrf-twim";
+	status = "okay";
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-1 = <&i2c1_sleep>;
+	pinctrl-names = "default", "sleep";
+  clock-frequency = <I2C_BITRATE_FAST>;
+
+	pcf85063a: pcf85063a@51 {
+		compatible = "nxp,pcf85063a";
+		reg = <0x51>;
   };
-
-  spi_feather_sleep: spi_feather_sleep {
-    group1 {
-      psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
-              <NRF_PSEL(SPIM_MOSI, 0, 21)>,
-              <NRF_PSEL(SPIM_MISO, 0, 22)>;
-      low-power-enable;
-    };
-  };
-};
-
-&spi2 {
-  compatible = "nordic,nrf-spim";
-  status = "okay";
-  cs-gpios = <&gpio0 18 GPIO_ACTIVE_LOW>;
-  pinctrl-0 = <&spi_feather_default>;
-  pinctrl-1 = <&spi_feather_sleep>;
-  pinctrl-names = "default", "sleep";
-  led_strip: ws2812@0 {
-    compatible = "worldsemi,ws2812-spi";
-
-    /* SPI */
-    reg = <0>; /* ignored, but necessary for SPI bindings */
-    spi-max-frequency = <4000000>;
-
-    /* WS2812 */
-    chain-length = <640>;
-    spi-one-frame = <0x70>;
-    spi-zero-frame = <0x40>;
-    color-mapping = <LED_COLOR_ID_GREEN
-    LED_COLOR_ID_RED
-    LED_COLOR_ID_BLUE>;
-  };
+  led_display0: is31fl3733@52 {
+		reg = <0x52>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display1: is31fl3733@53 {
+		reg = <0x53>;
+		compatible = "issi,is31fl3733";
+	};
 };
 
 /delete-node/ &boot_partition;
