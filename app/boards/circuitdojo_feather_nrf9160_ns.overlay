@@ -32,12 +32,45 @@
 		compatible = "nxp,pcf85063a";
 		reg = <0x51>;
   };
+
   led_display0: is31fl3733@52 {
 		reg = <0x52>;
 		compatible = "issi,is31fl3733";
 	};
   led_display1: is31fl3733@53 {
 		reg = <0x53>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display2: is31fl3733@54 {
+		reg = <0x54>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display3: is31fl3733@55 {
+		reg = <0x55>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display4: is31fl3733@56 {
+		reg = <0x56>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display5: is31fl3733@57 {
+		reg = <0x57>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display6: is31fl3733@58 {
+		reg = <0x58>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display7: is31fl3733@59 {
+		reg = <0x59>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display8: is31fl3733@60 {
+		reg = <0x60>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display9: is31fl3733@61 {
+		reg = <0x61>;
 		compatible = "issi,is31fl3733";
 	};
 };

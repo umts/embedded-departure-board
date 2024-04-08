@@ -14,12 +14,17 @@ LOG_MODULE_REGISTER(led_display, LOG_LEVEL_DBG);
  */
 #define LED(x, y) ((x) * COLS) + (y)
 
-// const struct device *led_panel0 = DEVICE_DT_GET(DT_NODELABEL(led_display0));
-// const struct device *led_panel1 = DEVICE_DT_GET(DT_NODELABEL(led_display1));
-
 static const struct device *led_panels[] = {
     DEVICE_DT_GET(DT_NODELABEL(led_display0)),
-    DEVICE_DT_GET(DT_NODELABEL(led_display1))
+    DEVICE_DT_GET(DT_NODELABEL(led_display1)),
+    DEVICE_DT_GET(DT_NODELABEL(led_display2)),
+    DEVICE_DT_GET(DT_NODELABEL(led_display3)),
+    DEVICE_DT_GET(DT_NODELABEL(led_display4)),
+    DEVICE_DT_GET(DT_NODELABEL(led_display5)),
+    DEVICE_DT_GET(DT_NODELABEL(led_display6)),
+    DEVICE_DT_GET(DT_NODELABEL(led_display7)),
+    DEVICE_DT_GET(DT_NODELABEL(led_display8)),
+    DEVICE_DT_GET(DT_NODELABEL(led_display9))
 };
 
 typedef struct RGB_LED {
@@ -211,6 +216,23 @@ int write_num_to_display(
   int ret;
   uint8_t current_limit;
 
+  if (!device_is_ready(led_panels[display])) {
+    for (int i = 0; i < 3; i++) {
+      if (!device_is_ready(led_panels[display]) && (i == 3 - 1)) {
+        LOG_ERR(
+            "is31fl3733(instance: %d) failed to initialize after 3 attempts.",
+            display
+        );
+      } else if (!device_is_ready(led_panels[display])) {
+        LOG_WRN("LED device is not ready. Retrying...");
+        k_msleep(1000);
+      } else {
+        break;
+      }
+    }
+    return 1;
+  }
+
   /** Sets the max current based on color to ensure each panel is within the
    * power budget and matches brightness with other colors
    */
@@ -227,20 +249,6 @@ int write_num_to_display(
       LOG_DBG("Current limit set to 102");
       current_limit = 102;
       break;
-  }
-
-  if (!device_is_ready(led_panels[display])) {
-    for (int i = 0; i < 3; i++) {
-      if (!device_is_ready(led_panels[display]) && (i == 3 - 1)) {
-        LOG_ERR("pcf85063a failed to initialize after 3 attempts.");
-      } else if (!device_is_ready(led_panels[display])) {
-        LOG_WRN("LED device is not ready. Retrying...");
-        k_msleep(1000);
-      } else {
-        break;
-      }
-    }
-    return 1;
   }
 
   ret = is31fl3733_current_limit(led_panels[display], current_limit);
@@ -276,10 +284,28 @@ fail:
 static const uint32_t colors[] = {0x7E0A6D, 0x00467E, 0xFF0000};
 
 void led_test_pattern(void) {
+  k_msleep(500);
   for (int i = 0; i < 3; i++) {
-    write_num_to_display(0, 888, &colors[i], 1);
-    // write_num_to_display(1, 888, &colors[i], 0);
-    k_sleep(K_SECONDS(2));
+    k_msleep(200);
+    write_num_to_display(0, 888, &colors[i], 0);
+    k_msleep(200);
+    write_num_to_display(1, 888, &colors[i], 1);
+    k_msleep(200);
+    write_num_to_display(2, 888, &colors[i], 0);
+    k_msleep(200);
+    write_num_to_display(3, 888, &colors[i], 1);
+    k_msleep(200);
+    write_num_to_display(4, 888, &colors[i], 0);
+    k_msleep(200);
+    write_num_to_display(5, 888, &colors[i], 1);
+    k_msleep(200);
+    write_num_to_display(6, 888, &colors[i], 0);
+    k_msleep(200);
+    write_num_to_display(7, 888, &colors[i], 1);
+    k_msleep(200);
+    write_num_to_display(8, 888, &colors[i], 0);
+    k_msleep(200);
+    write_num_to_display(9, 888, &colors[i], 1);
   }
 }
 #endif
