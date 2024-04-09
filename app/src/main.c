@@ -7,11 +7,12 @@
 #include <zephyr/types.h>
 
 /* nrf lib includes */
-#include <modem/lte_lc.h>
-#include <modem/modem_key_mgmt.h>
-#include <modem/nrf_modem_lib.h>
+// #include <modem/lte_lc.h>
+// #include <modem/modem_key_mgmt.h>
+// #include <modem/nrf_modem_lib.h>
 
 /* app includes */
+#include <connection_manager.h>
 #include <external_rtc.h>
 #include <led_display.h>
 #include <update_stop.h>
@@ -102,47 +103,46 @@ int main(void) {
     goto reset;
   }
 
-  err = nrf_modem_lib_init();
+  err = lte_connect();
   if (err) {
-    LOG_ERR("Failed to initialize modem library!");
     goto reset;
   }
 
-  err = lte_lc_init();
-  if (err < -1) {
-    LOG_ERR("LTE failed to init. Err: %d", err);
-    goto reset;
-  }
+  // err = nrf_modem_lib_init();
+  // if (err) {
+  //   LOG_ERR("Failed to initialize modem library!");
+  //   goto reset;
+  // }
 
-  err = lte_lc_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto reset;
-  }
+  // err = cert_provision();
+  // if (err) {
+  //   LOG_ERR("Failed to provision certificate, err %d\n", err);
+  //   return err;
+  // }
 
+  // err = lte_lc_init();
+  // if (err < -1) {
+  //   LOG_ERR("LTE failed to init. Err: %d", err);
+  //   goto reset;
+  // }
+
+  // err = lte_lc_connect();
+  // if (err < -1) {
+  //   LOG_ERR("LTE failed to connect. Err: %d", err);
+  //   goto reset;
+  // }
+
+  // if (k_sem_take(&network_connected_sem, K_SECONDS(30)) == 0) {
   err = set_external_rtc_time();
   if (err) {
     LOG_ERR("Failed to set rtc.");
     goto reset;
   }
-
-  err = lte_lc_init();
-  if (err < -1) {
-    LOG_ERR("LTE failed to init. Err: %d", err);
-    goto reset;
-  }
-
-  err = lte_lc_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto reset;
-  }
-
-  err = set_external_rtc_time();
-  if (err) {
-    LOG_ERR("Failed to set rtc.");
-    goto reset;
-  }
+  // } else {
+  //   LOG_ERR("Failed to take network_connected_sem.");
+  //   goto reset;
+  // }
+  // k_sem_give(&network_connected_sem);
 
   (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
   LOG_INF("update_stop_timer started");
@@ -160,10 +160,10 @@ int main(void) {
         goto reset;
       }
     }
-    k_cpu_idle();
   }
 
 reset:
+  lte_disconnect();
   LOG_WRN("Reached end of main; rebooting.");
   /* In ARM implementation sys_reboot ignores the parameter */
   sys_reboot(SYS_REBOOT_COLD);
