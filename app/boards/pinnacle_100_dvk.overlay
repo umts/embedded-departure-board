@@ -1,0 +1,100 @@
+#include <zephyr/dt-bindings/led/led.h>
+
+&uart0 {
+  status = "okay";
+  compatible = "nordic,nrf-uarte";
+  current-speed = <1000000>;
+  pinctrl-0 = <&uart0_default>;
+  pinctrl-1 = <&uart0_sleep>;
+  pinctrl-names = "default", "sleep";
+  hw-flow-control;
+};
+
+&uart1 {
+	compatible = "nordic,nrf-uarte";
+	status = "okay";
+	current-speed = <115200>;
+	hw-flow-control;
+	pinctrl-0 = <&uart1_default>;
+	pinctrl-1 = <&uart1_sleep>;
+	pinctrl-names = "default", "sleep";
+	hl7800: hl7800 {
+		compatible = "swir,hl7800";
+		status = "okay";
+		mdm-reset-gpios = <&gpio1 15 (GPIO_OPEN_DRAIN | GPIO_ACTIVE_LOW)>;
+		mdm-wake-gpios = <&gpio1 13 (GPIO_OPEN_SOURCE | GPIO_ACTIVE_HIGH)>;
+		mdm-pwr-on-gpios = <&gpio1 2 (GPIO_OPEN_DRAIN | GPIO_ACTIVE_LOW)>;
+		mdm-fast-shutd-gpios = <&gpio1 14 (GPIO_OPEN_DRAIN | GPIO_ACTIVE_LOW)>;
+		mdm-vgpio-gpios = <&gpio1 11 0>;
+		mdm-uart-dsr-gpios = <&gpio0 25 0>;
+		mdm-uart-cts-gpios = <&gpio0 15 0>;
+		mdm-gpio6-gpios = <&gpio1 12 0>;
+	};
+};
+
+&i2c0 {
+  compatible = "nordic,nrf-twim";
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+  clock-frequency = <I2C_BITRATE_FAST>;
+
+  bme: bme680@76 {
+		compatible = "bosch,bme680";
+		status = "okay";
+		reg = <0x76>;
+	};
+
+  led_display0: is31fl3733@52 {
+		reg = <0x52>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display1: is31fl3733@53 {
+		reg = <0x53>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display2: is31fl3733@54 {
+		reg = <0x54>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display3: is31fl3733@55 {
+		reg = <0x55>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display4: is31fl3733@56 {
+		reg = <0x56>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display5: is31fl3733@57 {
+		reg = <0x57>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display6: is31fl3733@58 {
+		reg = <0x58>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display7: is31fl3733@59 {
+		reg = <0x59>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display8: is31fl3733@60 {
+		reg = <0x60>;
+		compatible = "issi,is31fl3733";
+	};
+  led_display9: is31fl3733@61 {
+		reg = <0x61>;
+		compatible = "issi,is31fl3733";
+	};
+};
+
+/ {
+  chosen {
+    nordic,pm-ext-flash = &mx25r64;
+  };
+
+  aliases {
+      modem-uart = &uart1;
+      modem = &hl7800;
+  };
+};

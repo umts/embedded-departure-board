@@ -10,6 +10,8 @@
 #include <modem/lte_lc.h>
 #include <modem/modem_key_mgmt.h>
 #include <modem/nrf_modem_lib.h>
+#else
+#include <zephyr/net/tls_credentials.h>
 #endif
 
 LOG_MODULE_REGISTER(connection_manager, LOG_LEVEL_DBG);
