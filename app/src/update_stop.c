@@ -1,8 +1,8 @@
 #include "update_stop.h"
 
 /* app includes */
+#include <app_rtc.h>
 #include <custom_http_client.h>
-#include <external_rtc.h>
 #include <jsmn_parse.h>
 #include <led_display.h>
 #include <stop.h>
@@ -19,7 +19,7 @@ K_SEM_DEFINE(stop_sem, 1, 1);
 
 static unsigned int minutes_to_departure(Departure* departure) {
   int edt_ms = departure->etd;
-  return (unsigned int)(edt_ms - get_external_rtc_time()) / 60;
+  return (unsigned int)(edt_ms - get_app_rtc_time()) / 60;
 }
 
 static int get_display_address(

@@ -88,13 +88,20 @@
 	};
 };
 
+&rtc2 {
+  status = "okay";
+  // Set the frequency to 8Hz
+  prescaler = <4095>;
+};
+
 / {
   chosen {
     nordic,pm-ext-flash = &mx25r64;
   };
 
   aliases {
-      modem-uart = &uart1;
-      modem = &hl7800;
+    rtc = &rtc2;
+    modem-uart = &uart1;
+    modem = &hl7800;
   };
 };

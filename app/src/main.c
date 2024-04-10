@@ -12,8 +12,8 @@
 // #include <modem/nrf_modem_lib.h>
 
 /* app includes */
+#include <app_rtc.h>
 #include <connection_manager.h>
-#include <external_rtc.h>
 #include <led_display.h>
 #include <update_stop.h>
 #include <watchdog_app.h>
@@ -133,7 +133,7 @@ int main(void) {
   // }
 
   // if (k_sem_take(&network_connected_sem, K_SECONDS(30)) == 0) {
-  err = set_external_rtc_time();
+  err = set_app_rtc_time();
   if (err) {
     LOG_ERR("Failed to set rtc.");
     goto reset;

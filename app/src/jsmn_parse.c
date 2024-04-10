@@ -12,7 +12,7 @@
 #include <string.h>
 
 /* app includes */
-#include <external_rtc.h>
+#include <app_rtc.h>
 #include <stop.h>
 
 LOG_MODULE_REGISTER(jsmn_parse, LOG_LEVEL_INF);
@@ -293,7 +293,7 @@ int parse_json_for_stop(char *json_ptr, Stop *stop) {
     return EXIT_FAILURE;
   }
 
-  int time_now = get_external_rtc_time();
+  int time_now = get_app_rtc_time();
   if (time_now == -1) {
     return 2;
   }
