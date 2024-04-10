@@ -3,9 +3,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include "app_rtc.h"
 #include "display/display_switches.h"
 #include "display/led_display.h"
-#include "external_rtc.h"
 #include "json/jsmn_parse.h"
 #include "net/custom_http_client.h"
 #include "stop.h"
@@ -18,7 +18,7 @@ K_SEM_DEFINE(stop_sem, 1, 1);
 
 static unsigned int minutes_to_departure(Departure* departure) {
   int edt_ms = departure->etd;
-  return (unsigned int)(edt_ms - get_external_rtc_time()) / 60;
+  return (unsigned int)(edt_ms - get_app_rtc_time()) / 60;
 }
 
 static DisplayBox* get_display_address(

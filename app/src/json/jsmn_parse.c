@@ -7,7 +7,7 @@
 
 #define JSMN_HEADER
 
-#include "external_rtc.h"
+#include "app_rtc.h"
 #include "json/jsmn.h"
 #include "json/json_helpers.h"
 #include "stop.h"
@@ -296,7 +296,7 @@ int parse_stop_json(const char *const json_ptr, Stop *stop) {
       return EXIT_FAILURE;
   }
 
-  const int time_now = get_external_rtc_time();
+  const int time_now = get_app_rtc_time();
   if (time_now == -1) {
     return EXIT_FAILURE;
   }

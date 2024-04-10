@@ -4,8 +4,8 @@
 #include <zephyr/sys/reboot.h>
 #include <zephyr/types.h>
 
+#include "app_rtc.h"
 #include "display/display_switches.h"
-#include "external_rtc.h"
 #include "net/lte_manager.h"
 #include "update_stop.h"
 #include "watchdog_app.h"
@@ -172,7 +172,7 @@ int main(void) {
   }
 
   if (k_sem_take(&lte_connected_sem, K_FOREVER) == 0) {
-    ret = set_external_rtc_time();
+    ret = set_app_rtc_time();
     if (ret) {
       LOG_ERR("Failed to set rtc.");
       goto reset;

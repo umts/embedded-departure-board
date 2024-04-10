@@ -76,7 +76,9 @@
         "-r",
         "nrfjprog",
         "--erase",
-        "--softreset"
+        "--softreset",
+        "--nrf-family",
+        "NRF52"
       ],
       "options": {},
       "group": {
