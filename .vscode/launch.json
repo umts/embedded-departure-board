@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Cortex Debug",
+      "cwd": "${workspaceFolder}",
+      "executable": "build/zephyr/zephyr.elf",
+      "request": "launch",
+      "type": "cortex-debug",
+      "servertype": "jlink",
+      "device": "nRF52840_xxAA",
+      "interface": "swd",
+      "svdFile": "${workspaceFolder}/modules/hal/nordic/nrfx/mdk/nrf52840.svd",
+      "armToolchainPath": "${HOME}/.local/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin"
+    }
+  ]
+}
