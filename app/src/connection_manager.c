@@ -10,6 +10,13 @@
 #include <modem/lte_lc.h>
 #include <modem/modem_key_mgmt.h>
 #include <modem/nrf_modem_lib.h>
+#else
+#include <zephyr/drivers/cellular.h>
+#include <zephyr/net/tls_credentials.h>
+#include <zephyr/pm/device.h>
+#include <zephyr/pm/device_runtime.h>
+
+const struct device *modem = DEVICE_DT_GET(DT_ALIAS(modem));
 #endif
 
 LOG_MODULE_REGISTER(connection_manager, LOG_LEVEL_DBG);
@@ -129,6 +136,54 @@ static void connectivity_event_handler(
   }
 }
 
+static void print_cellular_info(void) {
+  int rc;
+  int16_t rssi;
+  char buffer[64];
+
+  rc = cellular_get_signal(modem, CELLULAR_SIGNAL_RSSI, &rssi);
+  if (!rc) {
+    printk("RSSI %d\n", rssi);
+  }
+
+  rc = cellular_get_modem_info(
+      modem, CELLULAR_MODEM_INFO_IMEI, &buffer[0], sizeof(buffer)
+  );
+  if (!rc) {
+    printk("IMEI: %s\n", buffer);
+  }
+  rc = cellular_get_modem_info(
+      modem, CELLULAR_MODEM_INFO_MODEL_ID, &buffer[0], sizeof(buffer)
+  );
+  if (!rc) {
+    printk("MODEL_ID: %s\n", buffer);
+  }
+  rc = cellular_get_modem_info(
+      modem, CELLULAR_MODEM_INFO_MANUFACTURER, &buffer[0], sizeof(buffer)
+  );
+  if (!rc) {
+    printk("MANUFACTURER: %s\n", buffer);
+  }
+  rc = cellular_get_modem_info(
+      modem, CELLULAR_MODEM_INFO_SIM_IMSI, &buffer[0], sizeof(buffer)
+  );
+  if (!rc) {
+    printk("SIM_IMSI: %s\n", buffer);
+  }
+  rc = cellular_get_modem_info(
+      modem, CELLULAR_MODEM_INFO_SIM_ICCID, &buffer[0], sizeof(buffer)
+  );
+  if (!rc) {
+    printk("SIM_ICCID: %s\n", buffer);
+  }
+  rc = cellular_get_modem_info(
+      modem, CELLULAR_MODEM_INFO_FW_VERSION, &buffer[0], sizeof(buffer)
+  );
+  if (!rc) {
+    printk("FW_VERSION: %s\n", buffer);
+  }
+}
+
 int lte_connect(void) {
   int err;
 
@@ -148,6 +203,9 @@ int lte_connect(void) {
     LOG_ERR("Failed to initialize modem library!");
     return err;
   }
+#else
+  LOG_INF("Powering up modem");
+  pm_device_action_run(modem, PM_DEVICE_ACTION_RESUME);
 #endif
 
   /* Provision certificates before connecting to the network */
@@ -174,6 +232,10 @@ int lte_connect(void) {
     LOG_ERR("conn_mgr_all_if_connect, error: %d\n", err);
     return 0;
   }
+
+  k_sem_take(&network_connected_sem, K_FOREVER);
+
+  print_cellular_info();
 
   return 0;
 }
