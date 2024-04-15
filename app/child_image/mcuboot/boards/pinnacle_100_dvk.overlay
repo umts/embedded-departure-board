@@ -1,0 +1,24 @@
+&uart0 {
+  status = "okay";
+  compatible = "nordic,nrf-uarte";
+  current-speed = <1000000>;
+  pinctrl-0 = <&uart0_default>;
+  pinctrl-1 = <&uart0_sleep>;
+  pinctrl-names = "default", "sleep";
+  hw-flow-control;
+};
+
+/* remove QSPI partitions from device tree because nRF Connect SDK
+ * partition manager will handle them.
+ */
+/delete-node/ &slot1_partition;
+/delete-node/ &scratch_partition;
+/delete-node/ &lfs_partition;
+
+/ {
+  chosen {
+    nordic,pm-ext-flash = &mx25r64;
+    zephyr,shell-uart = &uart0;
+		zephyr,uart-mcumgr = &uart0;
+  };
+};
