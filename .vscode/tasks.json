@@ -11,8 +11,7 @@
         "west",
         "build",
         "${workspaceFolder}/app",
-        "-p",
-        "auto"
+        "${input:build-opts}"
       ],
       "options": {
         "env": {

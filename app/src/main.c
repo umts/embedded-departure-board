@@ -9,7 +9,7 @@
 /* app includes */
 #include <app_rtc.h>
 #include <connection_manager.h>
-// #include <led_display.h>
+#include <led_display.h>
 #include <update_stop.h>
 #include <watchdog_app.h>
 
@@ -80,11 +80,11 @@ int main(void) {
   int err;
   // int wdt_channel_id;
 
-  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
-    // (void)turn_display_off(box);
-  }
+  // for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+  //   (void)turn_display_off(box);
+  // }
 
-  (void)log_reset_reason();
+  // (void)log_reset_reason();
 
   // wdt_channel_id = watchdog_init();
   // if (wdt_channel_id < 0) {
@@ -104,11 +104,11 @@ int main(void) {
   }
 
   // if (k_sem_take(&network_connected_sem, K_SECONDS(30)) == 0) {
-  // err = set_app_rtc_time();
-  // if (err) {
-  //   LOG_ERR("Failed to set rtc.");
-  //   goto reset;
-  // }
+  //   err = set_app_rtc_time();
+  //   if (err) {
+  //     LOG_ERR("Failed to set rtc.");
+  //     goto reset;
+  //   }
   // } else {
   //   LOG_ERR("Failed to take network_connected_sem.");
   //   goto reset;
@@ -119,7 +119,7 @@ int main(void) {
   LOG_INF("update_stop_timer started");
 
   while (1) {
-    // led_test_patern();
+    led_test_pattern();
     if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
       // err = wdt_feed(wdt, wdt_channel_id);
       // if (err) {
@@ -129,16 +129,17 @@ int main(void) {
 
       LOG_WRN("app rtc time: %d", get_app_rtc_time());
 
-      if (update_stop()) {
-        goto reset;
-      }
+      //     if (update_stop()) {
+      //       goto reset;
+      //     }
+      //   }
+      //   k_cpu_idle();
     }
-    k_cpu_idle();
-  }
 
-reset:
-  lte_disconnect();
-  LOG_WRN("Reached end of main; rebooting.");
-  /* In ARM implementation sys_reboot ignores the parameter */
-  sys_reboot(SYS_REBOOT_COLD);
+  reset:
+    lte_disconnect();
+    LOG_WRN("Reached end of main; rebooting.");
+    /* In ARM implementation sys_reboot ignores the parameter */
+    sys_reboot(SYS_REBOOT_COLD);
+  }
 }
