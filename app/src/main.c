@@ -126,24 +126,6 @@ int main(void) {
   //   goto reset;
   // }
 
-  // err = lte_lc_init();
-  // if (err < -1) {
-  //   LOG_ERR("LTE failed to init. Err: %d", err);
-  //   goto reset;
-  // }
-
-  // err = lte_lc_connect();
-  // if (err < -1) {
-  //   LOG_ERR("LTE failed to connect. Err: %d", err);
-  //   goto reset;
-  // }
-
-  // err = set_external_rtc_time();
-  // if (err) {
-  //   LOG_ERR("Failed to set rtc.");
-  //   goto reset;
-  // }
-
   (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
   LOG_INF("update_stop_timer started");
 

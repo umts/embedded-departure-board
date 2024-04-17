@@ -238,15 +238,15 @@ int write_num_to_display(
    */
   switch (*color) {
     case 0x7E0A6D:
-      LOG_DBG("Current limit set to 255");
+      LOG_DBG("Current limit set to 255 (display: %d)", display);
       current_limit = 205;
       break;
     case 0x00467E:
-      LOG_DBG("Current limit set to 255");
+      LOG_DBG("Current limit set to 255 (display: %d)", display);
       current_limit = 255;
       break;
     default:
-      LOG_DBG("Current limit set to 102");
+      LOG_DBG("Current limit set to 102 (display: %d)", display);
       current_limit = 102;
       break;
   }
@@ -284,28 +284,28 @@ fail:
 static const uint32_t colors[] = {0x7E0A6D, 0x00467E, 0xFF0000};
 
 void led_test_pattern(void) {
-  k_msleep(500);
+  // k_msleep(500);
   for (int i = 0; i < 3; i++) {
-    k_msleep(200);
     write_num_to_display(0, 888, &colors[i], 0);
-    k_msleep(200);
+    k_msleep(100);
     write_num_to_display(1, 888, &colors[i], 1);
-    k_msleep(200);
+    k_msleep(100);
     write_num_to_display(2, 888, &colors[i], 0);
-    k_msleep(200);
+    k_msleep(100);
     write_num_to_display(3, 888, &colors[i], 1);
-    k_msleep(200);
+    k_msleep(100);
     write_num_to_display(4, 888, &colors[i], 0);
-    k_msleep(200);
+    k_msleep(100);
     write_num_to_display(5, 888, &colors[i], 1);
-    k_msleep(200);
+    k_msleep(100);
     write_num_to_display(6, 888, &colors[i], 0);
-    k_msleep(200);
+    k_msleep(100);
     write_num_to_display(7, 888, &colors[i], 1);
-    k_msleep(200);
+    k_msleep(100);
     write_num_to_display(8, 888, &colors[i], 0);
-    k_msleep(200);
+    k_msleep(100);
     write_num_to_display(9, 888, &colors[i], 1);
+    k_msleep(100);
   }
 }
 #endif
