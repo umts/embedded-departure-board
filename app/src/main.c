@@ -6,15 +6,10 @@
 #include <zephyr/sys/reboot.h>
 #include <zephyr/types.h>
 
-/* nrf lib includes */
-// #include <modem/lte_lc.h>
-// #include <modem/modem_key_mgmt.h>
-// #include <modem/nrf_modem_lib.h>
-
 /* app includes */
 #include <app_rtc.h>
 #include <connection_manager.h>
-#include <led_display.h>
+// #include <led_display.h>
 #include <update_stop.h>
 #include <watchdog_app.h>
 
@@ -83,61 +78,37 @@ void log_reset_reason(void) {
 
 int main(void) {
   int err;
-  int wdt_channel_id;
+  // int wdt_channel_id;
 
   for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
-    (void)turn_display_off(box);
+    // (void)turn_display_off(box);
   }
 
   (void)log_reset_reason();
 
-  wdt_channel_id = watchdog_init();
-  if (wdt_channel_id < 0) {
-    LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
-    goto reset;
-  }
+  // wdt_channel_id = watchdog_init();
+  // if (wdt_channel_id < 0) {
+  //   LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
+  //   goto reset;
+  // }
 
-  err = wdt_feed(wdt, wdt_channel_id);
-  if (err) {
-    LOG_ERR("Failed to feed watchdog. Err: %d", err);
-    goto reset;
-  }
+  // err = wdt_feed(wdt, wdt_channel_id);
+  // if (err) {
+  //   LOG_ERR("Failed to feed watchdog. Err: %d", err);
+  //   goto reset;
+  // }
 
   err = lte_connect();
   if (err) {
     goto reset;
   }
 
-  // err = nrf_modem_lib_init();
-  // if (err) {
-  //   LOG_ERR("Failed to initialize modem library!");
-  //   goto reset;
-  // }
-
-  // err = cert_provision();
-  // if (err) {
-  //   LOG_ERR("Failed to provision certificate, err %d\n", err);
-  //   return err;
-  // }
-
-  // err = lte_lc_init();
-  // if (err < -1) {
-  //   LOG_ERR("LTE failed to init. Err: %d", err);
-  //   goto reset;
-  // }
-
-  // err = lte_lc_connect();
-  // if (err < -1) {
-  //   LOG_ERR("LTE failed to connect. Err: %d", err);
-  //   goto reset;
-  // }
-
   // if (k_sem_take(&network_connected_sem, K_SECONDS(30)) == 0) {
-  err = set_app_rtc_time();
-  if (err) {
-    LOG_ERR("Failed to set rtc.");
-    goto reset;
-  }
+  // err = set_app_rtc_time();
+  // if (err) {
+  //   LOG_ERR("Failed to set rtc.");
+  //   goto reset;
+  // }
   // } else {
   //   LOG_ERR("Failed to take network_connected_sem.");
   //   goto reset;
@@ -150,16 +121,19 @@ int main(void) {
   while (1) {
     // led_test_patern();
     if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
-      err = wdt_feed(wdt, wdt_channel_id);
-      if (err) {
-        LOG_ERR("Failed to feed watchdog. Err: %d", err);
-        goto reset;
-      }
+      // err = wdt_feed(wdt, wdt_channel_id);
+      // if (err) {
+      //   LOG_ERR("Failed to feed watchdog. Err: %d", err);
+      //   goto reset;
+      // }
+
+      LOG_WRN("app rtc time: %d", get_app_rtc_time());
 
       if (update_stop()) {
         goto reset;
       }
     }
+    k_cpu_idle();
   }
 
 reset:

@@ -4,7 +4,7 @@
 #include <app_rtc.h>
 #include <custom_http_client.h>
 #include <jsmn_parse.h>
-#include <led_display.h>
+// #include <led_display.h>
 #include <stop.h>
 
 /* Zephyr includes */
@@ -39,9 +39,9 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
   int display_address;
   unsigned int min = 0;
 
-  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
-    (void)turn_display_off(box);
-  }
+  // for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+  //   (void)turn_display_off(box);
+  // }
 
   for (int i = 0; i < stop.routes_size; i++) {
     struct RouteDirection route_direction = stop.route_directions[i];
@@ -65,9 +65,9 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
       if (display_address != -1) {
         LOG_INF("Display address: %d", display_address);
         // There is currently no light sensor to adjust brightness
-        if (write_num_to_display(display_address, 0x33, min)) {
-          return 1;
-        }
+        // if (write_num_to_display(display_address, 0x33, min)) {
+        //   return 1;
+        // }
       } else {
         LOG_WRN(
             "Display address for Route: %d, Direction Code: %c not found.",
