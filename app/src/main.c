@@ -108,24 +108,8 @@ int main(void) {
     goto reset;
   }
 
-  err = lte_lc_init();
-  if (err < -1) {
-    LOG_ERR("LTE failed to init. Err: %d", err);
-    goto reset;
-  }
-
-  err = lte_lc_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto reset;
-  }
-
-  err = set_external_rtc_time();
-  if (err) {
-    LOG_ERR("Failed to set rtc.");
-    goto reset;
-  }
-
+  // lte_lc_init() is deprecated, but still necessary until
+  // https://github.com/nrfconnect/sdk-nrf/pull/14634 is backported
   err = lte_lc_init();
   if (err < -1) {
     LOG_ERR("LTE failed to init. Err: %d", err);
