@@ -40,8 +40,7 @@
       ],
       "options": {},
       "group": {
-        "kind": "test",
-        "isDefault": true
+        "kind": "test"
       },
       "detail": "newtmgr image upload",
       "problemMatcher": []
@@ -80,7 +79,8 @@
       ],
       "options": {},
       "group": {
-        "kind": "test"
+        "kind": "test",
+        "isDefault": true
       },
       "detail": "west flash -r nfrjprog",
       "problemMatcher": []
