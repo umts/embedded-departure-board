@@ -84,49 +84,39 @@
 // };
 
 
-// /delete-node/ &boot_partition;
-// /delete-node/ &slot0_partition;
-// // /delete-node/ &slot0_ns_partition;
-// /delete-node/ &slot1_partition;
-// // /delete-node/ &slot1_ns_partition;
+/delete-node/ &boot_partition;
+/delete-node/ &slot0_partition;
+/delete-node/ &slot1_partition;
 
-// &flash0 {
-//   partitions {
-//     boot_partition: partition@0 {
-//       label = "mcuboot";
-//       reg = <0x00000000 0x10000>;
-//     };
-//     slot0_partition: partition@10000 {
-//       label = "image-0";
-//       reg = <0x000010000 0x0000e8000>;
-//     };
-//     // slot0_ns_partition: partition@40000 {
-//       //   label = "image-0-nonsecure";
-//       //   reg = <0x00040000 0x40000>;
-//     // };
-//   };
-// };
+&flash0 {
+  partitions {
+    boot_partition: partition@0 {
+      label = "mcuboot";
+      reg = <0x00000000 0x10000>;
+    };
+    slot0_partition: partition@10000 {
+      label = "image-0";
+      reg = <0x000010000 0x0000e8000>;
+    };
+  };
+};
 
-// &w25q32jv {
-//   partitions {
-//     compatible = "fixed-partitions";
-//     #address-cells = <1>;
-//     #size-cells = <1>;
+&w25q32jv {
+  partitions {
+    compatible = "fixed-partitions";
+    #address-cells = <1>;
+    #size-cells = <1>;
 
-//     slot1_partition: partition@0 {
-//       label = "image-1";
-//       reg = <0x00000000 0x0000d8000>;
-//     };
-//     // slot1_ns_partition: partition@40000 {
-//       //   label = "image-1-nonsecure";
-//       //   reg = <0x00040000 0x40000>;
-//     // };
-//   };
-// };
+    slot1_partition: partition@0 {
+      label = "image-1";
+      reg = <0x00000000 0x0000d8000>;
+    };
+  };
+};
 
-// &gpio0 {
-// 	status = "okay";
-// };
+&gpio0 {
+	status = "okay";
+};
 
 / {
   // led_strip: ws2812 {
@@ -138,13 +128,20 @@
   //   LED_COLOR_ID_BLUE>;
 	// 	in-gpios = <&gpio0 19 0>;
 	// };
+  app {
+    #address-cells = <1>;
+		#size-cells = <0>;
 
-  sw_pwm: sw-pwm {
-    compatible = "nordic,nrf-sw-pwm";
-    generator = <&timer1>;
-    clock-prescaler = <0>;
-    channel-gpios = <&gpio0 18 GPIO_ACTIVE_LOW>,
-                    <&gpio0 19 GPIO_ACTIVE_LOW>;
+    ws2812_rtio0: ws2812_rtio@0 {
+      compatible = "worldsemi,ws2812-rtio";
+      chain-length = <126>;
+      color-mapping = <LED_COLOR_ID_GREEN
+      LED_COLOR_ID_RED
+      LED_COLOR_ID_BLUE>;
+      gpios = <&gpio0 19 0>;
+      reg = <0>;
+      status = "okay";
+    };
   };
 
   chosen {
@@ -156,6 +153,6 @@
 
   aliases {
 		// led-strip = &led_strip;
-    sw-pwm = &sw_pwm;
+    led-strip = &ws2812_rtio0;
 	};
 };

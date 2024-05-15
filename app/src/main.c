@@ -13,8 +13,8 @@
 
 /* app includes */
 #include <external_rtc.h>
-#include <gpiote_test.h>
 // #include <led_display.h>
+#include <bit_bang.h>
 #include <update_stop.h>
 #include <watchdog_app.h>
 
@@ -85,8 +85,6 @@ int main(void) {
   int err;
   int wdt_channel_id;
 
-  gpiote_test();
-
   // for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
   //   (void)turn_display_off(box);
   // }
@@ -133,8 +131,11 @@ int main(void) {
 
   // (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
   // LOG_INF("update_stop_timer started");
-
+  bit_bang_test();
   // while (1) {
+  //   if (bit_bang_test() != 0) {
+  //     break;
+  //   }
   //   led_test_patern();
   // if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
   //   err = wdt_feed(wdt, wdt_channel_id);
@@ -148,6 +149,7 @@ int main(void) {
   //   }
   // }
   // k_cpu_idle();
+  //   k_sleep(K_MSEC(1000));
   // }
 
 reset:
