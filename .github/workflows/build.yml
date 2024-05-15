@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ZEPHYR_SDK_INSTALL_PATH: /opt/toolchains
-      ZSDK_VERSION: 0.16.5
+      ZSDK_VERSION: 0.16.6
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.7
+      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.12
       env:
         ZEPHYR_TOOLCHAIN_VARIANT: zephyr
         ZEPHYR_SDK_INSTALL_DIR: ${ZEPHYR_SDK_INSTALL_PATH}/zephyr-sdk-${ZSDK_VERSION}
@@ -27,6 +27,7 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v4
 
+      ## The ci-base image now takes care of this, but doesn't allow minimal install ##
       - name: Make ZEPHYR_SDK_INSTALL_PATH
         run: mkdir -p ${ZEPHYR_SDK_INSTALL_PATH}
 
