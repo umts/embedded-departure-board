@@ -8,7 +8,6 @@
 
 /* app includes */
 #include <external_rtc.h>
-#include <fota.h>
 #include <led_display.h>
 #include <lte_manager.h>
 #include <update_stop.h>
@@ -87,8 +86,6 @@ int main(void) {
 
   (void)log_reset_reason();
 
-  (void)image_validation();
-
   wdt_channel_id = watchdog_init();
   if (wdt_channel_id < 0) {
     LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
@@ -136,6 +133,7 @@ int main(void) {
         goto reset;
       }
     }
+    k_cpu_idle();
   }
 
 reset:
