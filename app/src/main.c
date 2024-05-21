@@ -13,8 +13,8 @@
 
 /* app includes */
 #include <external_rtc.h>
-// #include <led_display.h>
-#include <bit_bang.h>
+#include <led_display.h>
+// #include <bit_bang.h>
 #include <update_stop.h>
 #include <watchdog_app.h>
 
@@ -131,26 +131,26 @@ int main(void) {
 
   // (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
   // LOG_INF("update_stop_timer started");
-  bit_bang_test();
-  // while (1) {
-  //   if (bit_bang_test() != 0) {
-  //     break;
-  //   }
-  //   led_test_patern();
-  // if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
-  //   err = wdt_feed(wdt, wdt_channel_id);
-  //   if (err) {
-  //     LOG_ERR("Failed to feed watchdog. Err: %d", err);
-  //     goto reset;
-  //   }
+  // bit_bang_test();
+  while (1) {
+    //   if (bit_bang_test() != 0) {
+    //     break;
+    //   }
+    led_test_patern();
+    // if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
+    //   err = wdt_feed(wdt, wdt_channel_id);
+    //   if (err) {
+    //     LOG_ERR("Failed to feed watchdog. Err: %d", err);
+    //     goto reset;
+    //   }
 
-  //   if (update_stop()) {
-  //     goto reset;
-  //   }
-  // }
-  // k_cpu_idle();
-  //   k_sleep(K_MSEC(1000));
-  // }
+    //   if (update_stop()) {
+    //     goto reset;
+    //   }
+    // }
+    // k_cpu_idle();
+    //   k_sleep(K_MSEC(1000));
+  }
 
 reset:
   // LOG_WRN("Reached end of main; rebooting.");

@@ -1,13 +1,13 @@
+#include <nrfx.h>
 #include <stdlib.h>
+#include <sys/_stdint.h>
+#include <zephyr/cache.h>
+#include <zephyr/drivers/led_strip.h>
+#include <zephyr/sys/barrier.h>
 
-#include "zephyr/drivers/led_strip.h"
+#include "zephyr/arch/arm/misc.h"
+
 #define DT_DRV_COMPAT worldsemi_ws2812_rtio
-
-// #ifdef CONFIG_NRFX_TIMER
-// #include <nrfx_timer.h>
-
-// static const nrfx_timer_t m_timer_count = NRFX_TIMER_INSTANCE(1);
-// #endif
 
 #include <zephyr/drivers/counter.h>
 #include <zephyr/drivers/gpio.h>
@@ -16,6 +16,13 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/rtio/rtio.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/timing/timing.h>
+//
+#include <soc.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/clock_control.h>
+#include <zephyr/drivers/clock_control/nrf_clock_control.h>
+#include <zephyr/drivers/gpio.h>
 
 LOG_MODULE_REGISTER(ws2812_rtio, LOG_LEVEL_DBG);
 
@@ -34,6 +41,67 @@ struct ws2812_rtio_data {
   struct k_timer timer;
   const struct device *dev;
 };
+
+#define NOP10 \
+  __ISB();    \
+  arch_nop(); \
+  arch_nop(); \
+  arch_nop(); \
+  arch_nop(); \
+  arch_nop(); \
+  arch_nop(); \
+  arch_nop(); \
+  arch_nop(); \
+  arch_nop(); \
+  arch_nop();
+
+/*
+ * T1H: 1 bit high pulse delay: 12 cycles == .75 usec
+ * T0H: 0 bit high pulse delay: 4 cycles == .25 usec
+ * TxL: inter-bit low pulse delay: 8 cycles == .5 usec
+ *
+ * We can't use k_busy_wait() here: its argument is in microseconds,
+ * and we need roughly .05 microsecond resolution.
+ */
+#define DELAY_T1H NOP10 NOP10 NOP10 NOP10
+
+#define DELAY_T0H NOP10 NOP10
+
+/*
+ * GPIO set/clear.
+ *
+ * We should be able to make this portable using the results of
+ * https://github.com/zephyrproject-rtos/zephyr/issues/11917.
+ *
+ * We already have the GPIO device stashed in ws2812_gpio_config, so
+ * this driver can be used as a test case for the optimized API.
+ *
+ * Per Arm docs, both Rd and Rn must be r0-r7, so we use the "l"
+ * constraint in the below assembly.
+ */
+#define SET_HIGH "str %[p], [%[s], #0];" /* OUTSET = BIT(LED_PIN) */
+#define SET_LOW "str %[p], [%[c], #0];"  /* OUTCLR = BIT(LED_PIN) */
+
+// /* Send out a 1 bit's pulse */
+// #define ONE_BIT(set, clear, pin)                                           \
+//   __asm volatile(                                                          \
+//       SET_HIGH DELAY_T1H SET_LOW DELAY_T0H ::[s] "l"(set), [c] "l"(clear), \
+//       [p] "l"(pin)                                                         \
+//   );
+
+// /* Send out a 0 bit's pulse */
+// #define ZERO_BIT(set, clear, pin)                                          \
+//   __asm volatile(                                                          \
+//       SET_HIGH DELAY_T0H SET_LOW DELAY_T1H ::[s] "l"(set), [c] "l"(clear), \
+//       [p] "l"(pin)                                                         \
+//   );
+
+#define LOGIC_HIGH(set, pin) \
+  __asm volatile(SET_HIGH ::[s] "l"(set), [p] "l"(pin));
+
+/* Send out a 0 bit's pulse */
+#define LOGIC_LOW(clear, pin) \
+  __asm volatile(SET_LOW ::[c] "l"(clear), [p] "l"(pin));
 
 // static void ws2812_rtio_update_rgb(const struct device *dev) {
 //   LOG_DBG("Entering ws2812_rtio_update_rgb");
@@ -89,13 +157,13 @@ static void ws2812_rtio_update_rgb(
           *ptr++ = 0;
           break;
         case LED_COLOR_ID_RED:
-          *ptr++ = 0x33;  // pixels[p].r;
+          *ptr++ = 0x55;  // pixels[p].r;
           break;
         case LED_COLOR_ID_GREEN:
-          *ptr++ = 0x33;  // pixels[p].g;
+          *ptr++ = 0x55;  // pixels[p].g;
           break;
         case LED_COLOR_ID_BLUE:
-          *ptr++ = 0x33;  // pixels[p].b;
+          *ptr++ = 0x55;  // pixels[p].b;
           break;
         default:
           break;
@@ -104,40 +172,74 @@ static void ws2812_rtio_update_rgb(
   }
 }
 
-static int ws2812_rtio_iodev_write(
+static inline void nrfx_delay_cycles(uint32_t cycles) {
+  uint32_t cyccnt_initial = DWT->CYCCNT;
+  cyccnt_initial = DWT->CYCCNT;
+  while ((DWT->CYCCNT - cyccnt_initial) < cycles) {
+  }
+}
+
+const static int ws2812_rtio_iodev_write(
     const struct device *dev, struct led_rgb *pixels
 ) {
-  LOG_DBG("Entering ws2812_rtio_iodev_write");
   const struct ws2812_rtio_config *config = dev->config;
-  // struct ws2812_rtio_data *data = dev->data;
-  size_t bit;
-  uint32_t key;
-  int offset = 0;
+  size_t bit = 0;
   uint8_t *ptr = (uint8_t *)pixels;
   size_t len = config->chain_length;
+  // const struct device *port = config->gpios.port;
+  gpio_port_pins_t pin = (gpio_port_pins_t)BIT(config->gpios.pin);
 
-  // LOG_DBG("%s: buf_len = %d, buf = %p", dev->name, len, pixels);
+  volatile uint32_t *set = (uint32_t *)&NRF_P0->OUTSET;
+  volatile uint32_t *clear = (uint32_t *)&NRF_P0->OUTCLR;
 
-  // LOG_DBG("\nIRQ lock");
+  LOG_DBG("bit_val = %i", *(ptr));
+  uint8_t bit_val = *(ptr++);
 
-  key = irq_lock();
+  // Save the current state of the DEMCR register to be able to restore it
+  // before exiting this function. Enable the trace and debug blocks (including
+  // DWT).
+  uint32_t core_debug = CoreDebug->DEMCR;
+  CoreDebug->DEMCR = core_debug | CoreDebug_DEMCR_TRCENA_Msk;
+
+  // Save the current state of the CTRL register in the DWT block. Make sure
+  // that the cycle counter is enabled.
+  uint32_t dwt_ctrl = DWT->CTRL;
+  DWT->CTRL = dwt_ctrl | DWT_CTRL_CYCCNTENA_Msk;
+
+  uint32_t key = irq_lock();
+
   while (len--) {
     for (bit = 0; bit < 8; bit++) {
-      if (0b10000000 & (*(ptr + offset) << bit)) {
-        gpio_pin_set_dt(&config->gpios, 1);
-        gpio_pin_set_dt(&config->gpios, 1);
-        gpio_pin_set_dt(&config->gpios, 0);
+      // barrier_dsync_fence_full();
+      if ((0b10000000 >> bit) & (bit_val)) {
+        LOGIC_HIGH(set, pin);
+        DELAY_T1H;
+        // nrfx_delay_cycles(16);
+        LOGIC_LOW(clear, pin);
+        DELAY_T0H;
+        // nrfx_delay_cycles(1);
+        // gpio_port_set_bits_raw(port, pin);
+        // gpio_port_set_bits_raw(port, pin);
+        // gpio_port_clear_bits_raw(port, pin);
+
       } else {
-        gpio_pin_set_dt(&config->gpios, 1);
-        gpio_pin_set_dt(&config->gpios, 0);
-        gpio_pin_set_dt(&config->gpios, 0);
+        LOGIC_HIGH(set, pin);
+        // nrfx_delay_cycles(2);
+        DELAY_T0H;
+        LOGIC_LOW(clear, pin);
+        // nrfx_delay_cycles(16);
+        DELAY_T1H;
+        // gpio_port_set_bits_raw(port, pin);
+        // gpio_port_clear_bits_raw(port, pin);
+        // gpio_port_clear_bits_raw(port, pin);
       }
     }
-    offset++;
   }
-  irq_unlock(key);
-  // LOG_DBG("IRQ unlock");
 
+  // Restore preserved registers.
+  DWT->CTRL = dwt_ctrl;
+  CoreDebug->DEMCR = core_debug;
+  irq_unlock(key);
   return 0;
 }
 
@@ -229,7 +331,7 @@ static int ws2812_rtio_init(const struct device *dev) {
     return -ENODEV;
   }
 
-  err = gpio_pin_configure_dt(&config->gpios, GPIO_OUTPUT_LOW);
+  err = gpio_pin_configure_dt(&config->gpios, GPIO_OUTPUT);
   if (err) {
     LOG_ERR("Failed to configure gpio");
     return err;
@@ -261,9 +363,11 @@ static int ws2812_rtio_init(const struct device *dev) {
   // data->num_pixels = config->chain_length * config->num_colors;
   LOG_DBG("num_pixels: %i", config->chain_length);
 
+  // LOG_WRN("MHz: %i", timing_freq_get_mhz());
+
   rtio_mpsc_init(&data->iodev.iodev_sq);
   k_timer_init(&data->timer, ws2812_rtio_timer_expiry, NULL);
-  k_timer_start(&data->timer, K_MSEC(15), K_NSEC(PULSE_WIDTH_NS));
+  k_timer_start(&data->timer, K_MSEC(15), K_TIMEOUT_ABS_CYC(1));
 
   return 0;
 }

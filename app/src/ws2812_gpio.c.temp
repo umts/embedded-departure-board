@@ -38,6 +38,19 @@ struct ws2812_gpio_cfg {
 	const uint8_t *color_mapping;
 };
 
+#define NOP10                                                                                      \
+	__ISB();                                                                                   \
+	arch_nop();                                                                                \
+	arch_nop();                                                                                \
+	arch_nop();                                                                                \
+	arch_nop();                                                                                \
+	arch_nop();                                                                                \
+	arch_nop();                                                                                \
+	arch_nop();                                                                                \
+	arch_nop();                                                                                \
+	arch_nop();                                                                                \
+	arch_nop();
+
 /*
  * T1H: 1 bit high pulse delay: 12 cycles == .75 usec
  * T0H: 0 bit high pulse delay: 4 cycles == .25 usec
@@ -46,21 +59,9 @@ struct ws2812_gpio_cfg {
  * We can't use k_busy_wait() here: its argument is in microseconds,
  * and we need roughly .05 microsecond resolution.
  */
-#define DELAY_T1H                                                                                  \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
+#define DELAY_T1H NOP10 NOP10 NOP10
 
-#define DELAY_T0H                                                                                  \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"                                       \
-	"nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\nnop\n"
+#define DELAY_T0H NOP10 NOP10
 
 /*
  * GPIO set/clear.
@@ -77,15 +78,19 @@ struct ws2812_gpio_cfg {
 #define SET_HIGH "str %[p], [%[s], #0]\n" /* OUTSET = BIT(LED_PIN) */
 #define SET_LOW  "str %[p], [%[c], #0]\n" /* OUTCLR = BIT(LED_PIN) */
 
-/* Send out a 1 bit's pulse */
-#define ONE_BIT(set, clear, pin)                                                                   \
-	__asm volatile(SET_HIGH DELAY_T1H SET_LOW DELAY_T0H ::[s] "l"(set), [c] "l"(clear),        \
-		       [p] "l"(pin));
+#define LOGIC_HIGH(set, pin) __asm volatile(SET_HIGH ::[s] "l"(set), [p] "l"(pin));
 
-/* Send out a 0 bit's pulse */
-#define ZERO_BIT(set, clear, pin)                                                                  \
-	__asm volatile(SET_HIGH DELAY_T0H SET_LOW DELAY_T1H ::[s] "l"(set), [c] "l"(clear),        \
-		       [p] "l"(pin));
+#define LOGIC_LOW(clear, pin) __asm volatile(SET_LOW ::[c] "l"(clear), [p] "l"(pin));
+
+// /* Send out a 1 bit's pulse */
+// #define ONE_BIT(set, clear, pin) \
+// 	__asm volatile(SET_HIGH DELAY_T1H SET_LOW DELAY_T0H ::[s] "l"(set), [c] "l"(clear),        \
+// 		       [p] "l"(pin));
+
+// /* Send out a 0 bit's pulse */
+// #define ZERO_BIT(set, clear, pin) \
+// 	__asm volatile(SET_HIGH DELAY_T0H SET_LOW DELAY_T1H ::[s] "l"(set), [c] "l"(clear),        \
+// 		       [p] "l"(pin));
 
 /*
  * Latch current color values on strip and reset its state machines.
@@ -93,6 +98,14 @@ struct ws2812_gpio_cfg {
 static inline void ws2812_led_strip_reset_delay(uint16_t delay)
 {
 	k_usleep(delay);
+}
+
+static inline void nrfx_delay_cycles(uint32_t cycles)
+{
+	uint32_t cyccnt_initial = DWT->CYCCNT;
+	cyccnt_initial = DWT->CYCCNT;
+	while ((DWT->CYCCNT - cyccnt_initial) < cycles) {
+	}
 }
 
 static int send_buf(const struct device *dev, uint8_t *buf, size_t len)
@@ -105,7 +118,10 @@ static int send_buf(const struct device *dev, uint8_t *buf, size_t len)
 
 	struct onoff_manager *mgr = z_nrf_clock_control_get_onoff(CLOCK_CONTROL_NRF_SUBSYS_HF);
 	struct onoff_client cli;
-	int rc;
+	size_t bit = 0;
+	int rc = 0;
+
+	uint8_t bit_val = *(buf++);
 
 	sys_notify_init_spinwait(&cli.notify);
 	rc = onoff_request(mgr, &cli);
@@ -117,32 +133,35 @@ static int send_buf(const struct device *dev, uint8_t *buf, size_t len)
 		/* pend until clock is up and running */
 	}
 
-	size_t i;
-	int j = 0;
 	key = irq_lock();
+	uint32_t core_debug = CoreDebug->DEMCR;
+	CoreDebug->DEMCR = core_debug | CoreDebug_DEMCR_TRCENA_Msk;
+	uint32_t dwt_ctrl = DWT->CTRL;
+	DWT->CTRL = dwt_ctrl | DWT_CTRL_CYCCNTENA_Msk;
 
 	while (len--) {
-		/*
-		 * Generate signal out of the bits, MSbit first.
-		 *
-		 * Accumulator maintenance and branching mean the
-		 * inter-bit time will be longer than TxL, but the
-		 * wp.josh.com blog post says we have at least 5 usec
-		 * of slack time between bits before we risk the
-		 * signal getting latched, so this will be fine as
-		 * long as the compiler does something minimally
-		 * reasonable.
-		 */
-		for (i = 0; i < 8; i++) {
-			if (0b10000000 & (*(buf + j) << i)) {
-				ONE_BIT(set, clear, pin);
+		for (bit = 0; bit < 8; bit++) {
+			// barrier_dsync_fence_full();
+			if ((0b10000000 >> bit) & (bit_val)) {
+				LOGIC_HIGH(set, pin);
+				// DELAY_T1H;
+				nrfx_delay_cycles(16);
+				LOGIC_LOW(clear, pin);
+				// DELAY_T0H;
+				nrfx_delay_cycles(1);
 			} else {
-				ZERO_BIT(set, clear, pin);
+				LOGIC_HIGH(set, pin);
+				// DELAY_T0H;
+				nrfx_delay_cycles(1);
+				LOGIC_LOW(clear, pin);
+				// DELAY_T1H;
+				nrfx_delay_cycles(16);
 			}
 		}
-		j++;
 	}
 
+	DWT->CTRL = dwt_ctrl;
+	CoreDebug->DEMCR = core_debug;
 	irq_unlock(key);
 
 	rc = onoff_release(mgr);

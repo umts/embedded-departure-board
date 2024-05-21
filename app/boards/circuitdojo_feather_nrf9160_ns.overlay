@@ -119,30 +119,30 @@
 };
 
 / {
-  // led_strip: ws2812 {
-	// 	compatible = "worldsemi,ws2812-gpio";
+  led_strip: ws2812 {
+		compatible = "worldsemi,ws2812-gpio";
 
-	// 	chain-length = <126>;
-  //   color-mapping = <LED_COLOR_ID_GREEN
-  //   LED_COLOR_ID_RED
-  //   LED_COLOR_ID_BLUE>;
-	// 	in-gpios = <&gpio0 19 0>;
-	// };
-  app {
-    #address-cells = <1>;
-		#size-cells = <0>;
+		chain-length = <126>;
+    color-mapping = <LED_COLOR_ID_GREEN
+    LED_COLOR_ID_RED
+    LED_COLOR_ID_BLUE>;
+		in-gpios = <&gpio0 19 0>;
+	};
+  // app {
+  //   #address-cells = <1>;
+	// 	#size-cells = <0>;
 
-    ws2812_rtio0: ws2812_rtio@0 {
-      compatible = "worldsemi,ws2812-rtio";
-      chain-length = <126>;
-      color-mapping = <LED_COLOR_ID_GREEN
-      LED_COLOR_ID_RED
-      LED_COLOR_ID_BLUE>;
-      gpios = <&gpio0 19 0>;
-      reg = <0>;
-      status = "okay";
-    };
-  };
+  //   ws2812_rtio0: ws2812_rtio@0 {
+  //     compatible = "worldsemi,ws2812-rtio";
+  //     chain-length = <126>;
+  //     color-mapping = <LED_COLOR_ID_GREEN
+  //     LED_COLOR_ID_RED
+  //     LED_COLOR_ID_BLUE>;
+  //     gpios = <&gpio0 19 0>;
+  //     reg = <0>;
+  //     status = "okay";
+  //   };
+  // };
 
   chosen {
     nordic,pm-ext-flash = &w25q32jv;
@@ -152,7 +152,7 @@
   };
 
   aliases {
-		// led-strip = &led_strip;
-    led-strip = &ws2812_rtio0;
+		led-strip = &led_strip;
+    // led-strip = &ws2812_rtio0;
 	};
 };
