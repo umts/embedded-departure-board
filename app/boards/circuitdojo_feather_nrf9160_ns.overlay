@@ -79,9 +79,7 @@
 
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;
-// /delete-node/ &slot0_ns_partition;
 /delete-node/ &slot1_partition;
-// /delete-node/ &slot1_ns_partition;
 /delete-node/ &scratch_partition;
 
 &flash0 {
@@ -94,10 +92,6 @@
       label = "image-0";
       reg = <0x000010000 0x0000e8000>;
     };
-    // slot0_ns_partition: partition@40000 {
-      //   label = "image-0-nonsecure";
-      //   reg = <0x00040000 0x40000>;
-    // };
   };
 };
 
@@ -111,10 +105,6 @@
       label = "image-1";
       reg = <0x00000000 0x0000d8000>;
     };
-    // slot1_ns_partition: partition@40000 {
-      //   label = "image-1-nonsecure";
-      //   reg = <0x00040000 0x40000>;
-    // };
   };
 };
 
