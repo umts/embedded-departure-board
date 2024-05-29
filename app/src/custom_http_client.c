@@ -22,7 +22,7 @@ LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 #define FIRMWARE_REQUEST_HOSTNAME "iot.jes.contact"
 
 /** A macro that defines the HTTP file path for the request headers. */
-#define FIRMWARE_REQUEST_PATH "/firware/update"
+#define FIRMWARE_REQUEST_PATH "/firware"
 
 /** @def RECV_HEADER_BUF_SIZE
  *  @brief A macro that defines the max size for HTTP headers
@@ -33,11 +33,6 @@ LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 /** HTTP headers buffer with size defined by the
  * HEADER_BUF_SIZE macro. */
 static char headers_buf[HEADER_BUF_SIZE] = "\0";
-
-/** HTTP response body buffer with size defined by the
- * RECV_BODY_BUF_SIZE macro.
- */
-char recv_body_buf[RECV_BODY_BUF_SIZE] = "\0";
 
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
@@ -118,7 +113,9 @@ static int parse_status(void) {
   }
 }
 
-static int parse_response(int *sock) {
+static int parse_response(
+    int *sock, char *recv_body_buf, int recv_body_buf_size
+) {
   int state = 0;
   int bytes;
   size_t offset = 0;
@@ -165,7 +162,7 @@ static int parse_response(int *sock) {
       }
 
       bytes =
-          recv(*sock, &recv_body_buf[offset], RECV_BODY_BUF_SIZE - offset, 0);
+          recv(*sock, (recv_body_buf + offset), recv_body_buf_size - offset, 0);
       if (bytes < 0) {
         LOG_ERR("recv() body failed, err %d\n", errno);
         return bytes;
@@ -178,10 +175,10 @@ static int parse_response(int *sock) {
   LOG_INF("Total bytes received: %d", offset + headers_size);
 
   /* Make sure recv_buf is NULL terminated (for safe use with strstr) */
-  if (offset < sizeof(recv_body_buf)) {
-    recv_body_buf[offset] = '\0';
+  if (offset < recv_body_buf_size) {
+    *(recv_body_buf + offset) = '\0';
   } else {
-    recv_body_buf[sizeof(recv_body_buf) - 1] = '\0';
+    *(recv_body_buf + recv_body_buf_size - 1) = '\0';
   }
 
   return 0;
@@ -211,7 +208,8 @@ static char *get_redirect_location(void) {
 }
 
 static int send_http_request(
-    char *hostname, char *path, char *accept, sec_tag_t sec_tag
+    char *hostname, char *path, char *accept, sec_tag_t sec_tag,
+    char *recv_body_buf, int recv_body_buf_size
 ) {
   int bytes;
   int err;
@@ -331,7 +329,7 @@ retry:
 
   LOG_INF("Sent %d bytes", offset);
 
-  redirect = parse_response(&sock);
+  redirect = parse_response(&sock, recv_body_buf, recv_body_buf_size);
   if (redirect < 0) {
     LOG_ERR("EOF or error in response headers.");
   }
@@ -351,7 +349,6 @@ clean_up:
     goto redirect;
   }
 
-  LOG_DBG("Response Body:\n%s", &recv_body_buf[0]);
   return 0;
 
 redirect:
@@ -360,7 +357,7 @@ redirect:
 
   /* Assume the host is the same */
   if (*ptr == '/') {
-    path = strcpy(&recv_body_buf[0], ptr);
+    path = strcpy(recv_body_buf, ptr);
     LOG_DBG("path ptr: %s", path);
     /* Assume we're dealing with a url */
   } else if (*ptr == 'h') {
@@ -382,11 +379,11 @@ redirect:
     ptr = strstr(ptr, "/");
     *ptr++ = '\0';
 
-    path = stpcpy(&recv_body_buf[0], hostname);
+    path = stpcpy(recv_body_buf, hostname);
     *++path = '/';
 
     (void)strcpy((path + 1), ptr);
-    hostname = &recv_body_buf[0];
+    hostname = recv_body_buf;
   } else {
     LOG_ERR("Bad redirect location");
     return 1;
@@ -395,7 +392,7 @@ redirect:
   goto retry;
 }
 
-int http_request_stop_json(void) {
+int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size) {
   int err;
 
   if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
@@ -404,9 +401,10 @@ int http_request_stop_json(void) {
   } else {
     err = send_http_request(
         STOP_REQUEST_HOSTNAME, STOP_REQUEST_PATH, "application/json",
-        JES_SEC_TAG
+        JES_SEC_TAG, stop_body_buf, stop_body_buf_size
     );
     k_sem_give(&lte_connected_sem);
+    LOG_DBG("Response Body:\n%s", &stop_body_buf[0]);
   }
 
   return err;
@@ -419,10 +417,10 @@ int http_get_firmware(void) {
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {
-    err = send_http_request(
-        FIRMWARE_REQUEST_HOSTNAME, FIRMWARE_REQUEST_PATH,
-        "application/octet-stream", JES_SEC_TAG
-    );
+    // err = send_http_request(
+    //     FIRMWARE_REQUEST_HOSTNAME, FIRMWARE_REQUEST_PATH,
+    //     "application/octet-stream", JES_SEC_TAG
+    // );
     k_sem_give(&lte_connected_sem);
   }
 
