@@ -353,11 +353,12 @@ clean_up:
 
 redirect:
   ptr = get_redirect_location();
+  char redirect_hostname_buf[255];
   LOG_INF("Redirect location: %s", ptr);
 
   /* Assume the host is the same */
   if (*ptr == '/') {
-    path = strcpy(recv_body_buf, ptr);
+    path = strcpy(redirect_hostname_buf, ptr);
     LOG_DBG("path ptr: %s", path);
     /* Assume we're dealing with a url */
   } else if (*ptr == 'h') {
@@ -379,11 +380,11 @@ redirect:
     ptr = strstr(ptr, "/");
     *ptr++ = '\0';
 
-    path = stpcpy(recv_body_buf, hostname);
+    path = stpcpy(redirect_hostname_buf, hostname);
     *++path = '/';
 
     (void)strcpy((path + 1), ptr);
-    hostname = recv_body_buf;
+    hostname = redirect_hostname_buf;
   } else {
     LOG_ERR("Bad redirect location");
     return 1;
@@ -395,16 +396,22 @@ redirect:
 int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size) {
   int err;
 
+  /** Make the size 255 incase we get a redirect with a longer hostname */
+  static char hostname[255] = STOP_REQUEST_HOSTNAME;
+
+  /** Make the size 255 incase we get a redirect with a longer path */
+  static char path[255] = STOP_REQUEST_PATH;
+
   if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {
     err = send_http_request(
-        STOP_REQUEST_HOSTNAME, STOP_REQUEST_PATH, "application/json",
-        JES_SEC_TAG, stop_body_buf, stop_body_buf_size
+        hostname, path, "application/json", JES_SEC_TAG, stop_body_buf,
+        stop_body_buf_size
     );
     k_sem_give(&lte_connected_sem);
-    LOG_DBG("Response Body:\n%s", &stop_body_buf[0]);
+    LOG_DBG("Response Body:\n%s", stop_body_buf);
   }
 
   return err;
