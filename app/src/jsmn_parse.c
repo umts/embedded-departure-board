@@ -88,6 +88,7 @@ static bool unique_disply_text(const char *json_ptr, RouteDirection *route_direc
 }
 
 /** Iterates through the Departures array objects to find desired values. */
+#ifdef CONFIG_STOP_REQUEST_AVAIL
 static void parse_departures(char *json_ptr, int rdir, const size_t departures_count,
                              RouteDirection *route_direction, int time_now) {
   size_t valid_departure_count = 0;
@@ -184,6 +185,7 @@ static void parse_departures(char *json_ptr, int rdir, const size_t departures_c
 #endif
   route_direction->departures_size = valid_departure_count;
 }
+#endif
 
 /** Iterates through the RouteDirections array objects to find desired values. */
 static void parse_route_directions(char *json_ptr, const size_t route_directions_count, Stop *stop,

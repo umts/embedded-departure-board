@@ -12,18 +12,6 @@
 
 LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 
-/** A macro that defines the HTTP request host name for the request headers. */
-#define STOP_REQUEST_HOSTNAME "iot.jes.contact"
-
-/** A macro that defines the HTTP file path for the request headers. */
-#define STOP_REQUEST_PATH "/stop/" STOP_ID
-
-/** A macro that defines the HTTP request host name for the request headers. */
-#define FIRMWARE_REQUEST_HOSTNAME "iot.jes.contact"
-
-/** A macro that defines the HTTP file path for the request headers. */
-#define FIRMWARE_REQUEST_PATH "/firware"
-
 /** @def RECV_HEADER_BUF_SIZE
  *  @brief A macro that defines the max size for HTTP headers
  * buffer.
@@ -244,7 +232,8 @@ retry:
   }
   // TODO: Change APP_VERSION_STRING to APP_VERSION_TWEAK_STRING when possible
   ptr = stpcpy(
-      ptr, "User-Agent: EDB/" APP_VERSION_STRING " Stop-ID/" STOP_ID "\r\n"
+      ptr,
+      "User-Agent: EDB/" APP_VERSION_STRING " Stop-ID/" CONFIG_STOP_ID "\r\n"
   );
   ptr = stpcpy(ptr, "Accept: ");
   ptr = stpcpy(ptr, accept);
@@ -397,21 +386,30 @@ int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size) {
   int err;
 
   /** Make the size 255 incase we get a redirect with a longer hostname */
-  static char hostname[255] = STOP_REQUEST_HOSTNAME;
+  static char hostname[255] = CONFIG_STOP_REQUEST_HOSTNAME;
 
   /** Make the size 255 incase we get a redirect with a longer path */
-  static char path[255] = STOP_REQUEST_PATH;
+  static char path[255] = CONFIG_STOP_REQUEST_PATH;
 
   if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {
+#if CONFIG_STOP_REQUEST_AVAIL
+    err = send_http_request(
+        hostname, path, "application/json", NO_SEC_TAG, stop_body_buf,
+        stop_body_buf_size
+    );
+    k_sem_give(&lte_connected_sem);
+    LOG_DBG("Response Body:\n%s", stop_body_buf);
+#else
     err = send_http_request(
         hostname, path, "application/json", JES_SEC_TAG, stop_body_buf,
         stop_body_buf_size
     );
     k_sem_give(&lte_connected_sem);
     LOG_DBG("Response Body:\n%s", stop_body_buf);
+#endif
   }
 
   return err;
@@ -425,7 +423,7 @@ int http_get_firmware(void) {
     err = 1;
   } else {
     // err = send_http_request(
-    //     FIRMWARE_REQUEST_HOSTNAME, FIRMWARE_REQUEST_PATH,
+    //     CONFIG_OTA_HOSTNAME, CONFIG_OTA_PATH,
     //     "application/octet-stream", JES_SEC_TAG
     // );
     k_sem_give(&lte_connected_sem);
