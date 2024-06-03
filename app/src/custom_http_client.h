@@ -27,5 +27,5 @@ enum response_code {
  */
 int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size);
 
-int http_get_firmware(void);
+int http_get_firmware(char *write_buf, int write_buf_size);
 #endif

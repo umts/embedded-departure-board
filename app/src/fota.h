@@ -20,6 +20,11 @@
 // /* Define an instance of the stats group. */
 // extern STATS_SECT_DECL(smp_svr_stats) smp_svr_stats;
 
+#include <zephyr/dfu/mcuboot.h>
+int write_buffer_to_flash(char *data, size_t len, size_t offset);
+
+void flash_debug(void);
+
 void image_validation(void);
 
 void download_update(void);

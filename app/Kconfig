@@ -1,3 +1,22 @@
 menu "Embedded Departure Board"
 source "Kconfig.zephyr"
+
+config STOP_ID
+  string "Bus stop ID"
+
+config STOP_REQUEST_AVAIL
+  bool "Select if JSON feed is directly from Avail servers"
+
+config STOP_REQUEST_HOSTNAME
+  string "Hostname used to retrieve stop data"
+
+config STOP_REQUEST_PATH
+  string "Path used to retrieve stop data"
+
+config OTA_HOSTNAME
+  string "HTTP hostname used to download firmware upgade file"
+
+config OTA_PATH
+  string "HTTP path used to download firmware upgade file"
+
 endmenu

@@ -73,6 +73,7 @@
         "&&",
         "west",
         "flash",
+        "--skip-rebuild",
         "-r",
         "nrfjprog",
         "--erase",

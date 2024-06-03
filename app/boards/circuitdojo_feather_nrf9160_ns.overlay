@@ -115,4 +115,8 @@
     zephyr,shell-uart = &uart0;
     zephyr,uart-mcumgr = &uart0;
   };
+
+  aliases {
+		external-flash = &w25q32jv;
+	};
 };

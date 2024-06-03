@@ -1,14 +1,17 @@
 /** @headerfile custom_http_client.h */
+#include "custom_http_client.h"
+
 #include <app_version.h>
-#include <custom_http_client.h>
-#include <lte_manager.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/_intsup.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/socket.h>
 #include <zephyr/net/tls_credentials.h>
+#include <zephyr/storage/stream_flash.h>
+
+#include "fota.h"
+#include "lte_manager.h"
 
 LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 
@@ -102,8 +105,9 @@ static int parse_status(void) {
 }
 
 static int parse_response(
-    int *sock, char *recv_body_buf, int recv_body_buf_size
+    int *sock, char *recv_body_buf, int recv_body_buf_size, _Bool write_nvs
 ) {
+  int rc = 0;
   int state = 0;
   int bytes;
   size_t offset = 0;
@@ -130,37 +134,68 @@ static int parse_response(
         headers = false;
         headers_buf[offset + 1] = '\0';
         offset = 0;
+
+        status = parse_status();
+        switch (status) {
+          case HTTP_REDIRECT:
+            return 1;
+          case HTTP_CLIENT_ERROR:
+            return -1;
+          case HTTP_SERVER_ERROR:
+            return -1;
+          case HTTP_NULL:
+            return -1;
+          default:
+            break;
+        }
         continue;
       } else {
         state = 0;
       }
     } else {
-      status = parse_status();
-      switch (status) {
-        case HTTP_REDIRECT:
-          return 1;
-        case HTTP_CLIENT_ERROR:
+      if (write_nvs) {
+        if (rc > 0) {
+          bytes =
+              recv(*sock, (recv_body_buf + rc), (recv_body_buf_size - rc), 0);
+          if (bytes < 0) {
+            LOG_ERR("recv() body failed, err %d\n", errno);
+            return bytes;
+          }
+          bytes += rc;
+          LOG_DBG("recv + rc bytes: %d", bytes);
+        } else {
+          bytes = recv(*sock, recv_body_buf, recv_body_buf_size, 0);
+          if (bytes < 0) {
+            LOG_ERR("recv() body failed, err %d\n", errno);
+            return bytes;
+          }
+          LOG_DBG("recv bytes: %d", bytes);
+        }
+        rc = write_buffer_to_flash(recv_body_buf, bytes, offset);
+        LOG_DBG("Total: %d", offset);
+        if (rc < 0) {
+          LOG_DBG("rc: %d, error: %d", rc, errno);
           return -1;
-        case HTTP_SERVER_ERROR:
-          return -1;
-        case HTTP_NULL:
-          return -1;
-        default:
-          break;
+        }
+      } else {
+        bytes = recv(
+            *sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0
+        );
       }
-
-      bytes =
-          recv(*sock, (recv_body_buf + offset), recv_body_buf_size - offset, 0);
-      if (bytes < 0) {
-        LOG_ERR("recv() body failed, err %d\n", errno);
-        return bytes;
-      }
+      // if (bytes < 0) {
+      //   LOG_ERR("recv() body failed, err %d\n", errno);
+      //   return bytes;
+      // }
     }
     offset += bytes;
   } while (bytes != 0); /* peer closed connection */
 
   LOG_INF("Received Body. Size: %d bytes", offset);
   LOG_INF("Total bytes received: %d", offset + headers_size);
+
+  if (write_nvs) {
+    return 0;
+  }
 
   /* Make sure recv_buf is NULL terminated (for safe use with strstr) */
   if (offset < recv_body_buf_size) {
@@ -197,7 +232,7 @@ static char *get_redirect_location(void) {
 
 static int send_http_request(
     char *hostname, char *path, char *accept, sec_tag_t sec_tag,
-    char *recv_body_buf, int recv_body_buf_size
+    char *recv_body_buf, int recv_body_buf_size, _Bool write_nvs
 ) {
   int bytes;
   int err;
@@ -318,7 +353,8 @@ retry:
 
   LOG_INF("Sent %d bytes", offset);
 
-  redirect = parse_response(&sock, recv_body_buf, recv_body_buf_size);
+  redirect =
+      parse_response(&sock, recv_body_buf, recv_body_buf_size, write_nvs);
   if (redirect < 0) {
     LOG_ERR("EOF or error in response headers.");
   }
@@ -398,14 +434,14 @@ int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size) {
 #if CONFIG_STOP_REQUEST_AVAIL
     err = send_http_request(
         hostname, path, "application/json", NO_SEC_TAG, stop_body_buf,
-        stop_body_buf_size
+        stop_body_buf_size, false
     );
     k_sem_give(&lte_connected_sem);
     LOG_DBG("Response Body:\n%s", stop_body_buf);
 #else
     err = send_http_request(
         hostname, path, "application/json", JES_SEC_TAG, stop_body_buf,
-        stop_body_buf_size
+        stop_body_buf_size, false
     );
     k_sem_give(&lte_connected_sem);
     LOG_DBG("Response Body:\n%s", stop_body_buf);
@@ -415,17 +451,17 @@ int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size) {
   return err;
 }
 
-int http_get_firmware(void) {
+int http_get_firmware(char *write_buf, int write_buf_size) {
   int err;
 
   if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {
-    // err = send_http_request(
-    //     CONFIG_OTA_HOSTNAME, CONFIG_OTA_PATH,
-    //     "application/octet-stream", JES_SEC_TAG
-    // );
+    err = send_http_request(
+        CONFIG_OTA_HOSTNAME, CONFIG_OTA_PATH, "application/octet-stream",
+        JES_SEC_TAG, write_buf, write_buf_size, true
+    );
     k_sem_give(&lte_connected_sem);
   }
 
