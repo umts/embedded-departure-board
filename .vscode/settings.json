@@ -4,6 +4,12 @@
     "log-*.txt": "ansi"
     // "*.overlay": "dts"
   },
+  "files.watcherExclude": {
+    "**/.venv/**": true,
+    "**/.git/objects/**": true,
+    "**/node_modules/**": true,
+    "./bootloader/**": true
+  },
   "search.exclude": {
     "**/build": true
   },

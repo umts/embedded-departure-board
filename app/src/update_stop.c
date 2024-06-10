@@ -84,19 +84,28 @@ int update_stop(void) {
   static Stop stop = {.last_updated = 0, .id = STOP_ID};
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
-  err = http_request_stop_json();
-  if (err != 200) {
+  char headers_buf[1024];
+
+  /** HTTP response body buffer with size defined by the
+   * CONFIG_STOP_JSON_BUF_SIZE
+   */
+  static char json_buf[CONFIG_STOP_JSON_BUF_SIZE];
+
+  err = http_request_stop_json(
+      json_buf, CONFIG_STOP_JSON_BUF_SIZE, headers_buf, sizeof(headers_buf)
+  );
+  if (err) {
     LOG_ERR("HTTP GET request for JSON failed; cleaning up. ERR: %d", err);
     return 1;
   }
 
-  err = parse_json_for_stop(recv_body_buf, &stop);
+  err = parse_json_for_stop(json_buf, &stop);
   if (err) {
     LOG_DBG(
-        "recv_body_buf size: %d, recv_body strlen: %d", sizeof(recv_body_buf),
-        strlen(recv_body_buf)
+        "recv_body_buf size: %d, recv_body strlen: %d",
+        CONFIG_STOP_JSON_BUF_SIZE, strlen(json_buf)
     );
-    LOG_DBG("recv_body_buf:\n%s", recv_body_buf);
+    LOG_DBG("recv_body_buf:\n%s", json_buf);
     return 1;
   }
 

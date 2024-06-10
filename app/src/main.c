@@ -6,16 +6,21 @@
 #include <zephyr/sys/reboot.h>
 #include <zephyr/types.h>
 
-/* nrf lib includes */
-#include <modem/lte_lc.h>
-#include <modem/modem_key_mgmt.h>
-#include <modem/nrf_modem_lib.h>
-
 /* app includes */
-#include <external_rtc.h>
-#include <led_display.h>
-#include <update_stop.h>
-#include <watchdog_app.h>
+#include "external_rtc.h"
+#include "led_display.h"
+#include "lte_manager.h"
+#include "update_stop.h"
+#include "watchdog_app.h"
+
+#ifdef CONFIG_DEBUG
+#include "pm_config.h"
+
+#define STRINGIZE(arg) #arg
+#define STRINGIZE_VALUE(arg) STRINGIZE(arg)
+#define PM_MCUBOOT_PRIMARY_STRING STRINGIZE_VALUE(PM_MCUBOOT_PRIMARY_NAME)
+#define PM_MCUBOOT_SECONDARY_STRING STRINGIZE_VALUE(PM_MCUBOOT_SECONDARY_NAME)
+#endif
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
@@ -90,6 +95,14 @@ int main(void) {
 
   (void)log_reset_reason();
 
+#ifdef CONFIG_DEBUG
+  LOG_DBG("\nImage info: " PM_MCUBOOT_PRIMARY_STRING);
+  (void)image_info(PM_MCUBOOT_PRIMARY_ID);
+
+  LOG_DBG("\nImage info: " PM_MCUBOOT_SECONDARY_STRING);
+  (void)image_info(PM_MCUBOOT_SECONDARY_ID);
+#endif
+
   wdt_channel_id = watchdog_init();
   if (wdt_channel_id < 0) {
     LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
@@ -102,53 +115,27 @@ int main(void) {
     goto reset;
   }
 
-  err = nrf_modem_lib_init();
+  err = lte_connect();
   if (err) {
-    LOG_ERR("Failed to initialize modem library!");
     goto reset;
   }
 
-  err = lte_lc_init();
-  if (err < -1) {
-    LOG_ERR("LTE failed to init. Err: %d", err);
+  if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) == 0) {
+    err = set_external_rtc_time();
+    if (err) {
+      LOG_ERR("Failed to set rtc.");
+      goto reset;
+    }
+  } else {
+    LOG_ERR("Failed to take network_connected_sem.");
     goto reset;
   }
-
-  err = lte_lc_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto reset;
-  }
-
-  err = set_external_rtc_time();
-  if (err) {
-    LOG_ERR("Failed to set rtc.");
-    goto reset;
-  }
-
-  err = lte_lc_init();
-  if (err < -1) {
-    LOG_ERR("LTE failed to init. Err: %d", err);
-    goto reset;
-  }
-
-  err = lte_lc_connect();
-  if (err < -1) {
-    LOG_ERR("LTE failed to connect. Err: %d", err);
-    goto reset;
-  }
-
-  err = set_external_rtc_time();
-  if (err) {
-    LOG_ERR("Failed to set rtc.");
-    goto reset;
-  }
+  k_sem_give(&lte_connected_sem);
 
   (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
   LOG_INF("update_stop_timer started");
 
   while (1) {
-    // led_test_patern();
     if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
       err = wdt_feed(wdt, wdt_channel_id);
       if (err) {
@@ -164,6 +151,7 @@ int main(void) {
   }
 
 reset:
+  lte_disconnect();
   LOG_WRN("Reached end of main; rebooting.");
   /* In ARM implementation sys_reboot ignores the parameter */
   sys_reboot(SYS_REBOOT_COLD);
