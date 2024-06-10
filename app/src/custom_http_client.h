@@ -4,7 +4,6 @@
 
 #ifndef CUSTOM_HTTP_CLIENT_H
 #define CUSTOM_HTTP_CLIENT_H
-#include <stop.h>
 
 enum response_code {
   HTTP_NULL,
@@ -15,17 +14,18 @@ enum response_code {
   HTTP_SERVER_ERROR
 };
 
-/** @def RECV_BODY_BUF_SIZE
- *  @brief A macro that defines the max size for HTTP response body receive buffer.
- *
- *  Actual size varies quite a bit depending on how many routes are currently running.
+/** @brief Makes an HTTP GET request and returns a char pointer to the HTTP
+ * response body buffer.
  */
-#define STOP_BODY_BUF_SIZE 10240
+int http_request_stop_json(
+    char *stop_body_buf, int stop_body_buf_size, char *headers_buf,
+    int headers_buf_size
+);
 
-/** @fn char* http_get_request(void)
- *  @brief Makes an HTTP GET request and returns a char pointer to the HTTP response body buffer.
+/** @brief Makes an HTTP GET request to download a firmware update file and
+ * writes it to flash.
  */
-int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size);
-
-int http_get_firmware(char *write_buf, int write_buf_size);
+int http_get_firmware(
+    char *write_buf, int write_buf_size, char *headers_buf, int headers_buf_size
+);
 #endif

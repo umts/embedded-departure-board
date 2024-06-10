@@ -15,16 +15,6 @@
 
 LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 
-/** @def RECV_HEADER_BUF_SIZE
- *  @brief A macro that defines the max size for HTTP headers
- * buffer.
- */
-#define HEADER_BUF_SIZE 1024
-
-/** HTTP headers buffer with size defined by the
- * HEADER_BUF_SIZE macro. */
-static char headers_buf[HEADER_BUF_SIZE] = "\0";
-
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
   int err;
@@ -44,7 +34,7 @@ int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
 
   err = setsockopt(fd, SOL_TLS, TLS_PEER_VERIFY, &verify, sizeof(verify));
   if (err) {
-    LOG_ERR("Failed to setup peer verification, err %d\n", errno);
+    LOG_ERR("Failed to setup peer verification, %s", strerror(errno));
     return err;
   }
 
@@ -52,19 +42,20 @@ int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
       fd, SOL_TLS, TLS_SEC_TAG_LIST, tls_sec_tag, sizeof(tls_sec_tag)
   );
   if (err) {
-    LOG_ERR("Failed to setup TLS sec tag, err %d\n", errno);
+    LOG_ERR("Failed to setup TLS sec tag, %s", strerror(errno));
     return err;
   }
 
   err = setsockopt(fd, SOL_TLS, TLS_HOSTNAME, hostname, strlen(hostname));
   if (err) {
-    LOG_ERR("Failed to setup TLS hostname, err %d\n", errno);
+    LOG_ERR("Failed to setup TLS hostname, %s", strerror(errno));
     return err;
   }
+
   return 0;
 }
 
-static int parse_status(void) {
+static int parse_status(char *headers_buf) {
   char *ptr;
   int code;
 
@@ -104,97 +95,117 @@ static int parse_status(void) {
   }
 }
 
-static int parse_response(
-    int *sock, char *recv_body_buf, int recv_body_buf_size, _Bool write_nvs
-) {
-  int rc = 0;
+static int parse_headers(int *sock, char *headers_buf, int headers_buf_size) {
   int state = 0;
   int bytes;
-  size_t offset = 0;
-  bool headers = true;
   int status;
   size_t headers_size = 0;
+  size_t headers_offset = 0;
 
   do {
-    if (headers) {
-      bytes = recv(*sock, &headers_buf[offset], 1, 0);
+    bytes = recv(*sock, &headers_buf[headers_offset], 1, 0);
+    if (bytes < 0) {
+      LOG_ERR("recv() headers failed, %s", strerror(errno));
+      return bytes;
+    }
+
+    if ((state == 0 || state == 2) && headers_buf[headers_offset] == '\r') {
+      state++;
+    } else if (state == 1 && headers_buf[headers_offset] == '\n') {
+      state++;
+    } else if (state == 3) {
+      headers_size = headers_offset;
+      LOG_INF("Received Headers. Size: %d bytes", headers_offset);
+
+      headers_buf[headers_offset + 1] = '\0';
+
+      status = parse_status(headers_buf);
+      switch (status) {
+        case HTTP_REDIRECT:
+          return 1;
+        case HTTP_CLIENT_ERROR:
+          return -1;
+        case HTTP_SERVER_ERROR:
+          return -1;
+        case HTTP_NULL:
+          return -1;
+        default:
+          break;
+      }
+      break;
+    } else {
+      state = 0;
+    }
+    headers_offset += bytes;
+  } while (bytes != 0);
+
+  return headers_size;
+}
+
+static long parse_response(
+    int *sock, char *recv_body_buf, int recv_body_buf_size, long offset,
+    char *headers_buf, int headers_buf_size, _Bool write_nvs
+) {
+  int rc = 0;
+  int bytes;
+
+  // rc = setsockopt(
+  //     *sock, SOL_SOCKET, SO_RCVTIMEO, &(socklen_t){10}, sizeof(socklen_t)
+  // );
+  // if (rc) {
+  //   LOG_WRN("Failed to set socket timeout, %s", strerror(errno));
+  //   return -1;
+  // }
+
+  size_t headers_size = parse_headers(sock, headers_buf, headers_buf_size);
+  if (headers_size < 1) {
+    return -1;
+  }
+
+  do {
+    if (write_nvs) {
+      bytes = recv(*sock, recv_body_buf, recv_body_buf_size, 0);
       if (bytes < 0) {
-        LOG_ERR("recv() headers failed, err %d\n", errno);
+        if (errno == EMSGSIZE) {
+          LOG_WRN(
+              "recv() returned EMSGSIZE. Modem's secure socket buffer limit "
+              "reached.\nRetrying with new socket, Range: %ld-",
+              offset
+          );
+          return offset;
+        }
+        LOG_ERR("recv() body failed, %s", strerror(errno));
         return bytes;
       }
-
-      if ((state == 0 || state == 2) && headers_buf[offset] == '\r') {
-        state++;
-      } else if (state == 1 && headers_buf[offset] == '\n') {
-        state++;
-      } else if (state == 3) {
-        headers_size = offset;
-        LOG_INF("Received Headers. Size: %d bytes", offset);
-
-        headers = false;
-        headers_buf[offset + 1] = '\0';
-        offset = 0;
-
-        status = parse_status();
-        switch (status) {
-          case HTTP_REDIRECT:
-            return 1;
-          case HTTP_CLIENT_ERROR:
-            return -1;
-          case HTTP_SERVER_ERROR:
-            return -1;
-          case HTTP_NULL:
-            return -1;
-          default:
-            break;
-        }
-        continue;
-      } else {
-        state = 0;
+      LOG_DBG("recv bytes: %d", bytes);
+      LOG_DBG("Total: %ld", offset);
+      rc = write_buffer_to_flash(recv_body_buf, bytes, false);
+      if (rc < 0) {
+        LOG_ERR("write_buffer_to_flash() failed, error: %s", strerror(errno));
+        return bytes;
       }
     } else {
-      if (write_nvs) {
-        if (rc > 0) {
-          bytes =
-              recv(*sock, (recv_body_buf + rc), (recv_body_buf_size - rc), 0);
-          if (bytes < 0) {
-            LOG_ERR("recv() body failed, err %d\n", errno);
-            return bytes;
-          }
-          bytes += rc;
-          LOG_DBG("recv + rc bytes: %d", bytes);
-        } else {
-          bytes = recv(*sock, recv_body_buf, recv_body_buf_size, 0);
-          if (bytes < 0) {
-            LOG_ERR("recv() body failed, err %d\n", errno);
-            return bytes;
-          }
-          LOG_DBG("recv bytes: %d", bytes);
-        }
-        rc = write_buffer_to_flash(recv_body_buf, bytes, offset);
-        LOG_DBG("Total: %d", offset);
-        if (rc < 0) {
-          LOG_DBG("rc: %d, error: %d", rc, errno);
-          return -1;
-        }
-      } else {
-        bytes = recv(
-            *sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0
-        );
+      bytes = recv(
+          *sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0
+      );
+      if (bytes < 0) {
+        LOG_ERR("recv() body failed, %s", strerror(errno));
+        return bytes;
       }
-      // if (bytes < 0) {
-      //   LOG_ERR("recv() body failed, err %d\n", errno);
-      //   return bytes;
-      // }
     }
     offset += bytes;
-  } while (bytes != 0); /* peer closed connection */
+  } while (bytes != 0);
 
-  LOG_INF("Received Body. Size: %d bytes", offset);
-  LOG_INF("Total bytes received: %d", offset + headers_size);
+  LOG_INF("Received Body. Size: %ld bytes", offset);
+  LOG_INF("Total bytes received: %ld", offset + headers_size);
 
   if (write_nvs) {
-    return 0;
+    rc = write_buffer_to_flash(recv_body_buf, 0, true);
+    if (rc < 0) {
+      LOG_ERR("write_buffer_to_flash() failed, error: %s", strerror(errno));
+      return bytes;
+    }
+    return rc;
   }
 
   /* Make sure recv_buf is NULL terminated (for safe use with strstr) */
@@ -207,7 +218,7 @@ static int parse_response(
   return 0;
 }
 
-static char *get_redirect_location(void) {
+static char *get_redirect_location(char *headers_buf, int headers_buf_size) {
   char *ptr;
 
   ptr = strstr(headers_buf, "Location:");
@@ -232,15 +243,17 @@ static char *get_redirect_location(void) {
 
 static int send_http_request(
     char *hostname, char *path, char *accept, sec_tag_t sec_tag,
-    char *recv_body_buf, int recv_body_buf_size, _Bool write_nvs
+    char *recv_body_buf, int recv_body_buf_size, char *headers_buf,
+    int headers_buf_size, _Bool write_nvs
 ) {
   int bytes;
   int err;
   int headers_size;
   size_t offset;
   char *ptr;
-  int redirect;
+  long rc = 0;
   int sock = -1;
+  long range_start = 0;
 
   struct addrinfo *addr_inf;
   static struct addrinfo hints = {
@@ -253,8 +266,6 @@ static int send_http_request(
   LOG_DBG("SEC_TAG: %d", sec_tag);
 
 retry:
-  redirect = 0;
-
   ptr = stpcpy(&headers_buf[0], "GET ");
   ptr = stpcpy(ptr, path);
   ptr = stpcpy(ptr, " HTTP/1.1\r\n");
@@ -270,6 +281,11 @@ retry:
       ptr,
       "User-Agent: EDB/" APP_VERSION_STRING " Stop-ID/" CONFIG_STOP_ID "\r\n"
   );
+  if (range_start > 0) {
+    ptr = stpcpy(ptr, "Range: ");
+    ptr += sprintf(ptr, "%ld", range_start);
+    ptr = stpcpy(ptr, "-\r\n");
+  }
   ptr = stpcpy(ptr, "Accept: ");
   ptr = stpcpy(ptr, accept);
   ptr = stpcpy(ptr, "\r\nConnection: close\r\n\r\n");
@@ -284,7 +300,7 @@ retry:
     err = getaddrinfo(hostname, "443", &hints, &addr_inf);
   }
   if (err) {
-    LOG_ERR("getaddrinfo() failed, err %d\n", errno);
+    LOG_ERR("getaddrinfo() failed, %s", strerror(errno));
     return errno;
   }
 
@@ -295,7 +311,7 @@ retry:
           &((struct sockaddr_in *)(addr_inf->ai_addr))->sin_addr, peer_addr,
           INET6_ADDRSTRLEN
       ) == NULL) {
-    LOG_ERR("inet_ntop() failed, err %d\n", errno);
+    LOG_ERR("inet_ntop() failed, %s", strerror(errno));
     return errno;
   }
 
@@ -327,9 +343,10 @@ retry:
       "Connecting to %s:%d", hostname,
       ntohs(((struct sockaddr_in *)(addr_inf->ai_addr))->sin_port)
   );
+
   err = connect(sock, addr_inf->ai_addr, addr_inf->ai_addrlen);
   if (err) {
-    LOG_ERR("connect() failed, err: %d\n", errno);
+    LOG_ERR("connect() failed, %s", strerror(errno));
     goto clean_up;
   }
 
@@ -345,7 +362,7 @@ retry:
   do {
     bytes = send(sock, &headers_buf[offset], headers_size - offset, 0);
     if (bytes < 0) {
-      LOG_ERR("send() failed, err %d.", errno);
+      LOG_ERR("send() failed, %s", strerror(errno));
       goto clean_up;
     }
     offset += bytes;
@@ -353,9 +370,11 @@ retry:
 
   LOG_INF("Sent %d bytes", offset);
 
-  redirect =
-      parse_response(&sock, recv_body_buf, recv_body_buf_size, write_nvs);
-  if (redirect < 0) {
+  rc = parse_response(
+      &sock, recv_body_buf, recv_body_buf_size, range_start, headers_buf,
+      headers_buf_size, write_nvs
+  );
+  if (rc < 0) {
     LOG_ERR("EOF or error in response headers.");
   }
 
@@ -363,21 +382,24 @@ clean_up:
   LOG_INF("Closing socket %d", sock);
   err = close(sock);
   if (err) {
-    LOG_ERR("close() failed, err: %d\n", errno);
+    LOG_ERR("close() failed, %s", strerror(errno));
   }
 
   (void)freeaddrinfo(addr_inf);
 
   LOG_DBG("Response Headers:\n%s", &headers_buf[0]);
 
-  if (redirect == 1) {
+  if (rc == 1) {
     goto redirect;
+  } else if (rc > 1) {
+    range_start = rc;
+    goto retry;
   }
 
   return 0;
 
 redirect:
-  ptr = get_redirect_location();
+  ptr = get_redirect_location(headers_buf, headers_buf_size);
   char redirect_hostname_buf[255];
   LOG_INF("Redirect location: %s", ptr);
 
@@ -418,7 +440,10 @@ redirect:
   goto retry;
 }
 
-int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size) {
+int http_request_stop_json(
+    char *stop_body_buf, int stop_body_buf_size, char *headers_buf,
+    int headers_buf_size
+) {
   int err;
 
   /** Make the size 255 incase we get a redirect with a longer hostname */
@@ -434,7 +459,7 @@ int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size) {
 #if CONFIG_STOP_REQUEST_AVAIL
     err = send_http_request(
         hostname, path, "application/json", NO_SEC_TAG, stop_body_buf,
-        stop_body_buf_size, false
+        stop_body_buf_size, headers_buf, headers_buf_size, false
     );
     k_sem_give(&lte_connected_sem);
     LOG_DBG("Response Body:\n%s", stop_body_buf);
@@ -451,7 +476,9 @@ int http_request_stop_json(char *stop_body_buf, int stop_body_buf_size) {
   return err;
 }
 
-int http_get_firmware(char *write_buf, int write_buf_size) {
+int http_get_firmware(
+    char *write_buf, int write_buf_size, char *headers_buf, int headers_buf_size
+) {
   int err;
 
   if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
@@ -460,8 +487,10 @@ int http_get_firmware(char *write_buf, int write_buf_size) {
   } else {
     err = send_http_request(
         CONFIG_OTA_HOSTNAME, CONFIG_OTA_PATH, "application/octet-stream",
-        JES_SEC_TAG, write_buf, write_buf_size, true
+        JES_SEC_TAG, write_buf, write_buf_size, headers_buf, headers_buf_size,
+        true
     );
+
     k_sem_give(&lte_connected_sem);
   }
 

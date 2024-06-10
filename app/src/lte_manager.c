@@ -4,31 +4,44 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-#if CONFIG_MODEM_KEY_MGMT
+#ifdef CONFIG_MODEM_KEY_MGMT
 #include <modem/lte_lc.h>
 #include <modem/modem_key_mgmt.h>
 #include <modem/nrf_modem_lib.h>
 #endif
 
+#ifdef CONFIG_NET_SOCKETS_SOCKOPT_TLS
+#include <zephyr/net/net_if.h>
+#include <zephyr/net/tls_credentials.h>
+#endif
+
 LOG_MODULE_REGISTER(lte_manager, LOG_LEVEL_DBG);
 
-static const char jes_cert[] = {
+static const char ca_cert[] = {
 #include "../keys/public/jes-contact.pem"
 };
 
 #define CERT_LEN(c_) sizeof(c_)
 
 #if CONFIG_MODEM_KEY_MGMT
-BUILD_ASSERT(sizeof(jes_cert) < KB(4), "Certificates too large");
+BUILD_ASSERT(sizeof(ca_cert) < KB(4), "Certificates too large");
 #endif
 
 K_SEM_DEFINE(lte_connected_sem, 1, 1);
+
+#ifdef CONFIG_NRF_MODEM_LIB_ON_FAULT_APPLICATION_SPECIFIC
+void nrf_modem_fault_handler(struct nrf_modem_fault_info *fault_info) {
+  LOG_ERR("Reason: %d", fault_info->reason);
+  LOG_ERR("Program Counter: %d", fault_info->program_counter);
+  LOG_ERR("%s", nrf_modem_lib_fault_strerror(errno));
+}
+#endif
 
 /* Provision certificate to modem */
 int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_len) {
   int err;
 
-#if CONFIG_MODEM_KEY_MGMT
+#ifdef CONFIG_MODEM_KEY_MGMT
   bool exists;
   int mismatch;
 
@@ -68,8 +81,7 @@ int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_len) {
   }
 #else  /* CONFIG_MODEM_KEY_MGMT */
   err = tls_credential_add(
-      sec_tag, TLS_CREDENTIAL_CA_CERTIFICATE, cert,
-      cert_len)
+      sec_tag, TLS_CREDENTIAL_CA_CERTIFICATE, ca_cert, sizeof(ca_cert)
   );
   if (err == -EEXIST) {
     LOG_INF("CA certificate already exists, sec tag: %d\n", sec_tag);
@@ -95,7 +107,7 @@ int lte_connect(void) {
 #endif
 
   /* Provision certificates before connecting to the network */
-  err = provision_cert(JES_SEC_TAG, jes_cert, sizeof(jes_cert));
+  err = provision_cert(JES_SEC_TAG, ca_cert, sizeof(ca_cert));
   if (err) {
     LOG_ERR(
         "Failed to provision TLS certificate. TLS_SEC_TAG: %d", JES_SEC_TAG
