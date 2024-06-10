@@ -13,7 +13,7 @@
 #include "fota.h"
 #include "lte_manager.h"
 
-LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_INF);
 
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
@@ -148,14 +148,6 @@ static long parse_response(
 ) {
   int rc = 0;
   int bytes;
-
-  // rc = setsockopt(
-  //     *sock, SOL_SOCKET, SO_RCVTIMEO, &(socklen_t){10}, sizeof(socklen_t)
-  // );
-  // if (rc) {
-  //   LOG_WRN("Failed to set socket timeout, %s", strerror(errno));
-  //   return -1;
-  // }
 
   size_t headers_size = parse_headers(sock, headers_buf, headers_buf_size);
   if (headers_size < 1) {
@@ -462,14 +454,12 @@ int http_request_stop_json(
         stop_body_buf_size, headers_buf, headers_buf_size, false
     );
     k_sem_give(&lte_connected_sem);
-    LOG_DBG("Response Body:\n%s", stop_body_buf);
 #else
     err = send_http_request(
         hostname, path, "application/json", JES_SEC_TAG, stop_body_buf,
         stop_body_buf_size, false
     );
     k_sem_give(&lte_connected_sem);
-    LOG_DBG("Response Body:\n%s", stop_body_buf);
 #endif
   }
 
