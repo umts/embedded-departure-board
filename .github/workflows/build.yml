@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ZEPHYR_SDK_INSTALL_PATH: /opt/toolchains
-      ZSDK_VERSION: 0.16.6
+      ZSDK_VERSION: 0.16.8
     container:
       image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.12
       env:
