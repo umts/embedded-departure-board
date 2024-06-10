@@ -13,6 +13,9 @@ config STOP_REQUEST_HOSTNAME
 config STOP_REQUEST_PATH
   string "Path used to retrieve stop data"
 
+config STOP_JSON_BUF_SIZE
+  int "Defines the max size for stop JSON response body receive buffer"
+
 config OTA_HOSTNAME
   string "HTTP hostname used to download firmware upgade file"
 
