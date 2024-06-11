@@ -111,5 +111,5 @@ jobs:
         if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v4
         with:
-          name: merged.hex
+          name: app_test_update.hex
           path: build/zephyr/app_test_update.hex
