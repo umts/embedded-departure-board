@@ -21,8 +21,6 @@ static const char ca_cert[] = {
 #include "../keys/public/jes-contact.pem"
 };
 
-#define CERT_LEN(c_) sizeof(c_)
-
 #if CONFIG_MODEM_KEY_MGMT
 BUILD_ASSERT(sizeof(ca_cert) < KB(4), "Certificates too large");
 #endif
