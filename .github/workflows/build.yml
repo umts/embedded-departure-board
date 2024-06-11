@@ -106,3 +106,10 @@ jobs:
         with:
           name: app_update.bin
           path: build/zephyr/app_update.bin
+
+      - name: Upload app_test_update.hex
+        if: ${{ inputs.upload_artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged.hex
+          path: build/zephyr/app_test_update.hex
