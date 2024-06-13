@@ -13,7 +13,7 @@
 #include "fota.h"
 #include "lte_manager.h"
 
-LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
 
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
@@ -471,7 +471,7 @@ int http_get_firmware(
 ) {
   int err;
 
-  if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
+  if (k_sem_take(&lte_connected_sem, K_FOREVER) != 0) {
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {

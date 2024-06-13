@@ -1,6 +1,8 @@
 
 #include "fota.h"
 
+#include <string.h>
+#include <sys/errno.h>
 #include <zephyr/device.h>
 #include <zephyr/dfu/flash_img.h>
 #include <zephyr/dfu/mcuboot.h>
@@ -8,6 +10,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/stats/stats.h>
 #include <zephyr/storage/flash_map.h>
+#include <zephyr/sys/util.h>
 
 #include "custom_http_client.h"
 #include "pm_config.h"
@@ -18,6 +21,9 @@ LOG_MODULE_REGISTER(fota, LOG_LEVEL_DBG);
 #define STRINGIZE_VALUE(arg) STRINGIZE(arg)
 #define PM_MCUBOOT_PRIMARY_STRING STRINGIZE_VALUE(PM_MCUBOOT_PRIMARY_NAME)
 #define PM_MCUBOOT_SECONDARY_STRING STRINGIZE_VALUE(PM_MCUBOOT_SECONDARY_NAME)
+
+#define CONTENT_LENGTH_HEADER ""
+#define SHA256_HEADER "sha-256: "
 
 BUILD_ASSERT(
     FIXED_PARTITION_EXISTS(PM_MCUBOOT_SECONDARY_NAME),
@@ -93,12 +99,13 @@ void download_update(void) {
 
   char headers_buf[1024];
   char write_buf[CONFIG_IMG_BLOCK_BUF_SIZE];
+  char *sha256_ptr;
+  uint8_t sha256[32];
 
-  // TODO: Verify image sha256
-  //   struct flash_img_check fic {
-  // 	const uint8_t *match;		/** Match vector data */
-  // 	size_t clen;			/** Content to be compared */
-  // };
+  rc = boot_erase_img_bank(PM_MCUBOOT_SECONDARY_ID);
+  if (rc < 0) {
+    LOG_ERR("Failed to erase secondary image bank");
+  }
 
   rc = flash_img_init_id(&ctx, PM_MCUBOOT_SECONDARY_ID);
   if (rc < 0) {
@@ -111,9 +118,50 @@ void download_update(void) {
 
   LOG_DBG("mcuboot_swap_type: %d", mcuboot_swap_type());
 
-  rc = boot_request_upgrade(BOOT_UPGRADE_TEST);
-  if (rc < 0) {
-    LOG_ERR("Failed to REQUEST FIRMWARE UPGRADE");
+  sha256_ptr = strstr(headers_buf, SHA256_HEADER);
+  if (sha256_ptr == NULL) {
+    LOG_WRN("sha-256 not found in headers");
+
+    rc = boot_request_upgrade(BOOT_UPGRADE_TEST);
+    if (rc < 0) {
+      LOG_ERR("Failed to REQUEST FIRMWARE UPGRADE");
+    }
+  } else {
+    sha256_ptr += (sizeof(SHA256_HEADER) - 1);
+
+    // for (int i = 0; i < 64; i++) {
+    //   if (char2hex(*(sha256_ptr + i), &sha256[i]) < 0) {
+    //     LOG_ERR("char2hex failed");
+    //   }
+    // }
+    // strncpy(sha256, sha256_ptr, 64);
+    // sha256[64] = '\0';
+
+    rc = hex2bin(sha256_ptr, 64, sha256, 32);
+    if (rc != 32) {
+      LOG_ERR("hex2bin failed: %d", rc);
+    }
+    // LOG_DBG(
+    //     "fic = {.match = %s, .clen = %d}", sha256,
+    //     flash_img_bytes_written(&ctx)
+    // );
+
+    struct flash_img_check fic = {
+        .match = sha256, .clen = flash_img_bytes_written(&ctx)
+    };
+
+    rc = flash_img_check(&ctx, &fic, PM_MCUBOOT_SECONDARY_ID);
+    if (rc < 0) {
+      LOG_ERR("flash_img_check failed: %s (%d)", strerror(rc), rc);
+      return;
+    }
+
+    LOG_DBG("Image check sucessful!");
+
+    rc = boot_request_upgrade(BOOT_UPGRADE_PERMANENT);
+    if (rc < 0) {
+      LOG_ERR("Failed to REQUEST FIRMWARE UPGRADE");
+    }
   }
 
   LOG_DBG("\nImage info: " PM_MCUBOOT_PRIMARY_STRING);

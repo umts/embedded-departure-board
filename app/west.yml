@@ -23,6 +23,7 @@ manifest:
           - picolibc
           - qcbor
           - segger
+          - tinycrypt
           - trusted-firmware-m
           - zcbor
           - zephyr

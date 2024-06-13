@@ -8,6 +8,7 @@
 
 /* app includes */
 #include "external_rtc.h"
+#include "fota.h"
 #include "led_display.h"
 #include "lte_manager.h"
 #include "update_stop.h"
@@ -103,17 +104,17 @@ int main(void) {
   (void)image_info(PM_MCUBOOT_SECONDARY_ID);
 #endif
 
-  wdt_channel_id = watchdog_init();
-  if (wdt_channel_id < 0) {
-    LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
-    goto reset;
-  }
+  // wdt_channel_id = watchdog_init();
+  // if (wdt_channel_id < 0) {
+  //   LOG_ERR("Failed to initialize watchdog. Err: %d", wdt_channel_id);
+  //   goto reset;
+  // }
 
-  err = wdt_feed(wdt, wdt_channel_id);
-  if (err) {
-    LOG_ERR("Failed to feed watchdog. Err: %d", err);
-    goto reset;
-  }
+  // err = wdt_feed(wdt, wdt_channel_id);
+  // if (err) {
+  //   LOG_ERR("Failed to feed watchdog. Err: %d", err);
+  //   goto reset;
+  // }
 
   err = lte_connect();
   if (err) {
@@ -132,27 +133,29 @@ int main(void) {
   }
   k_sem_give(&lte_connected_sem);
 
-  (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
-  LOG_INF("update_stop_timer started");
+  (void)download_update();
 
-  while (1) {
-    if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
-      err = wdt_feed(wdt, wdt_channel_id);
-      if (err) {
-        LOG_ERR("Failed to feed watchdog. Err: %d", err);
-        goto reset;
-      }
+  // (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
+  // LOG_INF("update_stop_timer started");
 
-      if (update_stop()) {
-        goto reset;
-      }
-    }
-    k_cpu_idle();
-  }
+  // while (1) {
+  //   if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
+  //     err = wdt_feed(wdt, wdt_channel_id);
+  //     if (err) {
+  //       LOG_ERR("Failed to feed watchdog. Err: %d", err);
+  //       goto reset;
+  //     }
+
+  //     if (update_stop()) {
+  //       goto reset;
+  //     }
+  //   }
+  //   k_cpu_idle();
+  // }
 
 reset:
   lte_disconnect();
   LOG_WRN("Reached end of main; rebooting.");
   /* In ARM implementation sys_reboot ignores the parameter */
-  sys_reboot(SYS_REBOOT_COLD);
+  // sys_reboot(SYS_REBOOT_COLD);
 }
