@@ -19,24 +19,6 @@
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "modificationsIfAvailable",
   "cortex-debug.enableTelemetry": false,
-  "launch": {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Cortex Debug",
-        "cwd": "${workspaceRoot}",
-        "executable": "${workspaceRoot}/build/zephyr/zephyr.elf",
-        "request": "launch",
-        "type": "cortex-debug",
-        "servertype": "jlink",
-        "device": "nrf9160_xxAA",
-        "interface": "swd",
-        "rtos": "Zephyr",
-        // "symbolFiles": null
-        "showDevDebugOutput": "vscode"
-      }
-    ]
-  },
   "cmake.sourceDirectory": "/home/jforgue/embedded-departure-board/app",
   "kconfig.zephyr.base": "${zephyrBase}",
   "cmake.configureOnOpen": false

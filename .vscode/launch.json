@@ -1,0 +1,34 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Cortex Debug App",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceRoot}/build/zephyr/zephyr.elf",
+      "request": "launch",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "jlink",
+      "device": "nrf9160_xxAA",
+      "interface": "swd",
+      "rtos": "Zephyr",
+      "showDevDebugOutput": "vscode"
+    },
+    {
+      "name": "Cortex Debug MCUboot",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceRoot}/build/mcuboot/zephyr/zephyr.elf",
+      "request": "launch",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      "servertype": "jlink",
+      "device": "nrf9160_xxAA",
+      "interface": "swd",
+      "rtos": "Zephyr",
+      "showDevDebugOutput": "vscode"
+    }
+  ]
+}
