@@ -13,7 +13,7 @@
 #include "fota.h"
 #include "lte_manager.h"
 
-LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_INF);
 
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
