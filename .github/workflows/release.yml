@@ -61,11 +61,6 @@ jobs:
         with:
           name: app_update.bin
 
-      - name: Download app_test_update.hex
-        uses: actions/download-artifact@v4
-        with:
-          name: app_test_update.hex
-
       - name: Upload merged.hex
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -131,36 +126,3 @@ jobs:
           "${{ env.upload_url }}?name=app_update_sha256.sum" \
           --data-binary "@app_update_sha256.sum"
           echo 'Uploaded build artifact app_update_sha256.sum as asset to release' >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload app_test_update.hex
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
-        run: |
-          curl -L \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GH_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          -H "Content-Type: application/octet-stream" \
-          "${{ env.upload_url }}?name=app_test_update.hex" \
-          --data-binary "@app_test_update.hex"
-          echo 'Uploaded build artifact app_test_update.hex as asset to release' >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload app_test_update_sha256.sum
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
-        run: |
-          sha256sum app_test_update.hex > app_test_update_sha256.sum
-          curl -L \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GH_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          -H "Content-Type: application/octet-stream" \
-          "${{ env.upload_url }}?name=app_test_update_sha256.sum" \
-          --data-binary "@app_test_update_sha256.sum"
-          echo 'Uploaded build artifact app_test_update_sha256.sum as asset to release' >> $GITHUB_STEP_SUMMARY
