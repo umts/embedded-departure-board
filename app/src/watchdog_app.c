@@ -1,6 +1,5 @@
 #include "watchdog_app.h"
 
-#include <zephyr/drivers/watchdog.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
@@ -33,13 +32,15 @@ LOG_MODULE_REGISTER(watchdog, LOG_LEVEL_INF);
 
 #if DT_NODE_HAS_STATUS(WDT0_NODE, okay)
 const struct device *const wdt = DEVICE_DT_GET(WDT0_NODE);
+
 #else
 #error "Node is disabled"
 #endif
 
+int wdt_channel_id;
+
 int watchdog_init(void) {
   int err;
-  int wdt_channel_id;
 
   if (!device_is_ready(wdt)) {
     LOG_ERR("%s: device not ready.\n", wdt->name);

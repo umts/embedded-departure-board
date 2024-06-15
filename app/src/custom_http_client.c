@@ -471,7 +471,7 @@ int http_get_firmware(
 ) {
   int err;
 
-  if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
+  if (k_sem_take(&lte_connected_sem, K_FOREVER) != 0) {
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {

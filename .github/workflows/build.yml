@@ -68,6 +68,12 @@ jobs:
       - name: West update
         run: west update
 
+      - name: Update Python dependencies
+        run: |
+          pip install -r zephyr/scripts/requirements.txt
+          pip install -r nrf/scripts/requirements.txt
+          pip install -r bootloader/mcuboot/scripts/requirements.txt
+
       - name: Create west cache
         if: steps.west-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4

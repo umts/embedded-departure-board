@@ -1,6 +1,5 @@
 /* Zephyr includes */
 #include <zephyr/drivers/hwinfo.h>
-#include <zephyr/drivers/watchdog.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
@@ -8,19 +7,11 @@
 
 /* app includes */
 #include "external_rtc.h"
+#include "fota.h"
 #include "led_display.h"
 #include "lte_manager.h"
 #include "update_stop.h"
 #include "watchdog_app.h"
-
-#ifdef CONFIG_DEBUG
-#include "pm_config.h"
-
-#define STRINGIZE(arg) #arg
-#define STRINGIZE_VALUE(arg) STRINGIZE(arg)
-#define PM_MCUBOOT_PRIMARY_STRING STRINGIZE_VALUE(PM_MCUBOOT_PRIMARY_NAME)
-#define PM_MCUBOOT_SECONDARY_STRING STRINGIZE_VALUE(PM_MCUBOOT_SECONDARY_NAME)
-#endif
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
@@ -95,13 +86,7 @@ int main(void) {
 
   (void)log_reset_reason();
 
-#ifdef CONFIG_DEBUG
-  LOG_DBG("\nImage info: " PM_MCUBOOT_PRIMARY_STRING);
-  (void)image_info(PM_MCUBOOT_PRIMARY_ID);
-
-  LOG_DBG("\nImage info: " PM_MCUBOOT_SECONDARY_STRING);
-  (void)image_info(PM_MCUBOOT_SECONDARY_ID);
-#endif
+  (void)validate_image();
 
   wdt_channel_id = watchdog_init();
   if (wdt_channel_id < 0) {
@@ -120,7 +105,7 @@ int main(void) {
     goto reset;
   }
 
-  if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) == 0) {
+  if (k_sem_take(&lte_connected_sem, K_FOREVER) == 0) {
     err = set_external_rtc_time();
     if (err) {
       LOG_ERR("Failed to set rtc.");
@@ -131,6 +116,15 @@ int main(void) {
     goto reset;
   }
   k_sem_give(&lte_connected_sem);
+
+  err = wdt_feed(wdt, wdt_channel_id);
+  if (err) {
+    LOG_ERR("Failed to feed watchdog. Err: %d", err);
+    goto reset;
+  }
+
+  // TODO: check for update or wait for update socket
+  // (void)download_update();
 
   (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
   LOG_INF("update_stop_timer started");
