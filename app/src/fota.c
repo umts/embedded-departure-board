@@ -1,4 +1,6 @@
 
+#ifdef CONFIG_BOOTLOADER_MCUBOOT
+
 #include "fota.h"
 
 #include <string.h>
@@ -132,3 +134,5 @@ void download_update(void) {
     }
   }
 }
+
+#endif

@@ -1,15 +1,13 @@
 #include "update_stop.h"
 
-/* app includes */
-#include <custom_http_client.h>
-#include <external_rtc.h>
-#include <jsmn_parse.h>
-#include <led_display.h>
-#include <stop.h>
-
-/* Zephyr includes */
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+
+#include "custom_http_client.h"
+#include "external_rtc.h"
+#include "jsmn_parse.h"
+#include "led_display.h"
+#include "stop.h"
 
 LOG_MODULE_REGISTER(update_stop, LOG_LEVEL_DBG);
 
@@ -43,17 +41,17 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
     (void)turn_display_off(box);
   }
 
-  for (int i = 0; i < stop.routes_size; i++) {
-    struct RouteDirection route_direction = stop.route_directions[i];
+  for (size_t route_num = 0; route_num < stop.routes_size; route_num++) {
+    struct RouteDirection route_direction = stop.route_directions[route_num];
     LOG_INF(
         "\n========= Route ID: %d; Direction: %c; Departures size: %d "
         "========= ",
         route_direction.id, route_direction.direction_code,
         route_direction.departures_size
     );
-    for (int j = 0; j < route_direction.departures_size; j++) {
-      struct Departure departure = route_direction.departures[j];
-
+    for (size_t departure_num = 0;
+         departure_num < route_direction.departures_size; departure_num++) {
+      struct Departure departure = route_direction.departures[departure_num];
       min = minutes_to_departure(&departure);
       LOG_INF("Display text: %s", departure.display_text);
       LOG_INF("Minutes to departure: %d", min);
@@ -114,7 +112,8 @@ int update_stop(void) {
       stop.routes_size, stop.last_updated
   );
 
-  if (parse_returned_routes(stop, display_boxes)) {
+  err = parse_returned_routes(stop, display_boxes);
+  if (err) {
     return 1;
   }
 

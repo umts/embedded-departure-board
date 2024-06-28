@@ -1,8 +1,8 @@
 {
   "files.associations": {
     "*.h": "c",
-    "log-*.txt": "ansi"
-    // "*.overlay": "dts"
+    "log-*.txt": "ansi",
+    "*.conf": "kconfig"
   },
   "files.watcherExclude": {
     "**/.venv/**": true,
@@ -19,7 +19,6 @@
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "modificationsIfAvailable",
   "cortex-debug.enableTelemetry": false,
-  "cmake.sourceDirectory": "/home/jforgue/embedded-departure-board/app",
   "kconfig.zephyr.base": "${zephyrBase}",
-  "cmake.configureOnOpen": false
+  "cortex-debug.variableUseNaturalFormat": true
 }
