@@ -12,7 +12,9 @@
       "device": "nrf9160_xxAA",
       "interface": "swd",
       "rtos": "Zephyr",
-      "showDevDebugOutput": "vscode"
+      "showDevDebugOutput": "vscode",
+      "toolchainPrefix": "arm-zephyr-eabi",
+      "armToolchainPath": "${userHome}/.local/zephyr-sdk-0.16.8/arm-zephyr-eabi/bin/"
     },
     {
       "name": "Cortex Debug MCUboot",
@@ -25,7 +27,9 @@
       "device": "nrf9160_xxAA",
       "interface": "swd",
       "rtos": "Zephyr",
-      "showDevDebugOutput": "vscode"
+      "showDevDebugOutput": "vscode",
+      "toolchainPrefix": "arm-zephyr-eabi",
+      "armToolchainPath": "${userHome}/.local/zephyr-sdk-0.16.8/arm-zephyr-eabi/bin/"
     }
   ]
 }

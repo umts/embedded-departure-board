@@ -1,17 +1,18 @@
-/* Zephyr includes */
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/types.h>
 
-/* app includes */
 #include "external_rtc.h"
-#include "fota.h"
 #include "led_display.h"
 #include "lte_manager.h"
 #include "update_stop.h"
 #include "watchdog_app.h"
+
+#ifdef CONFIG_BOOTLOADER_MCUBOOT
+#include "fota.h"
+#endif
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
@@ -22,7 +23,7 @@ void log_reset_reason(void) {
   if (err) {
     LOG_ERR("Failed to get reset cause. Err: %d", err);
   } else {
-    LOG_INF("Reset Reason %d, Flags:", cause);
+    LOG_INF("Reset Reason: ");
     if (cause == 0) {
       LOG_ERR("RESET_UNKNOWN");
       return;
@@ -86,7 +87,9 @@ int main(void) {
 
   (void)log_reset_reason();
 
+#ifdef CONFIG_BOOTLOADER_MCUBOOT
   (void)validate_image();
+#endif
 
   wdt_channel_id = watchdog_init();
   if (wdt_channel_id < 0) {
@@ -146,7 +149,19 @@ int main(void) {
 
 reset:
   lte_disconnect();
+
+#ifdef CONFIG_DEBUG
+  LOG_WRN("Reached end of main; waiting for manual reset.");
+  while (1) {
+    err = wdt_feed(wdt, wdt_channel_id);
+    if (err) {
+      LOG_ERR("Failed to feed watchdog. Err: %d", err);
+    }
+    k_msleep(29000);
+  }
+#else
   LOG_WRN("Reached end of main; rebooting.");
   /* In ARM implementation sys_reboot ignores the parameter */
   sys_reboot(SYS_REBOOT_COLD);
+#endif
 }

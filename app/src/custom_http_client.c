@@ -171,7 +171,9 @@ static long parse_response(
       }
       LOG_DBG("recv bytes: %d", bytes);
       LOG_DBG("Total: %ld", offset);
+#ifdef CONFIG_BOOTLOADER_MCUBOOT
       rc = write_buffer_to_flash(recv_body_buf, bytes, false);
+#endif
       if (rc < 0) {
         LOG_ERR("write_buffer_to_flash() failed, error: %s", strerror(errno));
         return bytes;
@@ -192,7 +194,10 @@ static long parse_response(
   LOG_INF("Total bytes received: %ld", offset + headers_size);
 
   if (write_nvs) {
+#ifdef CONFIG_BOOTLOADER_MCUBOOT
     rc = write_buffer_to_flash(recv_body_buf, 0, true);
+#endif
+
     if (rc < 0) {
       LOG_ERR("write_buffer_to_flash() failed, error: %s", strerror(errno));
       return bytes;
