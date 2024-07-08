@@ -28,6 +28,7 @@ tools/
 modules/
 bootloader/
 zephyr/
+multiplexer/
 
 # Cortex debugging states
 .vscode/.cortex-debug.registers.state.json
