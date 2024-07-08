@@ -62,7 +62,7 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
       if (display != NULL) {
         LOG_DBG("Display address: %d", display->position);
         // There is currently no light sensor to adjust brightness
-        if (write_num_to_display(display, 0x33, min)) {
+        if (write_num_to_display(display, display->brightness, min)) {
           return 1;
         }
       } else {

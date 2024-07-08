@@ -22,10 +22,32 @@ LOG_MODULE_REGISTER(led_display, LOG_LEVEL_DBG);
 
 #define LED(_color, _brightness)                                    \
   {                                                                 \
-    .r = ((uint8_t)(((uint8_t)(_color >> 16) * _brightness) >> 8)), \
-    .g = ((uint8_t)(((uint8_t)(_color >> 8) * _brightness) >> 8)),  \
-    .b = ((uint8_t)(((uint8_t)_color * _brightness) >> 8))          \
+    .r = ((gamma_lut[(uint8_t)(_color >> 16)] * _brightness) >> 8), \
+    .g = ((gamma_lut[(uint8_t)(_color >> 8)] * _brightness) >> 8),  \
+    .b = ((gamma_lut[(uint8_t)_color] * _brightness) >> 8)          \
   }
+
+/** Gamma correction look up table, gamma = 1.8 */
+static const uint8_t gamma_lut[256] = {
+    0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1,   1,
+    2,   2,   2,   2,   2,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,
+    5,   6,   6,   6,   7,   7,   8,   8,   8,   9,   9,   10,  10,  10,  11,
+    11,  12,  12,  13,  13,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,
+    19,  19,  20,  21,  21,  22,  22,  23,  24,  24,  25,  26,  26,  27,  28,
+    28,  29,  30,  30,  31,  32,  32,  33,  34,  35,  35,  36,  37,  38,  38,
+    39,  40,  41,  41,  42,  43,  44,  45,  46,  46,  47,  48,  49,  50,  51,
+    52,  53,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,
+    66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,
+    81,  82,  83,  84,  86,  87,  88,  89,  90,  91,  92,  93,  95,  96,  97,
+    98,  99,  100, 102, 103, 104, 105, 107, 108, 109, 110, 111, 113, 114, 115,
+    116, 118, 119, 120, 122, 123, 124, 126, 127, 128, 129, 131, 132, 134, 135,
+    136, 138, 139, 140, 142, 143, 145, 146, 147, 149, 150, 152, 153, 154, 156,
+    157, 159, 160, 162, 163, 165, 166, 168, 169, 171, 172, 174, 175, 177, 178,
+    180, 181, 183, 184, 186, 188, 189, 191, 192, 194, 195, 197, 199, 200, 202,
+    204, 205, 207, 208, 210, 212, 213, 215, 217, 218, 220, 222, 224, 225, 227,
+    229, 230, 232, 234, 236, 237, 239, 241, 243, 244, 246, 248, 250, 251, 253,
+    255
+};
 
 /** 7 segment binary pixel map */
 static const uint8_t digit_segment_map[] = {0x7E, 0x30, 0x6D, 0x79, 0x33,
@@ -115,7 +137,6 @@ void led_test_patern(void) {
   uint8_t brightness = 0x33;
   uint32_t color = 0xFFFFFF;
   struct led_rgb pixel = LED(color, brightness);
-  static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
   memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
   for (size_t test = 0; test < (STRIP_NUM_PIXELS / 2); test++) {
@@ -132,11 +153,14 @@ void led_test_patern(void) {
     k_msleep(500);
   }
 
+  static const DisplayBox display_boxes[] = DISPLAY_BOXES;
   for (size_t test = 0; test < 10; test++) {
     for (size_t i = 0; i < NUMBER_OF_DISPLAY_BOXES; i++) {
-      write_num_to_display(&display_boxes[i], brightness, 111 * test);
+      write_num_to_display(
+          &display_boxes[i], display_boxes[i].brightness, test * 111
+      );
     }
-    k_msleep(1000);
+    k_msleep(3000);
   }
 }
 #endif
