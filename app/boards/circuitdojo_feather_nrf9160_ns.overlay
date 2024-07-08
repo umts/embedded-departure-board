@@ -113,6 +113,31 @@
             <&gpio0 0 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
   };
 
+  display_switch_0: display_switch_0 {
+    compatible = "gpio-switch";
+    gpios = <&gpio0 13 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+  };
+
+  display_switch_1: display_switch_1 {
+    compatible = "gpio-switch";
+    gpios = <&gpio0 14 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+  };
+
+  display_switch_2: display_switch_2 {
+    compatible = "gpio-switch";
+    gpios = <&gpio0 15 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+  };
+
+  display_switch_3: display_switch_3 {
+    compatible = "gpio-switch";
+    gpios = <&gpio0 16 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+  };
+
+  display_switch_4: display_switch_4 {
+    compatible = "gpio-switch";
+    gpios = <&gpio0 17 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+  };
+
   chosen {
     nordic,pm-ext-flash = &w25q32jv;
     zephyr,console = &uart0;

@@ -8,6 +8,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 
+#include "display_switches.h"
+
 #if !DT_NODE_EXISTS(DT_ALIAS(mux))
 #error "Multiplexer device node with alias 'mux' not defined."
 #endif
@@ -91,13 +93,18 @@ static int display_digit(
 int write_num_to_display(
     DisplayBox *display, uint8_t brightness, unsigned int num
 ) {
-  if (mux_set_active_port(mux, display->position)) {
-    LOG_ERR("Failed to set correct mux channel");
+  if (display_on(display->position)) {
+    LOG_ERR("Failed to enable display");
     return -1;
   }
 
   // Turn off all pixels for the given display
   memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
+
+  if (mux_set_active_port(mux, display->position)) {
+    LOG_ERR("Failed to set correct mux channel");
+    return -1;
+  }
 
   if (num > 999) {
     led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
@@ -150,7 +157,7 @@ void led_test_patern(void) {
         return;
       }
     }
-    k_msleep(500);
+    k_msleep(200);
   }
 
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
@@ -162,5 +169,10 @@ void led_test_patern(void) {
     }
     k_msleep(3000);
   }
+
+  for (size_t i = 0; i < NUMBER_OF_DISPLAY_BOXES; i++) {
+    display_off(i);
+  }
+  k_msleep(3000);
 }
 #endif

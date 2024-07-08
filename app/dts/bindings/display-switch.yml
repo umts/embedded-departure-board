@@ -1,0 +1,10 @@
+description: GPIO pin to enable/disable a display
+
+compatible: "gpio-switch"
+
+properties:
+  gpios:
+    type: phandle-array
+    required: true
+    description: |
+      The GPIO connected to the display enable pin.
