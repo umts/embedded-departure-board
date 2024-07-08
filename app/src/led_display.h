@@ -6,7 +6,11 @@
 #define LED_DISPLAY_H
 #include <zephyr/types.h>
 
-int write_num_to_display(size_t display, uint8_t brightness, unsigned int num);
+#include "update_stop.h"
+
+int write_num_to_display(
+    DisplayBox *display, uint8_t brightness, unsigned int num
+);
 
 int turn_display_off(size_t display);
 

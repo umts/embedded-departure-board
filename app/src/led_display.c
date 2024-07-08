@@ -27,10 +27,6 @@ LOG_MODULE_REGISTER(led_display, LOG_LEVEL_DBG);
     .b = ((uint8_t)(((uint8_t)_color * _brightness) >> 8))          \
   }
 
-static const uint32_t colors[] = {
-    0x7E0A6D, 0x00467E, 0x00467E, 0x00467E, 0xFF0000
-};
-
 /** 7 segment binary pixel map */
 static const uint8_t digit_segment_map[] = {0x7E, 0x30, 0x6D, 0x79, 0x33,
                                             0x5B, 0x5F, 0x70, 0x7F, 0x7B};
@@ -40,11 +36,11 @@ static const struct device *const strip = DEVICE_DT_GET(DT_ALIAS(led_strip));
 static const struct device *const mux = DEVICE_DT_GET(DT_ALIAS(mux));
 
 static int display_digit(
-    size_t display, uint8_t brightness, size_t offset, size_t digit
+    DisplayBox *display, uint8_t brightness, size_t offset, size_t digit
 ) {
   int rc;
   size_t seg_offset = 0;
-  struct led_rgb color = LED(colors[display], brightness);
+  struct led_rgb color = LED(display->color, brightness);
 
   for (size_t segment = 0; segment < 7; segment++) {
     if (0b01000000 & (digit_segment_map[digit] << segment)) {
@@ -62,16 +58,18 @@ static int display_digit(
   }
 
   rc = led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
-
   if (rc) {
-    LOG_ERR("couldn't update strip: %d", rc);
+    LOG_ERR("Couldn't update LED strip: %d", rc);
     return 1;
   }
+
   return 0;
 }
 
-int write_num_to_display(size_t display, uint8_t brightness, unsigned int num) {
-  if (mux_set_active_port(mux, (uint8_t)display)) {
+int write_num_to_display(
+    DisplayBox *display, uint8_t brightness, unsigned int num
+) {
+  if (mux_set_active_port(mux, (uint8_t)display->position)) {
     LOG_ERR("Failed to set correct mux channel");
     return -1;
   }
@@ -116,13 +114,14 @@ void led_test_patern(void) {
   uint8_t brightness = 0x33;
   uint32_t color = 0xFFFFFF;
   struct led_rgb pixel = LED(color, brightness);
+  static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
   memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
   for (size_t test = 0; test < (STRIP_NUM_PIXELS / 2); test++) {
     memcpy(&pixels[test], &pixel, sizeof(struct led_rgb));
     memcpy(&pixels[63 + test], &pixel, sizeof(struct led_rgb));
 
-    for (size_t i = 0; i < ARRAY_SIZE(colors); i++) {
+    for (size_t i = 0; i < NUMBER_OF_DISPLAY_BOXES; i++) {
       mux_set_active_port(mux, i);
       if (led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS) != 0) {
         LOG_ERR("Failed to update LED strip, test: %d", 0);
@@ -133,8 +132,8 @@ void led_test_patern(void) {
   }
 
   for (size_t test = 0; test < 10; test++) {
-    for (size_t i = 0; i < ARRAY_SIZE(colors); i++) {
-      write_num_to_display(i, brightness, 111 * test);
+    for (size_t i = 0; i < NUMBER_OF_DISPLAY_BOXES; i++) {
+      write_num_to_display(&display_boxes[i], brightness, 111 * test);
     }
     k_msleep(1000);
   }
