@@ -34,7 +34,6 @@ static DisplayBox* get_display_address(
 }
 
 static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
-  int display_address;
   unsigned int min = 0;
 
   for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {

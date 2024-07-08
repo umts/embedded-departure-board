@@ -69,7 +69,7 @@ static int display_digit(
 int write_num_to_display(
     DisplayBox *display, uint8_t brightness, unsigned int num
 ) {
-  if (mux_set_active_port(mux, (uint8_t)display->position)) {
+  if (mux_set_active_port(mux, display->position)) {
     LOG_ERR("Failed to set correct mux channel");
     return -1;
   }
@@ -93,10 +93,11 @@ int write_num_to_display(
   return 0;
 }
 
-int turn_display_off(size_t display) {
+int turn_display_off(size_t display_position) {
+  mux_set_active_port(mux, display_position);
   memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
   if (led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS) != 0) {
-    LOG_ERR("Failed to update LED strip, test: %d", display);
+    LOG_ERR("Failed to update LED strip, test: %d", display_position);
   }
   return 0;
 }

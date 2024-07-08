@@ -12,7 +12,7 @@ int write_num_to_display(
     DisplayBox *display, uint8_t brightness, unsigned int num
 );
 
-int turn_display_off(size_t display);
+int turn_display_off(size_t display_position);
 
 #ifdef CONFIG_DEBUG
 void led_test_patern(void);
