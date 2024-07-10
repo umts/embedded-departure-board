@@ -98,6 +98,9 @@ int write_num_to_display(
     return -1;
   }
 
+  /** Give some time for the pin set to take effect */
+  k_msleep(10);
+
   // Turn off all pixels for the given display
   memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
 
@@ -119,15 +122,6 @@ int write_num_to_display(
     display_digit(display, brightness, 0, num);
   }
 
-  return 0;
-}
-
-int turn_display_off(size_t display_position) {
-  mux_set_active_port(mux, display_position);
-  memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
-  if (led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS) != 0) {
-    LOG_ERR("Failed to update LED strip, test: %d", display_position);
-  }
   return 0;
 }
 

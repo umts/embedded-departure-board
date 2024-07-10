@@ -4,6 +4,7 @@
 #include <zephyr/logging/log.h>
 
 #include "custom_http_client.h"
+#include "display_switches.h"
 #include "external_rtc.h"
 #include "jsmn_parse.h"
 #include "led_display.h"
@@ -37,7 +38,7 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
   unsigned int min = 0;
 
   for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
-    (void)turn_display_off(box);
+    (void)display_off(box);
   }
 
   for (size_t route_num = 0; route_num < stop.routes_size; route_num++) {
