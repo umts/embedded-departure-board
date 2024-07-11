@@ -4,8 +4,8 @@
 #include <zephyr/sys/reboot.h>
 #include <zephyr/types.h>
 
+#include "display_switches.h"
 #include "external_rtc.h"
-#include "led_display.h"
 #include "lte_manager.h"
 #include "update_stop.h"
 #include "watchdog_app.h"
@@ -77,12 +77,36 @@ void log_reset_reason(void) {
   }
 }
 
+#ifdef CONFIG_LED_DISPLAY_TEST
+#include "led_display.h"
+
+int main(void) {
+  int err = init_display_switches();
+  if (err < 0) {
+    LOG_ERR("Failed to initialize display switches. Err: %d", err);
+    goto end;
+  }
+
+  while (1) {
+    err = led_test_patern();
+    if (err) {
+      goto end;
+    }
+  }
+
+end:
+  LOG_ERR("Reached end of main; waiting for manual reset.");
+}
+
+#else
 int main(void) {
   int err;
   int wdt_channel_id;
 
-  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
-    (void)turn_display_off(box);
+  err = init_display_switches();
+  if (err < 0) {
+    LOG_ERR("Failed to initialize display switches. Err: %d", err);
+    goto reset;
   }
 
   (void)log_reset_reason();
@@ -165,3 +189,4 @@ reset:
   sys_reboot(SYS_REBOOT_COLD);
 #endif
 }
+#endif  // CONFIG_LED_DISPLAY_TEST

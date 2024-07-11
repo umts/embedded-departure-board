@@ -1,128 +1,193 @@
-#include <led_display.h>
-#include <sys/_stdint.h>
+#include "led_display.h"
+
+#include <drivers/multiplexer/multiplexer.h>
+#include <zephyr/device.h>
 #include <zephyr/drivers/led_strip.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/util.h>
+
+#include "display_switches.h"
+
+#if !DT_NODE_EXISTS(DT_ALIAS(mux))
+#error "Multiplexer device node with alias 'mux' not defined."
+#endif
+
+#if !DT_NODE_EXISTS(DT_ALIAS(led_strip))
+#error "LED strip device node with alias 'led_strip' not defined."
+#endif
 
 LOG_MODULE_REGISTER(led_display, LOG_LEVEL_DBG);
 
-#define STRIP_NUM_PIXELS DT_PROP(DT_NODELABEL(led_strip), chain_length)
-#define PIXELS_PER_DISPLAY 128
-#define ROW_LENGTH 16
-#define NUM_ROWS (PIXELS_PER_DISPLAY / ROW_LENGTH)
+#define STRIP_NUM_PIXELS DT_PROP(DT_ALIAS(led_strip), chain_length)
 
 #define LED(_color, _brightness)                                    \
   {                                                                 \
-    .r = ((uint8_t)(((uint8_t)(_color >> 16) * _brightness) >> 8)), \
-    .g = ((uint8_t)(((uint8_t)(_color >> 8) * _brightness) >> 8)),  \
-    .b = ((uint8_t)(((uint8_t)_color * _brightness) >> 8))          \
+    .r = ((gamma_lut[(uint8_t)(_color >> 16)] * _brightness) >> 8), \
+    .g = ((gamma_lut[(uint8_t)(_color >> 8)] * _brightness) >> 8),  \
+    .b = ((gamma_lut[(uint8_t)_color] * _brightness) >> 8)          \
   }
 
-static const uint32_t colors[] = {
-    0x7E0A6D, 0x00467E, 0x00467E, 0x00467E, 0xFF0000};
+/** Gamma correction look up table, gamma = 1.8 */
+static const uint8_t gamma_lut[256] = {
+    0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1,   1,
+    2,   2,   2,   2,   2,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,
+    5,   6,   6,   6,   7,   7,   8,   8,   8,   9,   9,   10,  10,  10,  11,
+    11,  12,  12,  13,  13,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,
+    19,  19,  20,  21,  21,  22,  22,  23,  24,  24,  25,  26,  26,  27,  28,
+    28,  29,  30,  30,  31,  32,  32,  33,  34,  35,  35,  36,  37,  38,  38,
+    39,  40,  41,  41,  42,  43,  44,  45,  46,  46,  47,  48,  49,  50,  51,
+    52,  53,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,
+    66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,
+    81,  82,  83,  84,  86,  87,  88,  89,  90,  91,  92,  93,  95,  96,  97,
+    98,  99,  100, 102, 103, 104, 105, 107, 108, 109, 110, 111, 113, 114, 115,
+    116, 118, 119, 120, 122, 123, 124, 126, 127, 128, 129, 131, 132, 134, 135,
+    136, 138, 139, 140, 142, 143, 145, 146, 147, 149, 150, 152, 153, 154, 156,
+    157, 159, 160, 162, 163, 165, 166, 168, 169, 171, 172, 174, 175, 177, 178,
+    180, 181, 183, 184, 186, 188, 189, 191, 192, 194, 195, 197, 199, 200, 202,
+    204, 205, 207, 208, 210, 212, 213, 215, 217, 218, 220, 222, 224, 225, 227,
+    229, 230, 232, 234, 236, 237, 239, 241, 243, 244, 246, 248, 250, 251, 253,
+    255
+};
 
-/** 4 x 7 digit binary pixel map */
-static const uint32_t digit_pixel_map_x[] = {
-    0xF99999F0, 0x26222270, 0xF11F88F0, 0xF11F11F0, 0x999F1110,
-    0xF88F11F0, 0xF88F99F0, 0xF1111110, 0xF99F99F0, 0xF99F11F0};
+/** 7 segment binary pixel map */
+static const uint8_t digit_segment_map[] = {0x7E, 0x30, 0x6D, 0x79, 0x33,
+                                            0x5B, 0x5F, 0x70, 0x7F, 0x7B};
 
-struct led_rgb pixels[STRIP_NUM_PIXELS];
-
-static const struct device *const strip =
-    DEVICE_DT_GET(DT_NODELABEL(led_strip));
+static struct led_rgb pixels[STRIP_NUM_PIXELS];
+static const struct device *const strip = DEVICE_DT_GET(DT_ALIAS(led_strip));
+static const struct device *const mux = DEVICE_DT_GET(DT_ALIAS(mux));
 
 static int display_digit(
-    size_t display, uint8_t brightness, size_t offset, size_t digit
+    DisplayBox *display, uint8_t brightness, size_t offset, size_t digit
 ) {
   int rc;
+  size_t seg_offset = 0;
+  struct led_rgb color = LED(display->color, brightness);
 
-  struct led_rgb color = LED(colors[display], brightness);
+  for (size_t segment = 0; segment < 7; segment++) {
+    if (0b01000000 & (digit_segment_map[digit] << segment)) {
+      /* Panel 1 */
+      memcpy(&pixels[0 + seg_offset + offset], &color, sizeof(struct led_rgb));
+      memcpy(&pixels[1 + seg_offset + offset], &color, sizeof(struct led_rgb));
+      memcpy(&pixels[2 + seg_offset + offset], &color, sizeof(struct led_rgb));
 
-  uint32_t digit_map = digit_pixel_map_x[digit];
-
-  for (size_t cursor = 0; cursor < NUM_ROWS; cursor++) {
-    for (size_t column = 0; column < 4; column++) {
-      if (digit_map & (1UL << (31 - (cursor * 4) - column))) {
-        memcpy(
-            &pixels[(cursor * ROW_LENGTH) + offset + column], &color,
-            sizeof(struct led_rgb)
-        );
-      }
+      /* Panel 2 */
+      memcpy(&pixels[63 + seg_offset + offset], &color, sizeof(struct led_rgb));
+      memcpy(&pixels[64 + seg_offset + offset], &color, sizeof(struct led_rgb));
+      memcpy(&pixels[65 + seg_offset + offset], &color, sizeof(struct led_rgb));
     }
+    seg_offset += 3;
   }
 
   rc = led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
-
   if (rc) {
-    LOG_ERR("couldn't update strip: %d", rc);
+    LOG_ERR("Couldn't update LED strip: %d", rc);
     return 1;
   }
+
   return 0;
 }
 
-int write_num_to_display(size_t display, uint8_t brightness, unsigned int num) {
-  if (!device_is_ready(strip)) {
-    LOG_ERR("LED strip device %s is not ready", strip->name);
-    return 1;
+int write_num_to_display(
+    DisplayBox *display, uint8_t brightness, unsigned int num
+) {
+  if (display_on(display->position)) {
+    LOG_ERR("Failed to enable display");
+    return -1;
   }
 
-  size_t offset = display * PIXELS_PER_DISPLAY;
+  /** Give some time for the pin set to take effect */
+  k_msleep(10);
 
   // Turn off all pixels for the given display
-  memset(&pixels[offset], 0, sizeof(struct led_rgb) * PIXELS_PER_DISPLAY);
+  memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
 
-  // for (size_t side = 0; side < 2; side++) {
-  //   offset += (side * PIXELS_PER_DISPLAY);
+  if (mux_set_active_port(mux, display->position)) {
+    LOG_ERR("Failed to set correct mux channel");
+    return -1;
+  }
 
   if (num > 999) {
     led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
   } else if (num > 99) {
-    display_digit(display, brightness, offset + 11, num % 10);
-    display_digit(display, brightness, offset + 6, num / 10 % 10);
-    display_digit(display, brightness, offset + 1, num / 100 % 10);
+    display_digit(display, brightness, 0, num % 10);
+    display_digit(display, brightness, 21, num / 10 % 10);
+    display_digit(display, brightness, 42, num / 100 % 10);
   } else if (num > 9) {
-    display_digit(display, brightness, offset + 8, num % 10);
-    display_digit(display, brightness, offset + 3, num / 10 % 100);
+    display_digit(display, brightness, 0, num % 10);
+    display_digit(display, brightness, 21, num / 10 % 100);
   } else {
-    display_digit(display, brightness, offset + 6, num);
+    display_digit(display, brightness, 0, num);
   }
-  // }
 
   return 0;
 }
 
-int turn_display_off(size_t display) {
-  memset(
-      &pixels[display * PIXELS_PER_DISPLAY], 0,
-      sizeof(struct led_rgb) * PIXELS_PER_DISPLAY
+#ifdef CONFIG_LED_DISPLAY_TEST
+int led_test_patern(void) {
+  if (!device_is_ready(strip)) {
+    LOG_ERR("LED strip device %s is not ready", strip->name);
+    return -1;
+  }
+
+  if (!device_is_ready(mux)) {
+    LOG_ERR("MUX device %s is not ready", mux->name);
+    return -1;
+  }
+
+  static const uint8_t brightness = 0x33;
+  static const uint32_t color = 0xFFFFFF;
+  static const struct led_rgb pixel = LED(color, brightness);
+
+  LOG_DBG(
+      "LED = {.r=%#02x}, {.g=%#02x}, {.b=%#02x}", pixel.r, pixel.g, pixel.b
   );
-  if (led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS) != 0) {
-    LOG_ERR("Failed to update LED strip, test: %d", display);
+
+  LOG_INF("Running individual LED test");
+
+  memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
+  for (size_t test = 0; test < (STRIP_NUM_PIXELS / 2); test++) {
+    memcpy(&pixels[test], &pixel, sizeof(struct led_rgb));
+    memcpy(&pixels[63 + test], &pixel, sizeof(struct led_rgb));
+
+    for (size_t i = 0; i < NUMBER_OF_DISPLAY_BOXES; i++) {
+      mux_set_active_port(mux, i);
+      if (led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS) != 0) {
+        LOG_ERR("Failed to update LED strip, test: %d", 0);
+        return -1;
+      }
+    }
+    k_msleep(100);
   }
+
+  LOG_INF("Individual LED test done.");
+  k_msleep(3000);
+
+  LOG_INF("Running number display test.");
+  static const DisplayBox display_boxes[] = DISPLAY_BOXES;
+  for (size_t test = 0; test < 10; test++) {
+    for (size_t i = 0; i < NUMBER_OF_DISPLAY_BOXES; i++) {
+      if (write_num_to_display(
+              &display_boxes[i], display_boxes[i].brightness, test * 111
+          )) {
+        return -1;
+      }
+    }
+    k_msleep(3000);
+  }
+
+  LOG_INF("Number display test done. Setting enable pin low on all displays.");
+
+  for (size_t i = 0; i < NUMBER_OF_DISPLAY_BOXES; i++) {
+    if (display_off(i)) {
+      return -1;
+    }
+  }
+  k_msleep(3000);
+
+  LOG_INF("Tests complete!");
   return 0;
-}
-
-#ifdef CONFIG_DEBUG
-void led_test_patern() {
-  static const uint32_t colors[] = {0xff0000, 0x00ff00, 0x0000ff, 0xffffff};
-  uint8_t brightness = 0x55;
-
-  for (size_t test = 0; test < 4; test++) {
-    struct led_rgb pixel = LED((uint32_t)colors[test], (uint8_t)brightness);
-    // struct led_rgb pixel = {
-    //     .r = (((uint8_t)(colors[test] >> 16) * 0x55) >> 8),
-    //     .g = (((uint8_t)(colors[test] >> 8) * 0x55) >> 8),
-    //     .b = (((uint8_t)colors[test] * 0x55) >> 8)};
-    memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
-    k_msleep(10);
-    for (size_t cursor = 0; cursor < STRIP_NUM_PIXELS; cursor++) {
-      memcpy(&pixels[cursor], &pixel, sizeof(struct led_rgb));
-    }
-    k_msleep(1000);
-    if (led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS) != 0) {
-      LOG_ERR("Failed to update LED strip, test: %d", test);
-    }
-  }
 }
 #endif
