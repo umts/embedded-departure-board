@@ -125,19 +125,27 @@ int write_num_to_display(
   return 0;
 }
 
-#ifdef CONFIG_DEBUG
-void led_test_patern(void) {
+#ifdef CONFIG_LED_DISPLAY_TEST
+int led_test_patern(void) {
   if (!device_is_ready(strip)) {
     LOG_ERR("LED strip device %s is not ready", strip->name);
+    return -1;
   }
 
   if (!device_is_ready(mux)) {
     LOG_ERR("MUX device %s is not ready", mux->name);
+    return -1;
   }
 
-  uint8_t brightness = 0x33;
-  uint32_t color = 0xFFFFFF;
-  struct led_rgb pixel = LED(color, brightness);
+  static const uint8_t brightness = 0x33;
+  static const uint32_t color = 0xFFFFFF;
+  static const struct led_rgb pixel = LED(color, brightness);
+
+  LOG_DBG(
+      "LED = {.r=%#02x}, {.g=%#02x}, {.b=%#02x}", pixel.r, pixel.g, pixel.b
+  );
+
+  LOG_INF("Running individual LED test");
 
   memset(&pixels[0], 0, sizeof(struct led_rgb) * STRIP_NUM_PIXELS);
   for (size_t test = 0; test < (STRIP_NUM_PIXELS / 2); test++) {
@@ -148,25 +156,38 @@ void led_test_patern(void) {
       mux_set_active_port(mux, i);
       if (led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS) != 0) {
         LOG_ERR("Failed to update LED strip, test: %d", 0);
-        return;
+        return -1;
       }
     }
-    k_msleep(200);
+    k_msleep(100);
   }
 
+  LOG_INF("Individual LED test done.");
+  k_msleep(3000);
+
+  LOG_INF("Running number display test.");
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
   for (size_t test = 0; test < 10; test++) {
     for (size_t i = 0; i < NUMBER_OF_DISPLAY_BOXES; i++) {
-      write_num_to_display(
-          &display_boxes[i], display_boxes[i].brightness, test * 111
-      );
+      if (write_num_to_display(
+              &display_boxes[i], display_boxes[i].brightness, test * 111
+          )) {
+        return -1;
+      }
     }
     k_msleep(3000);
   }
 
+  LOG_INF("Number display test done. Setting enable pin low on all displays.");
+
   for (size_t i = 0; i < NUMBER_OF_DISPLAY_BOXES; i++) {
-    display_off(i);
+    if (display_off(i)) {
+      return -1;
+    }
   }
   k_msleep(3000);
+
+  LOG_INF("Tests complete!");
+  return 0;
 }
 #endif

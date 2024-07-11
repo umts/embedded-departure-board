@@ -12,7 +12,7 @@ int write_num_to_display(
     DisplayBox *display, uint8_t brightness, unsigned int num
 );
 
-#ifdef CONFIG_DEBUG
-void led_test_patern(void);
-#endif
-#endif
+#ifdef CONFIG_LED_DISPLAY_TEST
+int led_test_patern(void);
+#endif  // CONFIG_LED_DISPLAY_TEST
+#endif  // LED_DISPLAY_H
