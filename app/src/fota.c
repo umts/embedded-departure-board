@@ -135,4 +135,4 @@ void download_update(void) {
   }
 }
 
-#endif
+#endif  // CONFIG_BOOTLOADER_MCUBOOT
