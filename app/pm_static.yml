@@ -12,8 +12,18 @@ app:
   region: flash_primary
   size: 0xca000
 external_flash:
-  address: 0xd2000
+  address: 0x400000
   end_address: 0x400000
+  region: external_flash
+  size: 0x0
+littlefs_storage:
+  address: 0xd2000
+  device: DT_CHOSEN(nordic_pm_ext_flash)
+  end_address: 0x400000
+  placement:
+    before:
+    - tfm_storage
+    - end
   region: external_flash
   size: 0x32e000
 mcuboot:
