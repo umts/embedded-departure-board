@@ -11,16 +11,17 @@
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;
 /delete-node/ &slot1_partition;
+/delete-node/ &storage_partition;
 
 &flash0 {
   partitions {
     boot_partition: partition@0 {
       label = "mcuboot";
-      reg = <0x00000000 0x10000>;
+      reg = <0x00000000 0x00010000>;
     };
     slot0_partition: partition@10000 {
       label = "image-0";
-      reg = <0x000010000 0x0000e8000>;
+      reg = <0x00010000 0x000e8000>;
     };
   };
 };
@@ -30,10 +31,14 @@
     compatible = "fixed-partitions";
     #address-cells = <1>;
     #size-cells = <1>;
-
     slot1_partition: partition@0 {
       label = "image-1";
-      reg = <0x00000000 0x0000d8000>;
+      reg = <0x00000000 0x000d2000>;
+    };
+
+    storage_partition: partition@d2000 {
+      label = "storage";
+      reg = <0x000d2000 0x003f2000>;
     };
   };
 };
