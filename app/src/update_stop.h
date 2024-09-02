@@ -9,11 +9,11 @@
 /** Specify the route, display text, and position for each display box */
 // clang-format off
 #define DISPLAY_BOXES {                                                                         \
-  { .id = 30038, .position = 0, .direction_code = 'S', .color = 0x7E0A6D, .brightness = 0x69 }, \
-  { .id = 10043, .position = 1, .direction_code = 'E', .color = 0x00467E, .brightness = 0x80 }, \
-  { .id = 10043, .position = 2, .direction_code = 'W', .color = 0x00467E, .brightness = 0x80 }, \
-  { .id = 10943, .position = 3, .direction_code = 'W', .color = 0x00467E, .brightness = 0x80 }, \
-  { .id = 20029, .position = 4, .direction_code = 'S', .color = 0xFF0000, .brightness = 0x28 }  \
+  { .id = 30038, .position = 0, .direction_code = 'S', .color = 0x7E0A6D, .brightness = 0x7E }, \
+  { .id = 10043, .position = 1, .direction_code = 'E', .color = 0x00467E, .brightness = 0x9A }, \
+  { .id = 10043, .position = 2, .direction_code = 'W', .color = 0x00467E, .brightness = 0x9A }, \
+  { .id = 10943, .position = 3, .direction_code = 'W', .color = 0x00467E, .brightness = 0x9A }, \
+  { .id = 20029, .position = 4, .direction_code = 'S', .color = 0xFF0000, .brightness = 0x30 }  \
 }
 // clang-format on
 
