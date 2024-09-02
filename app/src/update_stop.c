@@ -10,7 +10,7 @@
 #include "led_display.h"
 #include "stop.h"
 
-LOG_MODULE_REGISTER(update_stop, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(update_stop, LOG_LEVEL_INF);
 
 K_TIMER_DEFINE(update_stop_timer, update_stop_timeout_handler, NULL);
 
@@ -108,7 +108,7 @@ int update_stop(void) {
   }
 
   LOG_DBG(
-      "Stop ID: %s\nStop routes size: %d\nLast updated: %lld\n", stop.id,
+      "Stop ID: %s\nStop routes size: %d\nLast updated: %llu\n", stop.id,
       stop.routes_size, stop.last_updated
   );
 

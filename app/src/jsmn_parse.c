@@ -308,14 +308,22 @@ int parse_json_for_stop(char *json_ptr, Stop *stop) {
       t++;
       char *last_updated_string = json_ptr + tokens[t].start + 7;
       // last_updated_string[10] = '\0';
-      LOG_DBG("LastUpdated: %lld\n", strtoll(last_updated_string, NULL, 10));
-      unsigned long long new_last_updated = strtoll(last_updated_string, NULL, 10);
-      if (stop->last_updated < new_last_updated) {
-        stop->last_updated = new_last_updated;
-      } else {
-        LOG_INF("StopDepartures not updated, skipping.");
-        break;
-      }
+      LOG_DBG("LastUpdated: %llu\n", strtoull(last_updated_string, NULL, 10));
+      unsigned long long new_last_updated =
+          strtoull(last_updated_string, NULL, 10);
+      stop->last_updated = new_last_updated;
+
+      /*
+       * Picolibc strtoull is not behaving as expected, needs more investigation
+       *
+       * if (stop->last_updated < new_last_updated) {
+       * stop->last_updated = new_last_updated;
+       * } else {
+       * LOG_INF("StopDepartures not updated, skipping.");
+       * break;
+       * }
+       */
+
     } else if (jsoneq(json_ptr, &tokens[t], "RouteDirections")) {
       /* Increase t by an additional 1 to step into the array */
       t++;
