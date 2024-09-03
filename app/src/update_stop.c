@@ -6,7 +6,7 @@
 #include "custom_http_client.h"
 #include "display_switches.h"
 #include "external_rtc.h"
-#include "jsmn_parse.h"
+#include "json/jsmn_parse.h"
 #include "led_display.h"
 #include "stop.h"
 
