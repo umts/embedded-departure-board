@@ -267,7 +267,7 @@ int parse_stop_json(const char *const json_ptr, Stop *stop) {
   if (eval_jsmn_return(ret)) {
     return EXIT_FAILURE;
   }
-  LOG_INF("Tokens allocated: %d/%d\n", ret, STOP_TOK_COUNT);
+  LOG_DBG("Tokens allocated: %d/%d\n", ret, STOP_TOK_COUNT);
 
   /* Set the starting position for t */
   switch (tokens[0].type) {
