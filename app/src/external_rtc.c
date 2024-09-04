@@ -1,27 +1,16 @@
-#include <external_rtc.h>
+#include "external_rtc.h"
 
 /* Zephyr includes */
+#include <drivers/counter/pcf85063a.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/counter.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/sntp.h>
-#include <zephyr/posix/time.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/types.h>
 
-/* pcf85063a driver includes */
-#include <drivers/counter/pcf85063a.h>
-
-/* modem includes */
-#include <stdbool.h>
-#include <zephyr/net/socket.h>
-
-#include "zephyr/kernel.h"
-
-#define SNTP_SERVER "pool.ntp.org"
-#define SNTP_FALLBACK_SERVER "time.nist.gov"
+#define SNTP_SERVER "time.nist.gov"
+#define SNTP_FALLBACK_SERVER "us.pool.ntp.org"
 #define SNTP_INIT_TIMEOUT_MS 3000
 #define RETRY_COUNT 3
 #define RTC DEVICE_DT_GET(DT_NODELABEL(pcf85063a))
