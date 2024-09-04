@@ -6,7 +6,7 @@
 #include "custom_http_client.h"
 #include "display_switches.h"
 #include "external_rtc.h"
-#include "jsmn_parse.h"
+#include "json/jsmn_parse.h"
 #include "led_display.h"
 #include "stop.h"
 
@@ -82,7 +82,7 @@ int update_stop(void) {
   static Stop stop = {.last_updated = 0, .id = STOP_ID};
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
-  char headers_buf[1024];
+  static char headers_buf[1024];
 
   /** HTTP response body buffer with size defined by the
    * CONFIG_STOP_JSON_BUF_SIZE
@@ -90,20 +90,20 @@ int update_stop(void) {
   static char json_buf[CONFIG_STOP_JSON_BUF_SIZE];
 
   err = http_request_stop_json(
-      json_buf, CONFIG_STOP_JSON_BUF_SIZE, headers_buf, sizeof(headers_buf)
+      &json_buf[0], CONFIG_STOP_JSON_BUF_SIZE, headers_buf, sizeof(headers_buf)
   );
   if (err) {
     LOG_ERR("HTTP GET request for JSON failed; cleaning up. ERR: %d", err);
     return 1;
   }
 
-  err = parse_json_for_stop(json_buf, &stop);
+  err = parse_stop_json(&json_buf[0], &stop);
   if (err) {
     LOG_DBG(
         "recv_body_buf size: %d, recv_body strlen: %d",
-        CONFIG_STOP_JSON_BUF_SIZE, strlen(json_buf)
+        CONFIG_STOP_JSON_BUF_SIZE, strlen(&json_buf[0])
     );
-    LOG_DBG("recv_body_buf:\n%s", json_buf);
+    LOG_DBG("recv_body_buf:\n%s", &json_buf[0]);
     return 1;
   }
 

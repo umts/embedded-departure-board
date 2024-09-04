@@ -11,7 +11,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(embedded-departure-board)
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-FILE(GLOB app_sources src/*.c)
+FILE(GLOB_RECURSE app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})
 
 SET_SOURCE_FILES_PROPERTIES( ${app_sources} PROPERTIES COMPILE_FLAGS -fanalyzer )

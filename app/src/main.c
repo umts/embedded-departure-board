@@ -101,7 +101,7 @@ end:
 #else
 int main(void) {
   int err;
-  int wdt_channel_id;
+  int wdt_channel_id = -1;
 
   err = init_display_switches();
   if (err < 0) {
