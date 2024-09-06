@@ -18,7 +18,7 @@
 #error "LED strip device node with alias 'led_strip' not defined."
 #endif
 
-LOG_MODULE_REGISTER(led_display, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(led_display, LOG_LEVEL_INF);
 
 #define STRIP_NUM_PIXELS DT_PROP(DT_ALIAS(led_strip), chain_length)
 

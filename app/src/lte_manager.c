@@ -15,7 +15,7 @@
 #include <zephyr/net/tls_credentials.h>
 #endif
 
-LOG_MODULE_REGISTER(lte_manager, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(lte_manager, LOG_LEVEL_INF);
 
 static const char ca_cert[] = {
 #include "../keys/public/jes-contact.pem"

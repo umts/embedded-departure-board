@@ -14,7 +14,7 @@
 #include "fota.h"
 #endif
 
-LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 void log_reset_reason(void) {
   uint32_t cause;

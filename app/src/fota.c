@@ -17,7 +17,7 @@
 #include "pm_config.h"
 #include "watchdog_app.h"
 
-LOG_MODULE_REGISTER(fota, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(fota, LOG_LEVEL_INF);
 
 #define STRINGIZE(arg) #arg
 #define STRINGIZE_VALUE(arg) STRINGIZE(arg)
