@@ -109,6 +109,14 @@ int main(void) {
     goto reset;
   }
 
+  // Set all displays off because the LEDs have memory
+  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+    err = display_off(box);
+    if (err < 0) {
+      LOG_ERR("Failed to set display switch %d off.", box);
+    }
+  }
+
   (void)log_reset_reason();
 
 #ifdef CONFIG_BOOTLOADER_MCUBOOT

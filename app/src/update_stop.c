@@ -37,6 +37,8 @@ static DisplayBox* get_display_address(
 static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
   unsigned int min = 0;
 
+  unsigned int times[6] = {0, 0, 0, 0, 0, 0};
+
   for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
     (void)display_off(box);
   }
@@ -59,13 +61,25 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
       DisplayBox* display = get_display_address(
           display_boxes, route_direction.id, route_direction.direction_code
       );
-
       if (display != NULL) {
-        LOG_DBG("Display address: %d", display->position);
-        // There is currently no light sensor to adjust brightness
-        if (write_num_to_display(display, display->brightness, min)) {
-          return 1;
+        LOG_INF("Display address: %d", display->position);
+        if ((times[display->position] == 0) ||
+            (min < times[display->position])) {
+          times[display->position] = min;
+          if (write_num_to_display(display, display->brightness, min)) {
+            return 1;
+          }
         }
+#ifdef CONFIG_DEBUG
+        else {
+          LOG_WRN(
+              "Display %u has lower time displayed;\nCurrent: %u\nAttempted: "
+              "%u",
+              display->position, times[display->position], min
+          );
+        }
+#endif
+
       } else {
         LOG_WRN(
             "Display address for Route: %d, Direction Code: %c not found.",
