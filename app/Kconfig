@@ -4,8 +4,8 @@ source "Kconfig.zephyr"
 config STOP_ID
   string "Bus stop ID"
 
-config STOP_REQUEST_AVAIL
-  bool "Select if JSON feed is directly from Avail servers"
+config STOP_REQUEST_INFOPOINT
+  bool "Select if JSON feed is directly from InfoPoint servers"
 
 config STOP_REQUEST_HOSTNAME
   string "Hostname used to retrieve stop data"

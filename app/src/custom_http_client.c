@@ -75,19 +75,19 @@ static int parse_status(char *headers_buf) {
 
   switch (code) {
     case 100 ... 199:
-      LOG_INF("Informational response code: %d", code);
+      LOG_WRN("Informational response code: %d", code);
       return HTTP_INFO;
     case 200 ... 299:
       LOG_INF("Successful response code: %d", code);
       return HTTP_SUCCESS;
     case 300 ... 399:
-      LOG_INF("Redirection response code: %d", code);
+      LOG_WRN("Redirection response code: %d", code);
       return HTTP_REDIRECT;
     case 400 ... 499:
-      LOG_INF("Client error response code: %d", code);
+      LOG_ERR("Client error response code: %d", code);
       return HTTP_CLIENT_ERROR;
     case 500 ... 599:
-      LOG_INF("Server error response code: %d", code);
+      LOG_ERR("Server error response code: %d", code);
       return HTTP_SERVER_ERROR;
     default:
       LOG_ERR("HTTP status code missing or incorrect. Response code: %d", code);
@@ -122,13 +122,13 @@ static int parse_headers(int *sock, char *headers_buf, int headers_buf_size) {
       status = parse_status(headers_buf);
       switch (status) {
         case HTTP_REDIRECT:
-          return 1;
+          return -2;
         case HTTP_CLIENT_ERROR:
-          return -1;
+          return -3;
         case HTTP_SERVER_ERROR:
-          return -1;
+          return -4;
         case HTTP_NULL:
-          return -1;
+          return -5;
         default:
           break;
       }
@@ -149,9 +149,12 @@ static long parse_response(
   int rc = 0;
   int bytes;
 
-  size_t headers_size = parse_headers(sock, headers_buf, headers_buf_size);
-  if (headers_size < 1) {
+  int headers_size = parse_headers(sock, headers_buf, headers_buf_size);
+
+  if (headers_size == 0) {
     return -1;
+  } else if (headers_size < 0) {
+    return headers_size;
   }
 
   do {
@@ -251,6 +254,8 @@ static int send_http_request(
   long rc = 0;
   int sock = -1;
   long range_start = 0;
+  // Keep track of retry attempts so we don't get in a loop
+  int retry_client_error = 0;
 
   struct addrinfo *addr_inf;
   static struct addrinfo hints = {
@@ -371,7 +376,7 @@ retry:
       &sock, recv_body_buf, recv_body_buf_size, range_start, headers_buf,
       headers_buf_size, write_nvs
   );
-  if (rc < 0) {
+  if (rc == -1) {
     LOG_ERR("EOF or error in response headers.");
   }
 
@@ -386,10 +391,18 @@ clean_up:
 
   LOG_DBG("Response Headers:\n%s", &headers_buf[0]);
 
-  if (rc == 1) {
+  LOG_INF("rc: %ld, retry_client_error: %d", rc, retry_client_error);
+
+  if (rc == -2) {
+    // Redirect returned; follow redirect
     goto redirect;
   } else if (rc > 1) {
+    // Partial transefer complete; reconnect with new range request
     range_start = rc;
+    goto retry;
+  } else if ((rc == -3) && (retry_client_error == 0)) {
+    // The InfoPoint endpoint occasionally returns 404; retry once
+    retry_client_error = 1;
     goto retry;
   }
 
@@ -453,7 +466,7 @@ int http_request_stop_json(
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {
-#if CONFIG_STOP_REQUEST_AVAIL
+#if CONFIG_STOP_REQUEST_INFOPOINT
     err = send_http_request(
         hostname, path, "application/json", NO_SEC_TAG, stop_body_buf,
         stop_body_buf_size, headers_buf, headers_buf_size, false
@@ -462,10 +475,10 @@ int http_request_stop_json(
 #else
     err = send_http_request(
         hostname, path, "application/json", JES_SEC_TAG, stop_body_buf,
-        stop_body_buf_size, false
+        stop_body_buf_size, headers_buf, headers_buf_size, false
     );
     k_sem_give(&lte_connected_sem);
-#endif
+#endif  // CONFIG_STOP_REQUEST_INFOPOINT
   }
 
   return err;

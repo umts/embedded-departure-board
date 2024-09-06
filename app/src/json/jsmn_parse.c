@@ -44,7 +44,7 @@ static int unique_disply_text(
 }
 
 /** Iterates through the Departures array objects to find desired values. */
-#ifdef CONFIG_STOP_REQUEST_AVAIL
+#ifdef CONFIG_STOP_REQUEST_INFOPOINT
 static int parse_departures(
     const char *const json_ptr, int t, jsmntok_t tokens[], int rdir,
     size_t departures_count, RouteDirection *route_direction, const int time_now
@@ -157,7 +157,7 @@ static int parse_departures(
   route_direction->departures_size = valid_departure_count;
   return t;
 }
-#endif  // CONFIG_STOP_REQUEST_AVAIL
+#endif  // CONFIG_STOP_REQUEST_INFOPOINT
 
 /** Iterates through the RouteDirections array objects to find desired values.
  */
@@ -265,6 +265,7 @@ int parse_stop_json(const char *const json_ptr, Stop *stop) {
   );
 
   if (eval_jsmn_return(ret)) {
+    LOG_ERR("Failed to parse JSON");
     return EXIT_FAILURE;
   }
   LOG_DBG("Tokens allocated: %d/%d\n", ret, STOP_TOK_COUNT);
