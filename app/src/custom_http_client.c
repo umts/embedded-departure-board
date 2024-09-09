@@ -391,8 +391,6 @@ clean_up:
 
   LOG_DBG("Response Headers:\n%s", &headers_buf[0]);
 
-  LOG_INF("rc: %ld, retry_client_error: %d", rc, retry_client_error);
-
   if (rc == -2) {
     // Redirect returned; follow redirect
     goto redirect;

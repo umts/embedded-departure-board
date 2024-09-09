@@ -14,5 +14,6 @@ int write_num_to_display(
 
 #ifdef CONFIG_LED_DISPLAY_TEST
 int led_test_patern(void);
+int max_power_test(void);
 #endif  // CONFIG_LED_DISPLAY_TEST
 #endif  // LED_DISPLAY_H

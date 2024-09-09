@@ -92,6 +92,11 @@ int main(void) {
     if (err) {
       goto end;
     }
+
+    err = max_power_test();
+    if (err) {
+      goto end;
+    }
   }
 
 end:
