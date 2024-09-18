@@ -93,7 +93,7 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
 
 int update_stop(void) {
   int err;
-  static Stop stop = {.last_updated = 0, .id = STOP_ID};
+  static Stop stop = {.last_updated = 0, .id = CONFIG_STOP_ID};
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
   static char headers_buf[1024];
