@@ -56,7 +56,7 @@
 &spi2 {
   compatible = "nordic,nrf-spim";
   status = "okay";
-  cs-gpios = <&gpio0 18 GPIO_ACTIVE_LOW>;
+  cs-gpios = <&gpio0 31 GPIO_ACTIVE_LOW>;
   pinctrl-0 = <&spi_feather_default>;
   pinctrl-1 = <&spi_feather_sleep>;
   pinctrl-names = "default", "sleep";
@@ -136,6 +136,11 @@
   display_switch_4: display_switch_4 {
     compatible = "gpio-switch";
     gpios = <&gpio0 17 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+  };
+
+  display_switch_5: display_switch_5 {
+    compatible = "gpio-switch";
+    gpios = <&gpio0 18 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
   };
 
   chosen {
