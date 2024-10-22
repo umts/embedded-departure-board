@@ -6,6 +6,7 @@
 
 #include "display_switches.h"
 #include "external_rtc.h"
+#include "light_sensor.h"
 #include "lte_manager.h"
 #include "update_stop.h"
 #include "watchdog_app.h"
@@ -178,6 +179,11 @@ int main(void) {
       }
 
       if (update_stop()) {
+        goto reset;
+      }
+
+      int lux = get_lux();
+      if (lux < 0) {
         goto reset;
       }
     }
