@@ -8,6 +8,7 @@
 #include "external_rtc.h"
 #include "light_sensor.h"
 #include "lte_manager.h"
+#include "pwm_leds.h"
 #include "update_stop.h"
 #include "watchdog_app.h"
 
@@ -88,6 +89,11 @@ int main(void) {
     goto end;
   }
 
+  err = pwm_leds_test();
+  if (err) {
+    goto end;
+  }
+
   while (1) {
     err = led_test_patern();
     if (err) {
@@ -98,6 +104,8 @@ int main(void) {
     if (err) {
       goto end;
     }
+
+    k_msleep(3000);
   }
 
 end:
@@ -121,6 +129,11 @@ int main(void) {
     if (err < 0) {
       LOG_ERR("Failed to set display switch %d off.", box);
     }
+  }
+
+  err = pwm_leds_set(0);
+  if (err) {
+    goto reset;
   }
 
   (void)log_reset_reason();
@@ -184,6 +197,11 @@ int main(void) {
 
       int lux = get_lux();
       if (lux < 0) {
+        goto reset;
+      }
+
+      err = pwm_leds_set((uint32_t)lux);
+      if (err) {
         goto reset;
       }
     }
