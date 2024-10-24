@@ -11,7 +11,7 @@ LOG_MODULE_REGISTER(pwm_leds, LOG_LEVEL_INF);
 static const struct pwm_dt_spec pwm_led0 = PWM_DT_SPEC_GET(DT_ALIAS(pwm_led0));
 
 #define MAX_PERIOD 250000000
-#define TRIGGER_LUX 0x32
+#define TRIGGER_LUX 0xA
 
 int pwm_leds_set(uint32_t value) {
   uint32_t pulse;

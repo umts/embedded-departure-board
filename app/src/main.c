@@ -115,6 +115,7 @@ end:
 #else
 int main(void) {
   int err;
+  int lux;
   int wdt_channel_id = -1;
 
   err = init_display_switches();
@@ -131,7 +132,12 @@ int main(void) {
     }
   }
 
-  err = pwm_leds_set(0);
+  lux = get_lux();
+  if (lux < 0) {
+    goto reset;
+  }
+
+  err = pwm_leds_set((uint32_t)lux);
   if (err) {
     goto reset;
   }
@@ -202,6 +208,12 @@ int main(void) {
 
       err = pwm_leds_set((uint32_t)lux);
       if (err) {
+        goto reset;
+      }
+
+      err = wdt_feed(wdt, wdt_channel_id);
+      if (err) {
+        LOG_ERR("Failed to feed watchdog. Err: %d", err);
         goto reset;
       }
     }
