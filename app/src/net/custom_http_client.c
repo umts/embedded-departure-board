@@ -10,8 +10,8 @@
 #include <zephyr/net/tls_credentials.h>
 #include <zephyr/storage/stream_flash.h>
 
-#include "fota.h"
-#include "lte_manager.h"
+#include "net/fota.h"
+#include "net/lte_manager.h"
 #include "watchdog_app.h"
 
 LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_INF);

@@ -3,11 +3,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-#include "custom_http_client.h"
-#include "display_switches.h"
+#include "display/display_switches.h"
+#include "display/led_display.h"
 #include "external_rtc.h"
 #include "json/jsmn_parse.h"
-#include "led_display.h"
+#include "net/custom_http_client.h"
 #include "stop.h"
 
 LOG_MODULE_REGISTER(update_stop, LOG_LEVEL_INF);
@@ -92,7 +92,7 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
 }
 
 int update_stop(void) {
-  int err;
+  int ret;
   static Stop stop = {.last_updated = 0, .id = CONFIG_STOP_ID};
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
@@ -107,16 +107,16 @@ int update_stop(void) {
   static char json_buf[CONFIG_STOP_JSON_BUF_SIZE];
 
 retry:
-  err = http_request_stop_json(
+  ret = http_request_stop_json(
       &json_buf[0], CONFIG_STOP_JSON_BUF_SIZE, headers_buf, sizeof(headers_buf)
   );
-  if (err) {
-    LOG_ERR("HTTP GET request for JSON failed; cleaning up. ERR: %d", err);
+  if (ret) {
+    LOG_ERR("HTTP GET request for JSON failed; cleaning up. ERR: %d", ret);
     return 1;
   }
 
-  err = parse_stop_json(&json_buf[0], &stop);
-  if (err) {
+  ret = parse_stop_json(&json_buf[0], &stop);
+  if (ret) {
     LOG_DBG(
         "recv_body_buf size: %d, recv_body strlen: %d",
         CONFIG_STOP_JSON_BUF_SIZE, strlen(&json_buf[0])
@@ -127,11 +127,11 @@ retry:
      * means the HTTP transfer was incomplete. This may be a server-side issue,
      * so we can retry the download once before resetting the device.
      */
-    if (err == 3 && retry_error == 0) {
+    if (ret == 3 && retry_error == 0) {
       LOG_WRN("JSON download was incomplete, retrying...");
       retry_error = 1;
       goto retry;
-    } else if (err == 5) {
+    } else if (ret == 5) {
       /* A returned 5 corresponds to a successful response with no scheduled
        * departures.
        */
@@ -146,8 +146,8 @@ retry:
       stop.routes_size, stop.last_updated
   );
 
-  err = parse_returned_routes(stop, display_boxes);
-  if (err) {
+  ret = parse_returned_routes(stop, display_boxes);
+  if (ret) {
     return 1;
   }
 

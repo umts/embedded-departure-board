@@ -13,7 +13,7 @@
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/sys/util.h>
 
-#include "custom_http_client.h"
+#include "net/custom_http_client.h"
 #include "pm_config.h"
 #include "watchdog_app.h"
 

@@ -8,7 +8,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 
-#include "display_switches.h"
+#include "display/display_switches.h"
 
 #if !DT_NODE_EXISTS(DT_ALIAS(mux))
 #error "Multiplexer device node with alias 'mux' not defined."
