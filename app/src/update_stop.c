@@ -98,11 +98,15 @@ int update_stop(void) {
 
   static char headers_buf[1024];
 
+  // Keep track of retry attempts so we don't get in a loop
+  int retry_error = 0;
+
   /** HTTP response body buffer with size defined by the
    * CONFIG_STOP_JSON_BUF_SIZE
    */
   static char json_buf[CONFIG_STOP_JSON_BUF_SIZE];
 
+retry:
   err = http_request_stop_json(
       &json_buf[0], CONFIG_STOP_JSON_BUF_SIZE, headers_buf, sizeof(headers_buf)
   );
@@ -118,6 +122,22 @@ int update_stop(void) {
         CONFIG_STOP_JSON_BUF_SIZE, strlen(&json_buf[0])
     );
     LOG_DBG("recv_body_buf:\n%s", &json_buf[0]);
+
+    /* A returned 3 corresponds to an incomplete JSON packet. Most likely this
+     * means the HTTP transfer was incomplete. This may be a server-side issue,
+     * so we can retry the download once before resetting the device.
+     */
+    if (err == 3 && retry_error == 0) {
+      LOG_WRN("JSON download was incomplete, retrying...");
+      retry_error = 1;
+      goto retry;
+    } else if (err == 5) {
+      /* A returned 5 corresponds to a successful response with no scheduled
+       * departures.
+       */
+      return 2;
+    }
+
     return 1;
   }
 

@@ -191,18 +191,15 @@ int main(void) {
 
   while (1) {
     if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
-      err = wdt_feed(wdt, wdt_channel_id);
-      if (err) {
-        LOG_ERR("Failed to feed watchdog. Err: %d", err);
-        goto reset;
-      }
-
-      if (update_stop()) {
-        goto reset;
-      }
-
-      int lux = get_lux();
-      if (lux < 0) {
+      err = update_stop();
+      if (err == 0) {
+        lux = get_lux();
+        if (lux < 0) {
+          goto reset;
+        }
+      } else if (err == 2) {
+        lux = 0xFF;
+      } else {
         goto reset;
       }
 

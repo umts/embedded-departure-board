@@ -23,10 +23,10 @@ int pwm_leds_set(uint32_t value) {
     pulse = 0;
   }
 
-  // if (!pwm_is_ready_dt(&pwm_led0)) {
-  //   LOG_ERR("Error: PWM device %s is not ready\n", pwm_led0.dev->name);
-  //   return 1;
-  // }
+  if (!pwm_is_ready_dt(&pwm_led0)) {
+    LOG_ERR("Error: PWM device %s is not ready\n", pwm_led0.dev->name);
+    return 1;
+  }
 
   ret = pwm_set_dt(&pwm_led0, MAX_PERIOD, pulse);
   if (ret) {

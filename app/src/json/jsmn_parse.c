@@ -255,6 +255,7 @@ int parse_stop_json(const char *const json_ptr, Stop *stop) {
   /** The jsmn token counter. */
   int t;
   int ret;
+  int err;
 
   jsmn_init(&p);
 
@@ -264,11 +265,18 @@ int parse_stop_json(const char *const json_ptr, Stop *stop) {
       &p, json_ptr, strlen(json_ptr), tokens, sizeof(tokens) / sizeof(jsmntok_t)
   );
 
-  if (eval_jsmn_return(ret)) {
+  err = eval_jsmn_return(ret);
+  if (err) {
     LOG_ERR("Failed to parse JSON");
-    return EXIT_FAILURE;
+    return err;
   }
+
   LOG_DBG("Tokens allocated: %d/%d\n", ret, STOP_TOK_COUNT);
+
+  if (ret < 2) {
+    LOG_WRN("No scheduled departures");
+    return 5;
+  }
 
   /* Set the starting position for t */
   switch (tokens[0].type) {
@@ -290,7 +298,7 @@ int parse_stop_json(const char *const json_ptr, Stop *stop) {
 
   const int time_now = get_external_rtc_time();
   if (time_now == -1) {
-    return 2;
+    return EXIT_FAILURE;
   }
 
   /* We want to loop over all the keys of the root object.
