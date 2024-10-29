@@ -419,38 +419,49 @@ redirect:
   char redirect_hostname_buf[255];
   LOG_INF("Redirect location: %s", ptr);
 
-  /* Assume the host is the same */
-  if (*ptr == '/') {
-    path = strcpy(redirect_hostname_buf, ptr);
-    LOG_DBG("path ptr: %s", path);
-    /* Assume we're dealing with a url */
-  } else if (*ptr == 'h') {
-    if (strncmp(ptr, "https", 5) == 0) {
-      if (sec_tag == NO_SEC_TAG) {
-        LOG_ERR(
-            "Redirect requires TLS, but a TLS sec_tag was assigned. Assign "
-            "correct sec_tag in the code "
-            "Aborting."
-        );
-        return EXIT_FAILURE;
-      }
-      ptr += 8;
-    } else {
-      ptr += 7;
-      sec_tag = NO_SEC_TAG;
-    }
-    hostname = ptr;
-    ptr = strstr(ptr, "/");
-    *ptr++ = '\0';
-
-    path = stpcpy(redirect_hostname_buf, hostname);
-    *++path = '/';
-
-    (void)strcpy((path + 1), ptr);
-    hostname = redirect_hostname_buf;
-  } else {
-    LOG_ERR("Bad redirect location");
+  if (ptr == NULL) {
+    LOG_ERR("get_redirect_location returned NULL pointer");
     return EXIT_FAILURE;
+  } else {
+    /* Assume the host is the same */
+    if (*ptr == '/') {
+      path = strcpy(redirect_hostname_buf, ptr);
+      LOG_DBG("path ptr: %s", path);
+      /* Assume we're dealing with a url */
+    } else if (*ptr == 'h') {
+      if (strncmp(ptr, "https", 5) == 0) {
+        if (sec_tag == NO_SEC_TAG) {
+          LOG_ERR(
+              "Redirect requires TLS, but a TLS sec_tag was assigned. Assign "
+              "correct sec_tag in the code "
+              "Aborting."
+          );
+          return EXIT_FAILURE;
+        }
+        ptr += 8;
+      } else {
+        ptr += 7;
+        sec_tag = NO_SEC_TAG;
+      }
+      hostname = ptr;
+      ptr = strstr(ptr, "/");
+
+      if (ptr == NULL) {
+        LOG_ERR("strstr returned NULL pointer");
+        return EXIT_FAILURE;
+      } else {
+        *ptr++ = '\0';
+
+        path = stpcpy(redirect_hostname_buf, hostname);
+        *++path = '/';
+
+        (void)strcpy((path + 1), ptr);
+        hostname = redirect_hostname_buf;
+      }
+    } else {
+      LOG_ERR("Bad redirect location");
+      return EXIT_FAILURE;
+    }
   }
 
   goto retry;
