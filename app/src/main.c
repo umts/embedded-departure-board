@@ -5,16 +5,19 @@
 #include <zephyr/types.h>
 
 #include "display/display_switches.h"
-#include "display/pwm_leds.h"
 #include "external_rtc.h"
-#include "light_sensor.h"
 #include "net/lte_manager.h"
 #include "update_stop.h"
 #include "watchdog_app.h"
 
+#ifdef CONFIG_LIGHT_SENSOR
+#include "display/pwm_leds.h"
+#include "light_sensor.h"
+#endif  // CONFIG_LIGHT_SENSOR
+
 #ifdef CONFIG_BOOTLOADER_MCUBOOT
 #include "net/fota.h"
-#endif
+#endif  // CONFIG_BOOTLOADER_MCUBOOT
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
@@ -115,7 +118,6 @@ end:
 #else
 int main(void) {
   int ret;
-  int lux;
   int wdt_channel_id = -1;
 
   ret = init_display_switches();
@@ -132,7 +134,8 @@ int main(void) {
     }
   }
 
-  lux = get_lux();
+#ifdef CONFIG_LIGHT_SENSOR
+  int lux = get_lux();
   if (lux < 0) {
     goto reset;
   }
@@ -141,6 +144,7 @@ int main(void) {
   if (ret) {
     goto reset;
   }
+#endif  // CONFIG_LIGHT_SENSOR
 
   (void)log_reset_reason();
 
@@ -191,6 +195,8 @@ int main(void) {
 
   while (1) {
     if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
+
+#ifdef CONFIG_LIGHT_SENSOR
       ret = update_stop();
       if (ret == 0) {
         lux = get_lux();
@@ -207,6 +213,11 @@ int main(void) {
       if (ret) {
         goto reset;
       }
+#else
+      if (update_stop()) {
+        goto reset;
+      }
+#endif  // CONFIG_LIGHT_SENSOR
 
       ret = wdt_feed(wdt, wdt_channel_id);
       if (ret) {
@@ -230,8 +241,8 @@ reset:
     k_msleep(29000);
   }
 #else
-  LOG_WRN("Reached end of main; rebooting.");
-  /* In ARM implementation sys_reboot ignores the parameter */
+  LOG_ERR("Reached end of main; rebooting.");
+  /* The ARM implementation sys_reboot ignores the parameter */
   sys_reboot(SYS_REBOOT_COLD);
 #endif
 }

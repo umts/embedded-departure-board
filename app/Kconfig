@@ -22,6 +22,9 @@ config OTA_HOSTNAME
 config OTA_PATH
   string "HTTP path used to download firmware upgade file"
 
+config LIGHT_SENSOR
+  bool "Enable I2C ambient light sensor"
+
 config LED_DISPLAY_TEST
   bool "Select to run LED display test instead of main application"
 
