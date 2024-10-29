@@ -15,6 +15,8 @@
 #include <zephyr/net/tls_credentials.h>
 #endif
 
+#include "watchdog_app.h"
+
 LOG_MODULE_REGISTER(lte_manager, LOG_LEVEL_INF);
 
 static const char ca_cert[] = {
@@ -122,6 +124,12 @@ int lte_connect(void) {
   }
 
   LOG_INF("Connecting to the network");
+
+  err = wdt_feed(wdt, wdt_channel_id);
+  if (err) {
+    LOG_ERR("Failed to feed watchdog. Err: %d", err);
+    return 1;
+  }
 
   err = lte_lc_connect();
   if (err < -1) {

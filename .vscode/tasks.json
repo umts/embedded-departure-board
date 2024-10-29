@@ -110,7 +110,7 @@
         "&&",
         "west",
         "build",
-        "${workspaceFolder}/nrf/samples/nrf9160/at_client/",
+        "${workspaceFolder}/nrf/samples/cellular/at_client",
         "-p"
       ],
       "options": {
