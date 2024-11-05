@@ -7,7 +7,6 @@
 
 #define JSMN_HEADER
 
-#include "app_rtc.h"
 #include "json/jsmn.h"
 #include "json/json_helpers.h"
 #include "stop.h"
@@ -245,7 +244,9 @@ static int parse_route_directions(
  *
  * TODO: Acount for size of *optional* arrays while iterating.
  */
-int parse_stop_json(const char *const json_ptr, Stop *stop) {
+int parse_stop_json(
+    const char *const json_ptr, Stop *stop, unsigned int time_now
+) {
   jsmn_parser p;
 
   /** The number of maximum possible tokens we expect in our JSON string + 1 for
@@ -294,11 +295,6 @@ int parse_stop_json(const char *const json_ptr, Stop *stop) {
     default:
       LOG_ERR("Top level token isn't an array or object.");
       return EXIT_FAILURE;
-  }
-
-  const int time_now = get_app_rtc_time();
-  if (time_now == -1) {
-    return EXIT_FAILURE;
   }
 
   /* We want to loop over all the keys of the root object.

@@ -196,6 +196,14 @@ int main(void) {
   LOG_INF("update_stop_timer started");
 
   while (1) {
+    if (k_sem_take(&rtc_sync_sem, K_NO_WAIT) == 0) {
+      ret = set_app_rtc_time();
+      if (ret) {
+        LOG_ERR("Failed to set rtc.");
+        goto reset;
+      }
+    }
+
     if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
       /* A returned 2 corresponds to a successful response with no scheduled
        * departures.
@@ -230,6 +238,7 @@ int main(void) {
         goto reset;
       }
     }
+
     k_cpu_idle();
   }
 

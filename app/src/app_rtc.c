@@ -1,47 +1,20 @@
-<<<<<<< HEAD:app/src/external_rtc.c
-#include "external_rtc.h"
+#include "app_rtc.h"
 
-/* Zephyr includes */
-#include <drivers/counter/pcf85063a.h>
-=======
-#include <app_rtc.h>
-
-/* Zephyr includes */
-#include <stdbool.h>
->>>>>>> 2d2bcbb (Use internal RTC):app/src/app_rtc.c
 #include <zephyr/device.h>
 #include <zephyr/drivers/counter.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/sntp.h>
-<<<<<<< HEAD:app/src/external_rtc.c
+#include <zephyr/sys/util.h>
+
+#define RTC DEVICE_DT_GET(DT_ALIAS(rtc))
 
 #define SNTP_SERVER "time.nist.gov"
 #define SNTP_FALLBACK_SERVER "us.pool.ntp.org"
-=======
-#include <zephyr/net/socket.h>
-#include <zephyr/posix/time.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/types.h>
-
-#if CONFIG_PCF85063A
-/* pcf85063a driver includes */
-#include <drivers/counter/pcf85063a.h>
-#include <zephyr/drivers/gpio.h>
-
-#define RTC DEVICE_DT_GET(DT_NODELABEL(pcf85063a))
-#else
-
-#define RTC DEVICE_DT_GET(DT_ALIAS(rtc))
-#endif
-
-#define SNTP_SERVER "pool.ntp.org"
-#define SNTP_FALLBACK_SERVER "time.nist.gov"
->>>>>>> 2d2bcbb (Use internal RTC):app/src/app_rtc.c
 #define SNTP_INIT_TIMEOUT_MS 3000
 #define RETRY_COUNT 3
 
-LOG_MODULE_REGISTER(get_rtc);
+LOG_MODULE_REGISTER(rtc, LOG_LEVEL_DBG);
 
 K_MUTEX_DEFINE(rtc_mutex);
 
@@ -49,7 +22,7 @@ const struct device *const rtc = RTC;
 
 static struct sntp_time ts;
 
-static unsigned int turnover_count = 0;
+K_SEM_DEFINE(rtc_sync_sem, 0, 1);
 
 static void get_ntp_time(void) {
   int err;
@@ -83,8 +56,16 @@ static void get_ntp_time(void) {
   }
 }
 
+static void counter_top_callback(
+    const struct device *counter_dev, void *user_data
+) {
+  LOG_INF("Updating RTC with NTP time");
+  (void)k_sem_give(&rtc_sync_sem);
+}
+
 int set_app_rtc_time(void) {
   int err;
+  struct counter_top_cfg top_cfg;
 
   err = k_mutex_lock(&rtc_mutex, K_MSEC(100));
   if (err) {
@@ -98,63 +79,59 @@ int set_app_rtc_time(void) {
     goto clean_up;
   }
 
+  top_cfg.flags = COUNTER_TOP_CFG_RESET_WHEN_LATE;
+  // 24 hours = 86400 sec
+  top_cfg.ticks = 86400 * counter_get_frequency(rtc);
+  top_cfg.callback = counter_top_callback;
+  top_cfg.user_data = &top_cfg;
+
+  err = counter_set_guard_period(rtc, 240, 0);
+  if (err) {
+    LOG_ERR("Failed to set RTC guard value, ERR: %d", err);
+  }
+
+  err = counter_set_top_value(rtc, &top_cfg);
+  if (err) {
+    LOG_ERR("Failed to set RTC top value, ERR: %d", err);
+  }
+
+  (void)get_ntp_time();
+  LOG_INF(
+      "time since Epoch: high word: %u, low word: %u",
+      (uint32_t)(ts.seconds >> 32), (uint32_t)ts.seconds
+  );
+
   err = counter_start(rtc);
-  if (err < -1) {
+  if (err) {
     LOG_WRN("Failed to start RTC. Err: %i", err);
     goto clean_up;
   }
 
-  get_ntp_time();
-
-  /* Convert time to struct tm */
-  struct tm rtc_time = *gmtime(&ts.seconds);
-
-#if CONFIG_PCF85063A
-  /* Set rtc time */
-  err = pcf85063a_set_time(rtc, &rtc_time);
-  if (err) {
-    LOG_WRN("Failed to set RTC counter. Err: %i", err);
-    goto clean_up;
-  }
-#endif
-
-  LOG_INF(
-      "RTC time set to: %i:%i:%i %i/%i/%i - %i", rtc_time.tm_hour,
-      rtc_time.tm_min, rtc_time.tm_sec, rtc_time.tm_mon + 1, rtc_time.tm_mday,
-      1900 + rtc_time.tm_year, rtc_time.tm_isdst
-  );
+  // LOG_DBG("Frequency: %u", counter_get_frequency(rtc));
+  // LOG_DBG("Max top Value: %u", counter_get_max_top_value(rtc));
+  // LOG_DBG("Top Value: %u", counter_get_top_value(rtc));
 
 clean_up:
   k_mutex_unlock(&rtc_mutex);
   return err;
 }
 
-int get_app_rtc_time(void) {
+unsigned int get_app_rtc_time(void) {
   int err = k_mutex_lock(&rtc_mutex, K_MSEC(100));
   if (err) {
-    LOG_WRN("Can't set RTC, mutex locked");
+    LOG_WRN("Can't read RTC, mutex locked");
     return -1;
   }
 
-/* Get current time from device */
-#if CONFIG_PCF85063A
-  struct tm rtc_time = {0};
-  err = pcf85063a_get_time(rtc, &rtc_time);
-#else
+  /* Get current time from device */
   uint32_t ticks;
   err = counter_get_value(rtc, &ticks);
   LOG_WRN("Counter value: %d", ticks);
-#endif
   if (err < -1) {
     LOG_ERR("Failed to get RTC value. Err: %i", err);
   }
 
   k_mutex_unlock(&rtc_mutex);
 
-#if CONFIG_PCF85063A
-  /* Convert to Unix timestamp */
-  return mktime(rtc_time);
-#else
-  return (ts.seconds + (ticks / 8));
-#endif
+  return ((uint32_t)ts.seconds + (ticks / counter_get_frequency(rtc)));
 }
