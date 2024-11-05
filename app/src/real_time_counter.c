@@ -1,4 +1,4 @@
-#include "app_rtc.h"
+#include "real_time_counter.h"
 
 #include <zephyr/device.h>
 #include <zephyr/drivers/counter.h>
@@ -14,7 +14,7 @@
 #define SNTP_INIT_TIMEOUT_MS 3000
 #define RETRY_COUNT 3
 
-LOG_MODULE_REGISTER(rtc, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(real_time_counter, LOG_LEVEL_DBG);
 
 K_MUTEX_DEFINE(rtc_mutex);
 
@@ -63,8 +63,9 @@ static void counter_top_callback(
   (void)k_sem_give(&rtc_sync_sem);
 }
 
-int set_app_rtc_time(void) {
+int set_rtc_time(void) {
   int err;
+  uint32_t freq;
   struct counter_top_cfg top_cfg;
 
   err = k_mutex_lock(&rtc_mutex, K_MSEC(100));
@@ -79,13 +80,15 @@ int set_app_rtc_time(void) {
     goto clean_up;
   }
 
+  freq = counter_get_frequency(rtc);
+
   top_cfg.flags = COUNTER_TOP_CFG_RESET_WHEN_LATE;
   // 24 hours = 86400 sec
-  top_cfg.ticks = 86400 * counter_get_frequency(rtc);
+  top_cfg.ticks = 86400 * freq;
   top_cfg.callback = counter_top_callback;
   top_cfg.user_data = &top_cfg;
 
-  err = counter_set_guard_period(rtc, 240, 0);
+  err = counter_set_guard_period(rtc, 30 * freq, 0);
   if (err) {
     LOG_ERR("Failed to set RTC guard value, ERR: %d", err);
   }
@@ -107,26 +110,21 @@ int set_app_rtc_time(void) {
     goto clean_up;
   }
 
-  // LOG_DBG("Frequency: %u", counter_get_frequency(rtc));
-  // LOG_DBG("Max top Value: %u", counter_get_max_top_value(rtc));
-  // LOG_DBG("Top Value: %u", counter_get_top_value(rtc));
-
 clean_up:
   k_mutex_unlock(&rtc_mutex);
   return err;
 }
 
-unsigned int get_app_rtc_time(void) {
+unsigned int get_rtc_time(void) {
   int err = k_mutex_lock(&rtc_mutex, K_MSEC(100));
   if (err) {
     LOG_WRN("Can't read RTC, mutex locked");
     return -1;
   }
 
-  /* Get current time from device */
   uint32_t ticks;
+
   err = counter_get_value(rtc, &ticks);
-  LOG_WRN("Counter value: %d", ticks);
   if (err < -1) {
     LOG_ERR("Failed to get RTC value. Err: %i", err);
   }

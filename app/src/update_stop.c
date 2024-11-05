@@ -3,11 +3,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-#include "app_rtc.h"
 #include "display/display_switches.h"
 #include "display/led_display.h"
 #include "json/jsmn_parse.h"
 #include "net/custom_http_client.h"
+#include "real_time_counter.h"
 #include "stop.h"
 
 LOG_MODULE_REGISTER(update_stop);
@@ -120,7 +120,7 @@ retry:
     return 1;
   }
 
-  time_now = get_app_rtc_time();
+  time_now = get_rtc_time();
 
   ret = parse_stop_json(&json_buf[0], &stop, time_now);
   if (ret) {
