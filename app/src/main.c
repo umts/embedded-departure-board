@@ -83,7 +83,7 @@ void log_reset_reason(void) {
 }
 
 #ifdef CONFIG_LED_DISPLAY_TEST
-#include "led_display.h"
+#include "display/led_display.h"
 
 int main(void) {
   int err = init_display_switches();
@@ -92,10 +92,12 @@ int main(void) {
     goto end;
   }
 
+#ifdef CONFIG_LIGHT_SENSOR
   err = pwm_leds_test();
   if (err) {
     goto end;
   }
+#endif  // CONFIG_LIGHT_SENSOR
 
   while (1) {
     err = led_test_patern();
