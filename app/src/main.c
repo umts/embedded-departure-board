@@ -195,7 +195,9 @@ int main(void) {
 
   while (1) {
     if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
-
+      /* A returned 2 corresponds to a successful response with no scheduled
+       * departures.
+       */
 #ifdef CONFIG_LIGHT_SENSOR
       ret = update_stop();
       if (ret == 0) {
@@ -214,7 +216,8 @@ int main(void) {
         goto reset;
       }
 #else
-      if (update_stop()) {
+      ret = update_stop();
+      if (ret && (ret != 2)) {
         goto reset;
       }
 #endif  // CONFIG_LIGHT_SENSOR
