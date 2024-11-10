@@ -1,7 +1,7 @@
 name: Version Check
 on:
   push:
-    branches: [ main ]
+    branches: [stop_73, stop_414, stop_1670]
 jobs:
   version_check:
     runs-on: ubuntu-latest

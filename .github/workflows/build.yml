@@ -10,14 +10,16 @@ on:
       upload_artifacts:
         description: 'Are artifacts required to be uploaded?'
         type: boolean
+  push:
+    branches: [main]
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       ZEPHYR_SDK_INSTALL_PATH: /opt/toolchains
-      ZSDK_VERSION: 0.16.8
+      ZSDK_VERSION: 0.16.9
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.12
+      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26-branch
       env:
         ZEPHYR_TOOLCHAIN_VARIANT: zephyr
         ZEPHYR_SDK_INSTALL_DIR: ${ZEPHYR_SDK_INSTALL_PATH}/zephyr-sdk-${ZSDK_VERSION}
@@ -99,16 +101,21 @@ jobs:
           BOARD: circuitdojo_feather_nrf9160_ns
         run: west build ./app -p
 
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
       - name: Upload merged.hex
         if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v4
         with:
           name: merged.hex
-          path: build/zephyr/merged.hex
+          path: build/zephyr/${{ steps.extract_branch.outputs.branch }}_merged.hex
 
       - name: Upload app_update.bin
         if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v4
         with:
           name: app_update.bin
-          path: build/zephyr/app_update.bin
+          path: build/zephyr/${{ steps.extract_branch.outputs.branch }}_app_update.bin
