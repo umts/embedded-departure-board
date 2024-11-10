@@ -5,7 +5,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(display_switches, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(display_switches);
 
 #if !DT_NODE_EXISTS(DT_NODELABEL(display_switch_0))
 #error "Overlay for enable switch 0 node not properly defined."

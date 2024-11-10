@@ -5,7 +5,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(light_sensor, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(light_sensor);
 
 #define SEN_ADDR 0x23
 #define SEN_REG_LUX 0x10

@@ -19,7 +19,7 @@
 #include "net/fota.h"
 #endif  // CONFIG_BOOTLOADER_MCUBOOT
 
-LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(main);
 
 void log_reset_reason(void) {
   uint32_t cause;

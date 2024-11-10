@@ -12,7 +12,7 @@
 #include "json/json_helpers.h"
 #include "stop.h"
 
-LOG_MODULE_REGISTER(jsmn_parse, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(jsmn_parse);
 
 /** The number of keys + values in for each object type in our JSON string */
 #define DEPARTURE_TOK_COUNT 18

@@ -14,7 +14,7 @@
 #include "net/lte_manager.h"
 #include "watchdog_app.h"
 
-LOG_MODULE_REGISTER(custom_http_client, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(custom_http_client);
 
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
