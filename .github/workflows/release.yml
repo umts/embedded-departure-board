@@ -86,9 +86,6 @@ jobs:
         with:
           merge-multiple: true
 
-      - name: Display structure of downloaded files
-        run: ls -R
-
       - name: Upload merged.hex
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
