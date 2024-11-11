@@ -103,19 +103,18 @@ jobs:
 
       - name: Extract branch name
         shell: bash
-        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
-        id: extract_branch
+        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_ENV
 
       - name: Upload merged.hex
         if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v4
         with:
-          name: merged.hex
-          path: build/zephyr/${{ steps.extract_branch.outputs.branch }}_merged.hex
+          name: ${{ env.BRANCH }}_merged.hex
+          path: build/zephyr/merged.hex
 
       - name: Upload app_update.bin
         if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v4
         with:
-          name: app_update.bin
-          path: build/zephyr/${{ steps.extract_branch.outputs.branch }}_app_update.bin
+          name: ${{ env.BRANCH }}_app_update.bin
+          path: build/zephyr/app_update.bin
