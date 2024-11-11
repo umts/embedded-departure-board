@@ -34,7 +34,7 @@ jobs:
 
       - name: Extract branch name
         shell: bash
-        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_ENV"
+        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
 
       - name: Check for existing release
         id: check_release
@@ -56,7 +56,7 @@ jobs:
             echo "No release matching tag [${{ env.version_tag }}] found" >> $GITHUB_STEP_SUMMARY
             echo "needs_release=true" >> $GITHUB_OUTPUT
           else
-            echo "upload_url=$(grep -Po '(?:\G(?!^)",|"upload_url":\s*)\s*"\K[^"{]+' release.json)" >> "$GITHUB_ENV"
+            echo "upload_url=$(grep -Po '(?:\G(?!^)",|"upload_url":\s*)\s*"\K[^"{]+' release.json)" >> $GITHUB_ENV
             echo "Found release [${{ env.version_tag }}]($html_url)" >> $GITHUB_STEP_SUMMARY
           fi
 
@@ -76,7 +76,7 @@ jobs:
           "https://api.github.com/repos/${{ env.OWNER }}/${{ env.REPO }}/releases" \
           -d '{"tag_name":"${{ env.version_tag }}","target_commitish":"${{ env.BRANCH }}","body":"___This release was automatically generated when the app version increased___","draft":false,"prerelease":false,"generate_release_notes":true}' \
           -o release.json
-          echo "upload_url=$(grep -Po '(?:\G(?!^)",|"upload_url":\s*)\s*"\K[^"{]+' release.json)" >> "$GITHUB_ENV"
+          echo "upload_url=$(grep -Po '(?:\G(?!^)",|"upload_url":\s*)\s*"\K[^"{]+' release.json)" >> $GITHUB_ENV
           html_url=$(grep -Po -m 1 '(?:\G(?!^)",|"html_url":\s*)\s*"\K[^"]+' release.json)
           echo "Created release [${{ env.version_tag }}]($html_url)" >> $GITHUB_STEP_SUMMARY
 

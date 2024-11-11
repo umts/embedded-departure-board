@@ -103,7 +103,7 @@ jobs:
 
       - name: Extract branch name
         shell: bash
-        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_ENV
+        run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
 
       - name: Upload merged.hex
         if: ${{ inputs.upload_artifacts }}
