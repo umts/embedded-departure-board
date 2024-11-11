@@ -53,7 +53,7 @@ jobs:
           -o release.json
           html_url=$(grep -Po -m 1 '(?:\G(?!^)",|"html_url":\s*)\s*"\K[^"]+' release.json)
           if [[ -z "$html_url" ]]; then
-            echo "No release matching tag [${{ env.version_tag }}] found" >> $GITHUB_STEP_SUMMARY
+            echo "No release matching tag ${{ env.version_tag }} found" >> $GITHUB_STEP_SUMMARY
             echo "needs_release=true" >> $GITHUB_OUTPUT
           else
             echo "upload_url=$(grep -Po '(?:\G(?!^)",|"upload_url":\s*)\s*"\K[^"{]+' release.json)" >> $GITHUB_ENV
@@ -67,6 +67,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
+          BRANCH: main
         run: |
           curl -L \
           -X POST \
@@ -90,12 +91,16 @@ jobs:
         with:
           name: ${{ env.BRANCH }}_app_update.bin
 
+      - name: Display structure of downloaded files
+        run: ls -R
+
       - name: Upload merged.hex
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
         run: |
+          ls -R
           curl -L \
           -X POST \
           -H "Accept: application/vnd.github+json" \
@@ -112,7 +117,7 @@ jobs:
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
         run: |
-          sha256sum merged.hex > merged_sha256.sum
+          sha256sum ${{ env.BRANCH }}_merged.hex > ${{ env.BRANCH }}_merged_sha256.sum
           curl -L \
           -X POST \
           -H "Accept: application/vnd.github+json" \
@@ -145,7 +150,7 @@ jobs:
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
         run: |
-          sha256sum app_update.bin > app_update_sha256.sum
+          sha256sum ${{ env.BRANCH }}_app_update.bin > ${{ env.BRANCH }}_app_update_sha256.sum
           curl -L \
           -X POST \
           -H "Accept: application/vnd.github+json" \
