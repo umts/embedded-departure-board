@@ -52,7 +52,7 @@ jobs:
           "https://api.github.com/repos/${{ env.OWNER }}/${{ env.REPO }}/releases/tags/${{ env.version_tag }}" \
           -o release.json
           html_url=$(grep -Po -m 1 '(?:\G(?!^)",|"html_url":\s*)\s*"\K[^"]+' release.json)
-          if if [[ -z "$html_url" ]]; then
+          if [[ -z "$html_url" ]]; then
             echo "No release matching tag [${{ env.version_tag }}] found" >> $GITHUB_STEP_SUMMARY
             echo "needs_release=true" >> $GITHUB_OUTPUT
           else
