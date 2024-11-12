@@ -17,7 +17,7 @@
 
 #include "watchdog_app.h"
 
-LOG_MODULE_REGISTER(lte_manager, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(lte_manager);
 
 static const char ca_cert[] = {
 #include "../keys/public/jes-contact.pem"

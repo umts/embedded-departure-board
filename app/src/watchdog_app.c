@@ -3,7 +3,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(watchdog, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(watchdog);
 
 #define WDT DEVICE_DT_GET(DT_NODELABEL(wdt0))
 /* Nordic supports a callback, but it has 61.2 us to complete before

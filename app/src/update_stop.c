@@ -10,7 +10,7 @@
 #include "net/custom_http_client.h"
 #include "stop.h"
 
-LOG_MODULE_REGISTER(update_stop, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(update_stop);
 
 K_TIMER_DEFINE(update_stop_timer, update_stop_timeout_handler, NULL);
 
@@ -81,7 +81,7 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
 #endif
 
       } else {
-        LOG_WRN(
+        LOG_INF(
             "Display address for Route: %d, Direction Code: %c not found.",
             route_direction.id, route_direction.direction_code
         );
