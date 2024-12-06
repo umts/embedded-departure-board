@@ -31,6 +31,6 @@ void update_stop_timeout_handler(struct k_timer* timer_id);
 int update_stop(void);
 
 extern struct k_timer update_stop_timer;
-extern struct k_sem stop_sem;
+extern struct k_sem update_stop_sem;
 
 #endif

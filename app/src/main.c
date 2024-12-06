@@ -5,8 +5,8 @@
 #include <zephyr/types.h>
 
 #include "display/display_switches.h"
-#include "external_rtc.h"
 #include "net/lte_manager.h"
+#include "real_time_counter.h"
 #include "update_stop.h"
 #include "watchdog_app.h"
 
@@ -172,7 +172,7 @@ int main(void) {
   }
 
   if (k_sem_take(&lte_connected_sem, K_FOREVER) == 0) {
-    ret = set_external_rtc_time();
+    ret = set_rtc_time();
     if (ret) {
       LOG_ERR("Failed to set rtc.");
       goto reset;
@@ -192,11 +192,22 @@ int main(void) {
   // TODO: check for update or wait for update socket
   // (void)download_update();
 
-  (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
+  (void)k_timer_start(
+      &update_stop_timer, K_SECONDS(CONFIG_UPDATE_STOP_FREQUENCY),
+      K_SECONDS(CONFIG_UPDATE_STOP_FREQUENCY)
+  );
   LOG_INF("update_stop_timer started");
 
   while (1) {
-    if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
+    if (k_sem_take(&rtc_sync_sem, K_NO_WAIT) == 0) {
+      ret = set_rtc_time();
+      if (ret) {
+        LOG_ERR("Failed to set rtc.");
+        goto reset;
+      }
+    }
+
+    if (k_sem_take(&update_stop_sem, K_NO_WAIT) == 0) {
       /* A returned 2 corresponds to a successful response with no scheduled
        * departures.
        */
@@ -230,6 +241,7 @@ int main(void) {
         goto reset;
       }
     }
+
     k_cpu_idle();
   }
 

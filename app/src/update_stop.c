@@ -5,20 +5,22 @@
 
 #include "display/display_switches.h"
 #include "display/led_display.h"
-#include "external_rtc.h"
 #include "json/jsmn_parse.h"
 #include "net/custom_http_client.h"
+#include "real_time_counter.h"
 #include "stop.h"
 
 LOG_MODULE_REGISTER(update_stop);
 
 K_TIMER_DEFINE(update_stop_timer, update_stop_timeout_handler, NULL);
 
-K_SEM_DEFINE(stop_sem, 1, 1);
+K_SEM_DEFINE(update_stop_sem, 1, 1);
 
-static unsigned int minutes_to_departure(Departure* departure) {
+static unsigned int minutes_to_departure(
+    Departure* departure, unsigned int time_now
+) {
   int edt_ms = departure->etd;
-  return (unsigned int)(edt_ms - get_external_rtc_time()) / 60;
+  return (unsigned int)(edt_ms - time_now) / 60;
 }
 
 static DisplayBox* get_display_address(
@@ -34,7 +36,9 @@ static DisplayBox* get_display_address(
   return NULL;
 }
 
-static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
+static int parse_returned_routes(
+    Stop stop, DisplayBox display_boxes[], unsigned int time_now
+) {
   unsigned int min = 0;
 
   unsigned int times[6] = {0, 0, 0, 0, 0, 0};
@@ -54,7 +58,7 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
     for (size_t departure_num = 0;
          departure_num < route_direction.departures_size; departure_num++) {
       struct Departure departure = route_direction.departures[departure_num];
-      min = minutes_to_departure(&departure);
+      min = minutes_to_departure(&departure, time_now);
       LOG_INF("Display text: %s", departure.display_text);
       LOG_INF("Minutes to departure: %d", min);
 
@@ -93,6 +97,7 @@ static int parse_returned_routes(Stop stop, DisplayBox display_boxes[]) {
 
 int update_stop(void) {
   int ret;
+  unsigned int time_now;
   static Stop stop = {.last_updated = 0, .id = CONFIG_STOP_ID};
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
@@ -115,7 +120,9 @@ retry:
     return 1;
   }
 
-  ret = parse_stop_json(&json_buf[0], &stop);
+  time_now = get_rtc_time();
+
+  ret = parse_stop_json(&json_buf[0], &stop, time_now);
   if (ret) {
     LOG_DBG(
         "recv_body_buf size: %d, recv_body strlen: %d",
@@ -146,7 +153,7 @@ retry:
       stop.routes_size, stop.last_updated
   );
 
-  ret = parse_returned_routes(stop, display_boxes);
+  ret = parse_returned_routes(stop, display_boxes, time_now);
   if (ret) {
     return 1;
   }
@@ -155,6 +162,5 @@ retry:
 }
 
 void update_stop_timeout_handler(struct k_timer* timer_id) {
-  LOG_DBG("Update stop timeout\n");
-  (void)k_sem_give(&stop_sem);
+  (void)k_sem_give(&update_stop_sem);
 }

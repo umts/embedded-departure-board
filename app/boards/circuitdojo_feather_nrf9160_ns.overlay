@@ -35,14 +35,19 @@
 	pinctrl-0 = <&i2c1_default>;
 	pinctrl-1 = <&i2c1_sleep>;
 	pinctrl-names = "default", "sleep";
-	pcf85063a: pcf85063a@51 {
-		compatible = "nxp,pcf85063a";
-		reg = <0x51>;
-};
-sen0562@23 {
-  compatible = "dfrobot,sen0562";
-  reg = <0x23>;
-};
+
+  pcf85063a: pcf85063a@51 {
+	  status = "disabled";
+  };
+
+  lis2dh: lis2dh@18 {
+    status = "disabled";
+  };
+
+  sen0562@23 {
+    compatible = "dfrobot,sen0562";
+    reg = <0x23>;
+  };
 };
 
 &uart0 {
@@ -83,6 +88,13 @@ sen0562@23 {
     LED_COLOR_ID_RED
     LED_COLOR_ID_BLUE>;
   };
+};
+
+&rtc0 {
+  status = "okay";
+  // Set the frequency to 8Hz
+  prescaler = <4095>;
+  wakeup-source;
 };
 
 &pwm0 {
@@ -170,6 +182,7 @@ sen0562@23 {
   };
 
   aliases {
+    rtc = &rtc0;
     led-strip = &led_strip;
     mux = &multiplexer;
   };

@@ -4,6 +4,9 @@ source "Kconfig.zephyr"
 config STOP_ID
   string "Bus stop ID"
 
+config UPDATE_STOP_FREQUENCY
+  int "Defines the frequency of stop updates in seconds"
+
 config STOP_REQUEST_INFOPOINT
   bool "Select if JSON feed is directly from InfoPoint servers"
 

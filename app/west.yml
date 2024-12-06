@@ -28,12 +28,6 @@ manifest:
           - zcbor
           - zephyr
 
-    # RTC Driver
-    - name: pcf85063a
-      url: https://github.com/circuitdojo/pcf85063a
-      revision: master
-      path: pcf85063a
-
     # Multiplexer Driver
     - name: multiplexer
       url: https://github.com/justins-engineering/zephyr-multiplexer
