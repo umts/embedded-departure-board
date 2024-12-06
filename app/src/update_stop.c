@@ -14,7 +14,7 @@ LOG_MODULE_REGISTER(update_stop);
 
 K_TIMER_DEFINE(update_stop_timer, update_stop_timeout_handler, NULL);
 
-K_SEM_DEFINE(stop_sem, 1, 1);
+K_SEM_DEFINE(update_stop_sem, 1, 1);
 
 static unsigned int minutes_to_departure(
     Departure* departure, unsigned int time_now
@@ -162,6 +162,5 @@ retry:
 }
 
 void update_stop_timeout_handler(struct k_timer* timer_id) {
-  LOG_DBG("Update stop timeout\n");
-  (void)k_sem_give(&stop_sem);
+  (void)k_sem_give(&update_stop_sem);
 }

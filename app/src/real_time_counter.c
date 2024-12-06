@@ -14,7 +14,7 @@
 #define SNTP_INIT_TIMEOUT_MS 3000
 #define RETRY_COUNT 3
 
-LOG_MODULE_REGISTER(real_time_counter, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(real_time_counter);
 
 K_MUTEX_DEFINE(rtc_mutex);
 

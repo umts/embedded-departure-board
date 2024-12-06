@@ -94,6 +94,7 @@
   status = "okay";
   // Set the frequency to 8Hz
   prescaler = <4095>;
+  wakeup-source;
 };
 
 &pwm0 {

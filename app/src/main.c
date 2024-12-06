@@ -192,7 +192,10 @@ int main(void) {
   // TODO: check for update or wait for update socket
   // (void)download_update();
 
-  (void)k_timer_start(&update_stop_timer, K_SECONDS(30), K_SECONDS(30));
+  (void)k_timer_start(
+      &update_stop_timer, K_SECONDS(CONFIG_UPDATE_STOP_FREQUENCY),
+      K_SECONDS(CONFIG_UPDATE_STOP_FREQUENCY)
+  );
   LOG_INF("update_stop_timer started");
 
   while (1) {
@@ -204,7 +207,7 @@ int main(void) {
       }
     }
 
-    if (k_sem_take(&stop_sem, K_NO_WAIT) == 0) {
+    if (k_sem_take(&update_stop_sem, K_NO_WAIT) == 0) {
       /* A returned 2 corresponds to a successful response with no scheduled
        * departures.
        */
