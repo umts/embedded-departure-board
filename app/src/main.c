@@ -129,7 +129,7 @@ int main(void) {
   }
 
   // Set all displays off because the LEDs have memory
-  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+  for (size_t box = 0; box < CONFIG_NUMBER_OF_DISPLAY_BOXES; box++) {
     ret = display_off(box);
     if (ret < 0) {
       LOG_ERR("Failed to set display switch %d off.", box);
@@ -193,8 +193,8 @@ int main(void) {
   // (void)download_update();
 
   (void)k_timer_start(
-      &update_stop_timer, K_SECONDS(CONFIG_UPDATE_STOP_FREQUENCY),
-      K_SECONDS(CONFIG_UPDATE_STOP_FREQUENCY)
+      &update_stop_timer, K_SECONDS(CONFIG_UPDATE_STOP_FREQUENCY_SECONDS),
+      K_SECONDS(CONFIG_UPDATE_STOP_FREQUENCY_SECONDS)
   );
   LOG_INF("update_stop_timer started");
 

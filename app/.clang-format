@@ -3,5 +3,5 @@ Language:        Cpp
 BasedOnStyle:  Google
 
 AlignAfterOpenBracket: BlockIndent
-# ColumnLimit:  100
+ColumnLimit:  100
 ...
