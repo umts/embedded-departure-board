@@ -5,35 +5,12 @@
 
 LOG_MODULE_REGISTER(watchdog);
 
-#define WDT DEVICE_DT_GET(DT_NODELABEL(wdt0))
-/* Nordic supports a callback, but it has 61.2 us to complete before
- * the reset occurs, which is too short for this sample to do anything
- * useful. Explicitly disallow use of the callback.
- */
-#if DT_HAS_COMPAT_STATUS_OKAY(nordic_nrf_wdt)
-#define WDT_ALLOW_CALLBACK 0
+#define WDT0 DT_NODELABEL(wdt0)
+
+#if DT_NODE_HAS_STATUS(WDT0, okay)
+const struct device *const wdt = DEVICE_DT_GET(WDT0);
 #else
-#define WDT_ALLOW_CALLBACK 1
-#endif
-#define WDT_MAX_WINDOW 60000U
-#define WDT_MIN_WINDOW 0U
-#define WDT_OPT WDT_OPT_PAUSE_HALTED_BY_DBG
-
-#define WDT0_NODE DT_NODELABEL(wdt0)
-
-#ifndef WDT_MAX_WINDOW
-#define WDT_MAX_WINDOW 2000U
-#endif
-
-#ifndef WDT_MIN_WINDOW
-#define WDT_MIN_WINDOW 0U
-#endif
-
-#if DT_NODE_HAS_STATUS(WDT0_NODE, okay)
-const struct device *const wdt = DEVICE_DT_GET(WDT0_NODE);
-
-#else
-#error "Node is disabled"
+#error "wdt0 node is disabled"
 #endif
 
 int wdt_channel_id;
@@ -47,12 +24,12 @@ int watchdog_init(void) {
   }
 
   struct wdt_timeout_cfg wdt_config = {
-      /* Reset SoC when watchdog timer expires. */
+      /* Reset SoC when watchdog timer expires */
       .flags = WDT_FLAG_RESET_SOC,
 
       /* Expire watchdog after max window */
-      .window.min = WDT_MIN_WINDOW,
-      .window.max = WDT_MAX_WINDOW,
+      .window.min = 0U,
+      .window.max = (uint32_t)CONFIG_MAX_TIME_INACTIVE_BEFORE_RESET_MS,
       .callback = NULL,
   };
 

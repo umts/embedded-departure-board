@@ -16,6 +16,9 @@ config UPDATE_STOP_FREQUENCY_SECONDS
 config NUMBER_OF_DISPLAY_BOXES
   int "The number of display boxes connected to the sign"
 
+config MAX_TIME_INACTIVE_BEFORE_RESET_MS
+  int "Maximum amount of time the system can remain inactive before it resets in milliseconds"
+
 config STOP_REQUEST_INFOPOINT
   bool "Select if JSON feed is directly from InfoPoint servers"
 
