@@ -3,10 +3,7 @@
 
 #include <zephyr/kernel.h>
 
-/** Specify the number of display boxes connected*/
-#define NUMBER_OF_DISPLAY_BOXES 5
-
-/** Specify the route, display text, and position for each display box */
+/** Specify the route, position, direction, color, and brightness for each display box */
 // clang-format off
 #define DISPLAY_BOXES {                                                                         \
   { .id = 30038, .position = 0, .direction_code = 'S', .color = 0x660066, .brightness = 0xFF }, \

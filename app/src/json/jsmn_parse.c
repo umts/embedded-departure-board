@@ -17,8 +17,8 @@ LOG_MODULE_REGISTER(jsmn_parse);
 #define DEPARTURE_TOK_COUNT 18
 #define HEADWAY_TOK_COUNT 14
 #define ROUTE_DIRECTION_TOK_COUNT \
-  (12 + (MAX_DEPARTURES * (DEPARTURE_TOK_COUNT + HEADWAY_TOK_COUNT)))
-#define STOP_TOK_COUNT (6 + (MAX_ROUTES * ROUTE_DIRECTION_TOK_COUNT))
+  (12 + (CONFIG_ROUTE_MAX_DEPARTURES * (DEPARTURE_TOK_COUNT + HEADWAY_TOK_COUNT)))
+#define STOP_TOK_COUNT (6 + (CONFIG_STOP_MAX_ROUTES * ROUTE_DIRECTION_TOK_COUNT))
 
 /** With jsmn JSON objects count as a token, so we need to offset by an
  *  additional 1 for each level deeper we go.

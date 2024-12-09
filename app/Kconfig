@@ -4,8 +4,17 @@ source "Kconfig.zephyr"
 config STOP_ID
   string "Bus stop ID"
 
-config UPDATE_STOP_FREQUENCY
-  int "Defines the frequency of stop updates in seconds"
+config STOP_MAX_ROUTES
+  int "Maximum number of routes expected at the configured stop"
+
+config ROUTE_MAX_DEPARTURES
+  int "Maximum number of departures expected for EACH route"
+
+config UPDATE_STOP_FREQUENCY_SECONDS
+  int "The frequency at which stop departure times are updated in seconds"
+
+config NUMBER_OF_DISPLAY_BOXES
+  int "The number of display boxes connected to the sign"
 
 config STOP_REQUEST_INFOPOINT
   bool "Select if JSON feed is directly from InfoPoint servers"
@@ -18,6 +27,18 @@ config STOP_REQUEST_PATH
 
 config STOP_JSON_BUF_SIZE
   int "Defines the max size for stop JSON response body receive buffer"
+
+config PRIMARY_NTP_SERVER
+  string "Primary NTP server used to synchronize system time"
+
+config FALLBACK_NTP_SERVER
+  string "Fallback NTP server used to synchronize system time if the primary server is unavailable"
+
+config NTP_REQUEST_TIMEOUT_MS
+  int "Max amount of time allowed waiting for a single NTP query response for in milliseconds"
+
+config NTP_FETCH_RETRY_COUNT
+  int "Max attempts to fetch time from NTP server before changing to fallback server"
 
 config OTA_HOSTNAME
   string "HTTP hostname used to download firmware upgade file"

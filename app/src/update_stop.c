@@ -27,7 +27,7 @@ static DisplayBox* get_display_address(
     const DisplayBox display_boxes[], const int route_id,
     const char direction_code
 ) {
-  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+  for (size_t box = 0; box < CONFIG_NUMBER_OF_DISPLAY_BOXES; box++) {
     if ((route_id == display_boxes[box].id) &&
         (display_boxes[box].direction_code == direction_code)) {
       return &display_boxes[box];
@@ -43,7 +43,7 @@ static int parse_returned_routes(
 
   unsigned int times[6] = {0, 0, 0, 0, 0, 0};
 
-  for (size_t box = 0; box < NUMBER_OF_DISPLAY_BOXES; box++) {
+  for (size_t box = 0; box < CONFIG_NUMBER_OF_DISPLAY_BOXES; box++) {
     (void)display_off(box);
   }
 

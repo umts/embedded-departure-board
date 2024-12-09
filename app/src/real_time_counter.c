@@ -9,11 +9,6 @@
 
 #define RTC DEVICE_DT_GET(DT_ALIAS(rtc))
 
-#define SNTP_SERVER "time.nist.gov"
-#define SNTP_FALLBACK_SERVER "us.pool.ntp.org"
-#define SNTP_INIT_TIMEOUT_MS 3000
-#define RETRY_COUNT 3
-
 LOG_MODULE_REGISTER(real_time_counter);
 
 K_MUTEX_DEFINE(rtc_mutex);
@@ -28,28 +23,27 @@ static void get_ntp_time(void) {
   int err;
 
   /* Get sntp time */
-  for (int rc = 0; rc < (RETRY_COUNT * 2); rc++) {
-    if (rc < RETRY_COUNT) {
-      err = sntp_simple(SNTP_SERVER, SNTP_INIT_TIMEOUT_MS, &ts);
+  for (int rc = 0; rc < (CONFIG_NTP_FETCH_RETRY_COUNT * 2); rc++) {
+    if (rc < CONFIG_NTP_FETCH_RETRY_COUNT) {
+      err = sntp_simple(CONFIG_PRIMARY_NTP_SERVER, CONFIG_NTP_REQUEST_TIMEOUT_MS, &ts);
     } else {
-      err = sntp_simple(SNTP_FALLBACK_SERVER, SNTP_INIT_TIMEOUT_MS, &ts);
+      err = sntp_simple(CONFIG_FALLBACK_NTP_SERVER, CONFIG_NTP_REQUEST_TIMEOUT_MS, &ts);
     }
 
-    if (err && (rc == (RETRY_COUNT * 2) - 1)) {
+    if (err && (rc == (CONFIG_NTP_FETCH_RETRY_COUNT * 2) - 1)) {
       LOG_ERR(
           "Failed to get time from all NTP pools! Err: %i\n Check your network "
           "connection.",
           err
       );
-    } else if (err && (rc == RETRY_COUNT - 1)) {
+    } else if (err && (rc == CONFIG_NTP_FETCH_RETRY_COUNT - 1)) {
       LOG_WRN(
-          "Unable to get time after 3 tries from NTP pool " SNTP_SERVER
-          " . Err: %i\n Attempting to use fallback NTP pool...",
-          err
+          "Unable to get time after %d tries from NTP "
+          "pool " CONFIG_PRIMARY_NTP_SERVER " . Err: %i\n Attempting to use fallback NTP pool...",
+          CONFIG_NTP_FETCH_RETRY_COUNT, err
       );
     } else if (err) {
       LOG_WRN("Failed to get time using SNTP, Err: %i. Retrying...", err);
-      k_msleep(100);
     } else {
       break;
     }
