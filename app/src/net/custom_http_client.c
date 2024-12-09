@@ -116,7 +116,7 @@ static int parse_headers(int *sock, char *headers_buf, int headers_buf_size) {
       state++;
     } else if (state == 3) {
       headers_size = headers_offset;
-      LOG_INF("Received Headers. Size: %d bytes", headers_offset);
+      LOG_DBG("Received Headers. Size: %d bytes", headers_offset);
 
       headers_buf[headers_offset + 1] = '\0';
 
@@ -194,7 +194,7 @@ static long parse_response(
     offset += bytes;
   } while (bytes != 0);
 
-  LOG_INF("Received Body. Size: %ld bytes", offset);
+  LOG_DBG("Received Body. Size: %ld bytes", offset);
   LOG_INF("Total bytes received: %ld", offset + headers_size);
 
   if (write_nvs) {
@@ -324,7 +324,7 @@ retry:
     return errno;
   }
 
-  LOG_INF("Resolved %s (%s)", peer_addr, net_family2str(addr_inf->ai_family));
+  LOG_DBG("Resolved %s (%s)", peer_addr, net_family2str(addr_inf->ai_family));
 
   if (sec_tag == NO_SEC_TAG) {
     sock = socket(addr_inf->ai_family, SOCK_STREAM, addr_inf->ai_protocol);
@@ -360,10 +360,10 @@ retry:
   }
 
   LOG_DBG(
-      "addrinfo @%p: ai_family=%d, ai_socktype=%d, ai_protocol=%d, "
-      "sa_family=%d, sin_port=%x\n",
-      addr_inf, addr_inf->ai_family, addr_inf->ai_socktype,
-      addr_inf->ai_protocol, addr_inf->ai_addr->sa_family,
+      "Socket %d addrinfo: ai_family=%d, ai_socktype=%d, ai_protocol=%d, "
+      "sa_family=%d, sin_port=%x",
+      sock, addr_inf->ai_family, addr_inf->ai_socktype, addr_inf->ai_protocol,
+      addr_inf->ai_addr->sa_family,
       ((struct sockaddr_in *)addr_inf->ai_addr)->sin_port
   );
 
@@ -388,7 +388,7 @@ retry:
   }
 
 clean_up:
-  LOG_INF("Closing socket %d", sock);
+  LOG_DBG("Closing socket %d", sock);
   err = close(sock);
   if (err) {
     LOG_ERR("close() failed, %s", strerror(errno));
