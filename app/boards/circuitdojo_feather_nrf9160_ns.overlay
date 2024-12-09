@@ -45,6 +45,7 @@
   };
 
   sen0562@23 {
+    status = "okay";
     compatible = "dfrobot,sen0562";
     reg = <0x23>;
   };
