@@ -117,14 +117,6 @@ int lte_connect(void) {
 
   LOG_INF("Initializing LTE interface");
 
-  err = lte_lc_init();
-  if (err < -1) {
-    LOG_ERR("LTE failed to init. Err: %d", err);
-    return err;
-  }
-
-  LOG_INF("Connecting to the network");
-
   err = wdt_feed(wdt, wdt_channel_id);
   if (err) {
     LOG_ERR("Failed to feed watchdog. Err: %d", err);
@@ -147,12 +139,6 @@ int lte_disconnect(void) {
 
   /* A small delay for the TCP connection teardown */
   k_sleep(K_SECONDS(1));
-
-  err = lte_lc_deinit();
-  if (err < -1) {
-    LOG_ERR("Failed to deinit lte lib. Err: %d", err);
-    return err;
-  }
 
   err = nrf_modem_lib_shutdown();
   if (err) {
