@@ -8,7 +8,7 @@ manifest:
     - name: nrf
       repo-path: sdk-nrf
       remote: ncs
-      revision: v2.5.2
+      revision: v2.6.1
       import:
          name-allowlist:
           - cmsis
@@ -20,6 +20,7 @@ manifest:
           - mcuboot
           - nrf_hw_models
           - nrfxlib
+          - oberon-psa-crypto
           - picolibc
           - qcbor
           - segger
