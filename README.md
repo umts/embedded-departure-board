@@ -49,7 +49,7 @@ Our Github Actions [build workflow](https://github.com/umts/embedded-departure-b
 
 ## Build
 ```sh
-west build ./app -b circuitdojo_feather_nrf9160_ns
+west build ./app -b circuitdojo_feather/nrf9160/ns
 ```
 
 ## Programming

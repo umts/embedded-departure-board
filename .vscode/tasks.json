@@ -15,7 +15,7 @@
       ],
       "options": {
         "env": {
-          "BOARD": "circuitdojo_feather_nrf9160_ns",
+          "BOARD": "circuitdojo_feather/nrf9160/ns",
           "ZEPHYR_TOOLCHAIN_VARIANT": "zephyr"
         }
       },

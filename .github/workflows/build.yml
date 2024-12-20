@@ -98,7 +98,7 @@ jobs:
 
       - name: Build Zephyr app
         env:
-          BOARD: circuitdojo_feather_nrf9160_ns
+          BOARD: circuitdojo_feather/nrf9160/ns
         run: west build ./app -p
 
       - name: Extract branch name
