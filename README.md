@@ -47,9 +47,17 @@ Zephyr supplies various [Docker images](https://github.com/zephyrproject-rtos/do
 Our Github Actions [build workflow](https://github.com/umts/embedded-departure-board/blob/main/.github/workflows/build_test.yml) uses the Base Image (ci-base).
 
 
-## Build
+## Building
+### Testing
+
 ```sh
-west build ./app -b circuitdojo_feather/nrf9160/ns
+west build --sysbuild ./app -b circuitdojo_feather/nrf9160/ns
+```
+### Release
+
+**You need a copy of the MCUBoot key file placed here:** `app/keys/private/boot-ecdsa-p256.pem`
+```sh
+west build --sysbuild ./app -b circuitdojo_feather/nrf9160/ns -- -DFILE_SUFFIX=release
 ```
 
 ## Programming
@@ -62,17 +70,16 @@ Flashing the device with an external programmer is quicker than using a bootload
 - [J-Link](https://www.segger.com/downloads/jlink/) software.
 - [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools/download#infotabs).
 
-#### Run
+#### Running
 ```sh
 west flash -r nrfjprog --erase --softreset
 ```
 
 ### Uploading via the bootloader
-Currently we are not using a bootloader, but it will be required for OTA firmware updates. It's also the only way to flash the device without an external programming device.
+The only way to flash the device without an external programming device, uses serial over the builtin USB port.
 
 #### Requirements
 - [Newtmgr](https://mynewt.apache.org/latest/newtmgr/install/index.html)
-- Ensure `CONFIG_BOOTLOADER_MCUBOOT=y` is set in `app/prj.conf`
 
 #### Setup
 1. Create a "serial" profile in newtmgr:
@@ -83,7 +90,7 @@ newtmgr conn add serial type=serial connstring="dev=/dev/ttyUSB0,baud=1000000"
 
 #### Run
 ```sh
-newtmgr -c serial image upload ./build/zephyr/app_update.bin
+newtmgr -c serial image upload ./build/app/zephyr/zephyr.signed.bin
 ```
 
 ## VSCode
@@ -98,7 +105,7 @@ This repo includes `.vscode/tasks.json` to make develpoment easier. The included
 - West Flash and Monitor
 - Build AT Client
   - Builds the At Client sample provided by nrf.
-  - Useful for debugging via AT commands. Use the "LTE Link Monitor" app from [nRF Connect for Desktop](https://www.nordicsemi.com/Products/Development-tools/nRF-Connect-for-desktop) to send AT commands
+  - Useful for debugging via AT commands. Use a serial console to send AT commands
 
 ## Creating a Release
 Update the [VERSION file](https://github.com/umts/embedded-departure-board/blob/main/app/VERSION).
