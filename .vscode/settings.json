@@ -15,10 +15,14 @@
   },
   "python.defaultInterpreterPath": "${workspaceRoot}/.venv/bin/python",
   "python.terminal.activateEnvironment": true,
-  "python.languageServer": "Jedi",
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "modificationsIfAvailable",
   "cortex-debug.enableTelemetry": false,
   "kconfig.zephyr.base": "${zephyrBase}",
-  "cortex-debug.variableUseNaturalFormat": true
+  "cortex-debug.variableUseNaturalFormat": true,
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/build/app",
+    "--completion-style=detailed",
+    "--header-insertion=never"
+  ]
 }
