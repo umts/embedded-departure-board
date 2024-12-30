@@ -140,7 +140,7 @@ int lte_disconnect(void) {
   /* A small delay for the TCP connection teardown */
   k_sleep(K_SECONDS(1));
 
-  err = nrf_modem_lib_shutdown();
+  err = lte_lc_power_off();
   if (err) {
     LOG_ERR("Failed to shutdown nrf modem. Err: %d", err);
     return err;
