@@ -146,7 +146,7 @@ static int parse_departures(
     LOG_DBG("*********************(t: %d)********************\n", t);
   }
 #ifdef CONFIG_DEBUG
-  for (int i = 0; i < MAX_DEPARTURES; i++) {
+  for (int i = 0; i < CONFIG_ROUTE_MAX_DEPARTURES; i++) {
     LOG_DBG(
         "Uniq display text(s) %d: %s", i,
         route_direction->departures[i].display_text
