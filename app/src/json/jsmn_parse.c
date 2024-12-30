@@ -275,7 +275,7 @@ int parse_stop_json(
   LOG_DBG("Tokens allocated: %d/%d\n", ret, STOP_TOK_COUNT);
 
   if (ret < 2) {
-    LOG_WRN("No scheduled departures");
+    LOG_INF("No scheduled departures");
     return 5;
   }
 
