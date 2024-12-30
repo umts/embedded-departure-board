@@ -2,13 +2,13 @@ name: Build
 on:
   workflow_call:
     inputs:
-      upload_artifacts:
-        description: 'Are artifacts required to be uploaded?'
+      release_build:
+        description: 'Is this build for release?'
         type: boolean
   workflow_dispatch:
     inputs:
-      upload_artifacts:
-        description: 'Are artifacts required to be uploaded?'
+      release_build:
+        description: 'Is this build for release?'
         type: boolean
   push:
     branches: [main]
@@ -90,31 +90,39 @@ jobs:
           key: ${{ runner.os }}-west-cache-${{ hashFiles('app/west.yml') }}
 
       - name: Add secret key files
+        if: ${{ inputs.release_build }}
         env:
           BOOT_ECDSA_P256: ${{ secrets.BOOT_ECDSA_P256 }}
         run: |
           mkdir ./app/keys/private/
           echo "$BOOT_ECDSA_P256" >> ./app/keys/private/boot-ecdsa-p256.pem
 
-      - name: Build Zephyr app
+      - name: Build Zephyr app test
+        if: ${{ !inputs.release_build }}
         env:
-          BOARD: circuitdojo_feather_nrf9160_ns
-        run: west build ./app -p
+          BOARD: circuitdojo_feather/nrf9160/ns
+        run: west build --sysbuild ./app -p
+
+      - name: Build Zephyr app for release
+        if: ${{ inputs.release_build }}
+        env:
+          BOARD: circuitdojo_feather/nrf9160/ns
+        run: west build --sysbuild ./app -p -- -DFILE_SUFFIX=release
 
       - name: Extract branch name
         shell: bash
         run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
 
       - name: Upload merged.hex
-        if: ${{ inputs.upload_artifacts }}
+        if: ${{ inputs.release_build }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BRANCH }}_merged.hex
-          path: build/zephyr/merged.hex
+          path: build/merged.hex
 
-      - name: Upload app_update.bin
-        if: ${{ inputs.upload_artifacts }}
+      - name: Upload zephyr.signed.bin
+        if: ${{ inputs.release_build }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.BRANCH }}_app_update.bin
-          path: build/zephyr/app_update.bin
+          name: ${{ env.BRANCH }}_zephyr.signed.bin
+          path: build/app/zephyr/zephyr.signed.bin
