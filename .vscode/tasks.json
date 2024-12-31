@@ -12,7 +12,9 @@
         "build",
         "--sysbuild",
         "${workspaceFolder}/app",
-        "${input:build-opts}"
+        "${input:build-opts}",
+        "--",
+        "-DFILE_SUFFIX=release"
       ],
       "options": {
         "env": {
