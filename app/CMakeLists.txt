@@ -12,4 +12,4 @@ FILE(GLOB_RECURSE app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})
 target_compile_definitions(app PRIVATE _POSIX_C_SOURCE=200809L)
 
-SET_SOURCE_FILES_PROPERTIES( ${app_sources} PROPERTIES COMPILE_FLAGS -fanalyzer )
+SET_SOURCE_FILES_PROPERTIES( ${app_sources} APPEND PROPERTIES COMPILE_FLAGS -fanalyzer )
