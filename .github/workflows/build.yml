@@ -19,12 +19,15 @@ jobs:
       ZEPHYR_SDK_INSTALL_PATH: /opt/toolchains
       ZSDK_VERSION: 0.17.0
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26-branch
+      image: ghcr.io/zephyrproject-rtos/ci-base:main
       env:
         ZEPHYR_TOOLCHAIN_VARIANT: zephyr
         ZEPHYR_SDK_INSTALL_DIR: ${ZEPHYR_SDK_INSTALL_PATH}/zephyr-sdk-${ZSDK_VERSION}
         PKG_CONFIG_PATH: /usr/lib/i386-linux-gnu/pkgconfig
         OVMF_FD_PATH: /usr/share/ovmf/OVMF.fd
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -72,9 +75,10 @@ jobs:
 
       - name: Update Python dependencies
         run: |
-          pip install -r zephyr/scripts/requirements.txt
-          pip install -r nrf/scripts/requirements.txt
-          pip install -r bootloader/mcuboot/scripts/requirements.txt
+          pip install --no-cache-dir -r zephyr/scripts/requirements-base.txt
+          pip install --no-cache-dir -r zephyr/scripts/requirements-extras.txt
+          pip install --no-cache-dir -r nrf/scripts/requirements.txt
+          pip install --no-cache-dir -r bootloader/mcuboot/scripts/requirements.txt
 
       - name: Create west cache
         if: steps.west-cache.outputs.cache-hit != 'true'
@@ -97,11 +101,14 @@ jobs:
           mkdir ./app/keys/private/
           echo "$BOOT_ECDSA_P256" >> ./app/keys/private/boot-ecdsa-p256.pem
 
+      - name: Mark mounted git repositories as trusted
+        run: git config --global --add safe.directory '*'
+
       - name: Build Zephyr app test
         if: ${{ !inputs.release_build }}
         env:
           BOARD: circuitdojo_feather/nrf9160/ns
-        run: west build --sysbuild ./app -p
+        run: west build --sysbuild ./app -p -- -DCMAKE_BUILD_TYPE=Release
 
       - name: Build Zephyr app for release
         if: ${{ inputs.release_build }}
@@ -110,7 +117,6 @@ jobs:
         run: west build --sysbuild ./app -p -- -DFILE_SUFFIX=release -DCMAKE_BUILD_TYPE=Release
 
       - name: Extract branch name
-        shell: bash
         run: echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
 
       - name: Upload merged.hex
