@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ZEPHYR_SDK_INSTALL_PATH: /opt/toolchains
-      ZSDK_VERSION: 0.16.9
+      ZSDK_VERSION: 0.17.0
     container:
       image: ghcr.io/zephyrproject-rtos/ci-base:v0.26-branch
       env:
@@ -107,7 +107,7 @@ jobs:
         if: ${{ inputs.release_build }}
         env:
           BOARD: circuitdojo_feather/nrf9160/ns
-        run: west build --sysbuild ./app -p -- -DFILE_SUFFIX=release
+        run: west build --sysbuild ./app -p -- -DFILE_SUFFIX=release -DCMAKE_BUILD_TYPE=Release
 
       - name: Extract branch name
         shell: bash
