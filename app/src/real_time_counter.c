@@ -4,8 +4,9 @@
 #include <zephyr/drivers/counter.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/net/sntp.h>
 #include <zephyr/sys/util.h>
+
+#include "net/ntp.h"
 
 #define RTC DEVICE_DT_GET(DT_ALIAS(rtc))
 
@@ -15,40 +16,7 @@ K_MUTEX_DEFINE(rtc_mutex);
 
 const struct device *const rtc = RTC;
 
-static struct sntp_time ts;
-
 K_SEM_DEFINE(rtc_sync_sem, 0, 1);
-
-static void get_ntp_time(void) {
-  int err;
-
-  /* Get sntp time */
-  for (int rc = 0; rc < (CONFIG_NTP_FETCH_RETRY_COUNT * 2); rc++) {
-    if (rc < CONFIG_NTP_FETCH_RETRY_COUNT) {
-      err = sntp_simple(CONFIG_PRIMARY_NTP_SERVER, CONFIG_NTP_REQUEST_TIMEOUT_MS, &ts);
-    } else {
-      err = sntp_simple(CONFIG_FALLBACK_NTP_SERVER, CONFIG_NTP_REQUEST_TIMEOUT_MS, &ts);
-    }
-
-    if (err && (rc == (CONFIG_NTP_FETCH_RETRY_COUNT * 2) - 1)) {
-      LOG_ERR(
-          "Failed to get time from all NTP pools! Err: %i\n Check your network "
-          "connection.",
-          err
-      );
-    } else if (err && (rc == CONFIG_NTP_FETCH_RETRY_COUNT - 1)) {
-      LOG_WRN(
-          "Unable to get time after %d tries from NTP "
-          "pool " CONFIG_PRIMARY_NTP_SERVER " . Err: %i\n Attempting to use fallback NTP pool...",
-          CONFIG_NTP_FETCH_RETRY_COUNT, err
-      );
-    } else if (err) {
-      LOG_WRN("Failed to get time using SNTP, Err: %i. Retrying...", err);
-    } else {
-      break;
-    }
-  }
-}
 
 static void counter_top_callback(
     const struct device *counter_dev, void *user_data
@@ -92,10 +60,16 @@ int set_rtc_time(void) {
     LOG_ERR("Failed to set RTC top value, ERR: %d", err);
   }
 
-  (void)get_ntp_time();
+  err = get_ntp_time();
+  if (err) {
+    LOG_ERR("Failed to get NTP time, ERR: %d", err);
+    k_msleep(CONFIG_NTP_REQUEST_TIMEOUT_MS);
+    goto clean_up;
+  }
+
   LOG_INF(
-      "time since Epoch: high word: %u, low word: %u",
-      (uint32_t)(ts.seconds >> 32), (uint32_t)ts.seconds
+      "time since Epoch: high word: %u, low word: %u", (uint32_t)(time_stamp.seconds >> 32),
+      (uint32_t)time_stamp.seconds
   );
 
   err = counter_start(rtc);
@@ -125,5 +99,5 @@ unsigned int get_rtc_time(void) {
 
   k_mutex_unlock(&rtc_mutex);
 
-  return ((uint32_t)ts.seconds + (ticks / counter_get_frequency(rtc)));
+  return ((uint32_t)time_stamp.seconds + (ticks / counter_get_frequency(rtc)));
 }
