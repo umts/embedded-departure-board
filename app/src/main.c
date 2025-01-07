@@ -5,7 +5,7 @@
 #include <zephyr/types.h>
 
 #include "display/display_switches.h"
-#include "net/lte_manager.h"
+#include "net/connection_manager.h"
 #include "real_time_counter.h"
 #include "update_stop.h"
 #include "watchdog_app.h"
@@ -171,17 +171,17 @@ int main(void) {
     goto reset;
   }
 
-  if (k_sem_take(&lte_connected_sem, K_FOREVER) == 0) {
+  if (k_sem_take(&network_connection_sem, K_FOREVER) == 0) {
     ret = set_rtc_time();
     if (ret) {
       LOG_ERR("Failed to set rtc.");
       goto reset;
     }
   } else {
-    LOG_ERR("Failed to take network_connected_sem.");
+    LOG_ERR("Failed to take network_connection_sem.");
     goto reset;
   }
-  k_sem_give(&lte_connected_sem);
+  k_sem_give(&network_connection_sem);
 
   ret = wdt_feed(wdt, wdt_channel_id);
   if (ret) {

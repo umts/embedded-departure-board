@@ -1,10 +1,10 @@
 /** @file connection_manager.h
  *  @brief Macros and function defines for the zephyr connection manager.
  */
-#ifndef LTE_MANAGER_H
-#define LTE_MANAGER_H
+#ifndef CONNECTION_MANAGER_H
+#define CONNECTION_MANAGER_H
 
-extern struct k_sem lte_connected_sem;
+extern struct k_sem network_connection_sem;
 enum tls_sec_tags { NO_SEC_TAG, JES_SEC_TAG };
 
 /** @fn int lte_connect(void)

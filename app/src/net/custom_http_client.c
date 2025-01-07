@@ -10,8 +10,8 @@
 #include <zephyr/net/tls_credentials.h>
 #include <zephyr/storage/stream_flash.h>
 
+#include "net/connection_manager.h"
 #include "net/fota.h"
-#include "net/lte_manager.h"
 #include "watchdog_app.h"
 
 LOG_MODULE_REGISTER(custom_http_client);
@@ -479,8 +479,8 @@ int http_request_stop_json(
   /** Make the size 255 incase we get a redirect with a longer path */
   static char path[255] = CONFIG_STOP_REQUEST_PATH;
 
-  if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
-    LOG_ERR("Failed to take lte_connected_sem");
+  if (k_sem_take(&network_connection_sem, K_SECONDS(30)) != 0) {
+    LOG_ERR("Failed to take network_connection_sem");
     err = 1;
   } else {
 #if CONFIG_STOP_REQUEST_INFOPOINT
@@ -488,13 +488,13 @@ int http_request_stop_json(
         hostname, path, "application/json", NO_SEC_TAG, stop_body_buf,
         stop_body_buf_size, headers_buf, headers_buf_size, false
     );
-    k_sem_give(&lte_connected_sem);
+    k_sem_give(&network_connection_sem);
 #else
     err = send_http_request(
         hostname, path, "application/json", JES_SEC_TAG, stop_body_buf,
         stop_body_buf_size, headers_buf, headers_buf_size, false
     );
-    k_sem_give(&lte_connected_sem);
+    k_sem_give(&network_connection_sem);
 #endif  // CONFIG_STOP_REQUEST_INFOPOINT
   }
 
@@ -506,8 +506,8 @@ int http_get_firmware(
 ) {
   int err;
 
-  if (k_sem_take(&lte_connected_sem, K_FOREVER) != 0) {
-    LOG_ERR("Failed to take lte_connected_sem");
+  if (k_sem_take(&network_connection_sem, K_FOREVER) != 0) {
+    LOG_ERR("Failed to take network_connection_sem");
     err = 1;
   } else {
     err = send_http_request(
@@ -516,7 +516,7 @@ int http_get_firmware(
         true
     );
 
-    k_sem_give(&lte_connected_sem);
+    k_sem_give(&network_connection_sem);
   }
 
   return err;
