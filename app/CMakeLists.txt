@@ -17,6 +17,12 @@ generate_inc_file_for_target(
   ${gen_dir}/jes-contact-root-r4.pem.hex
 )
 
+generate_inc_file_for_target(
+  app
+  keys/public/bustracker-pvta-com-root-x1.pem
+  ${gen_dir}/bustracker-pvta-com-root-x1.pem.hex
+)
+
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 FILE(GLOB_RECURSE app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})

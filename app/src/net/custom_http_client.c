@@ -46,6 +46,16 @@ int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
     return err;
   }
 
+#ifdef CONFIG_MBEDTLS_SSL_CACHE_C
+  socklen_t session_cache = TLS_SESSION_CACHE_ENABLED;
+
+  err = setsockopt(fd, SOL_TLS, TLS_SESSION_CACHE, &session_cache, sizeof(session_cache));
+  if (err) {
+    LOG_ERR("Unable to set TLS session cache, Err: %s (%d)", strerror(errno), errno);
+    return err;
+  }
+#endif  // CONFIG_MBEDTLS_SSL_CACHE_C
+
   return EXIT_SUCCESS;
 }
 
@@ -467,10 +477,17 @@ int http_request_stop_json(
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+    err = send_http_request(
+        hostname, path, "application/json", BUSTRACKER_SEC_TAG, stop_body_buf, stop_body_buf_size,
+        headers_buf, headers_buf_size, false
+    );
+#else
     err = send_http_request(
         hostname, path, "application/json", NO_SEC_TAG, stop_body_buf, stop_body_buf_size,
         headers_buf, headers_buf_size, false
     );
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
     k_sem_give(&lte_connected_sem);
   }
 
