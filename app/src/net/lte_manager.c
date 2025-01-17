@@ -41,6 +41,7 @@ void nrf_modem_fault_handler(struct nrf_modem_fault_info *fault_info) {
 }
 #endif
 
+#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
 /* Provision certificate to modem */
 #ifdef CONFIG_MODEM_KEY_MGMT
 static int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_len) {
@@ -92,6 +93,7 @@ static int provision_cert(sec_tag_t sec_tag, const char cert[], size_t cert_len)
   return 0;
 }
 #endif /* !CONFIG_MODEM_KEY_MGMT */
+#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
 
 int lte_connect(void) {
   int err;
