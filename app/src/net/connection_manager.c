@@ -24,11 +24,32 @@ static const char jes_cert[] = {
 };
 #endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
 
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+static const char bustracker_cert[] = {
+#include "bustracker-pvta-com-root-x1.pem.hex"
+    // Null terminate certificate if running Mbed TLS
+    IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
+};
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+
 #ifdef CONFIG_MODEM_KEY_MGMT
 // The total size of the included certificates must be less than 4KB
+BUILD_ASSERT(
+    (
 #if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
-BUILD_ASSERT(sizeof(jes_cert) < KB(4), "Certificates too large");
+        sizeof(jes_cert)
+#else
+        0
 #endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+        +
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+        sizeof(bustracker_cert)
+#else
+        0
+#endif
+    ) < KB(4),
+    "Certificates too large"
+);
 #endif
 
 /* Macros used to subscribe to specific Zephyr NET management events. */
@@ -159,6 +180,14 @@ int lte_connect(void) {
     return err;
   }
 #endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+  err = provision_cert(BUSTRACKER_SEC_TAG, bustracker_cert, sizeof(bustracker_cert));
+  if (err) {
+    LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", BUSTRACKER_SEC_TAG);
+    return err;
+  }
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
 
   LOG_INF("Connecting to the network");
 

@@ -48,6 +48,16 @@ int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
     return err;
   }
 
+#ifdef CONFIG_MBEDTLS_SSL_CACHE_C
+  socklen_t session_cache = TLS_SESSION_CACHE_ENABLED;
+
+  err = setsockopt(fd, SOL_TLS, TLS_SESSION_CACHE, &session_cache, sizeof(session_cache));
+  if (err) {
+    LOG_ERR("Unable to set TLS session cache, Err: %s (%d)", strerror(errno), errno);
+    return err;
+  }
+#endif  // CONFIG_MBEDTLS_SSL_CACHE_C
+
   return EXIT_SUCCESS;
 }
 
