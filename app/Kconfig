@@ -1,58 +1,107 @@
 menu "Embedded Departure Board"
 source "Kconfig.zephyr"
 
+#### LED DISPLAY TEST SETTINGS ####
+config LED_DISPLAY_TEST
+  bool "Select to run LED display test instead of main application"
+
+#### STOP SETTINGS ####
 config STOP_ID
   string "Bus stop ID"
 
 config STOP_MAX_ROUTES
   int "Maximum number of routes expected at the configured stop"
+  default 6
 
 config ROUTE_MAX_DEPARTURES
   int "Maximum number of departures expected for EACH route"
+  default 4
+
+#### SIGN SETTINGS ####
 
 config UPDATE_STOP_FREQUENCY_SECONDS
   int "The frequency at which stop departure times are updated in seconds"
+  default 30
 
 config NUMBER_OF_DISPLAY_BOXES
   int "The number of display boxes connected to the sign"
+  default 6
 
 config MAX_TIME_INACTIVE_BEFORE_RESET_MS
   int "Maximum amount of time the system can remain inactive before it resets in milliseconds"
+  default 60000
 
-config STOP_REQUEST_INFOPOINT
-  bool "Select if JSON feed is directly from InfoPoint servers"
-
-config STOP_REQUEST_HOSTNAME
-  string "Hostname used to retrieve stop data"
-
-config STOP_REQUEST_PATH
-  string "Path used to retrieve stop data"
-
-config STOP_JSON_BUF_SIZE
-  int "Defines the max size for stop JSON response body receive buffer"
-
-config PRIMARY_NTP_SERVER
-  string "Primary NTP server used to synchronize system time"
-
-config FALLBACK_NTP_SERVER
-  string "Fallback NTP server used to synchronize system time if the primary server is unavailable"
-
-config NTP_REQUEST_TIMEOUT_MS
-  int "Max amount of time allowed waiting for a single NTP query response for in milliseconds"
-
-config NTP_FETCH_RETRY_COUNT
-  int "Max attempts to fetch time from NTP server before changing to fallback server"
-
-config OTA_HOSTNAME
-  string "HTTP hostname used to download firmware upgade file"
-
-config OTA_PATH
-  string "HTTP path used to download firmware upgade file"
+#### LIGHT_SENSOR SETTINGS ####
 
 config LIGHT_SENSOR
   bool "Enable I2C ambient light sensor"
+  default y
 
-config LED_DISPLAY_TEST
-  bool "Select to run LED display test instead of main application"
+#### HTTP stop request settings ####
+
+config STOP_JSON_BUF_SIZE
+  int "Defines the max size for stop JSON response body receive buffer"
+  default 20480
+
+## BUSTRACKER ##
+config STOP_REQUEST_BUSTRACKER
+  bool "Use BusTracker InfoPoint servers to fetch JSON feed"
+
+config STOP_REQUEST_BUSTRACKER_USE_TLS
+  bool "Use TLS (HTTPS) when connecting to BusTracker InfoPoint servers"
+  depends on STOP_REQUEST_BUSTRACKER
+  default y if STOP_REQUEST_BUSTRACKER
+
+config STOP_REQUEST_BUSTRACKER_HOSTNAME
+  string "BusTracker server hostname used to retrieve stop data"
+  depends on STOP_REQUEST_BUSTRACKER
+
+config STOP_REQUEST_BUSTRACKER_PATH
+  string "BusTracker server path used to retrieve stop data"
+  depends on STOP_REQUEST_BUSTRACKER
+
+## JES ##
+config STOP_REQUEST_JES
+  bool "Use JES servers to fetch JSON feed"
+
+config STOP_REQUEST_JES_HOSTNAME
+  string "JES server hostname used to retrieve stop data"
+  depends on STOP_REQUEST_JES
+
+config STOP_REQUEST_JES_PATH
+  string "JES server path used to retrieve stop data"
+  depends on STOP_REQUEST_JES
+
+#### NTP SETTINGS ####
+
+config PRIMARY_NTP_SERVER
+  string "Primary NTP server used to synchronize system time"
+  default "time.nist.gov"
+
+config FALLBACK_NTP_SERVER
+  string "Fallback NTP server used to synchronize system time if the primary server is unavailable"
+  default "us.pool.ntp.org"
+
+config NTP_REQUEST_TIMEOUT_MS
+  int "Max amount of time allowed waiting for a single NTP query response for in milliseconds"
+  # The NIST time servers should never be queried more frequently than once every 4 seconds.
+  default 4000
+
+config NTP_FETCH_RETRY_COUNT
+  int "Max attempts to fetch time from NTP server before changing to fallback server"
+  default 2
+
+#### FOTA SETTINGS ####
+
+config JES_FOTA
+  bool "Enable FOTA downloads from JES servers"
+
+config JES_FOTA_HOSTNAME
+  string "HTTP hostname used to download firmware upgade file"
+  depends on JES_FOTA
+
+config JES_FOTA_PATH
+  string "HTTP path used to download firmware upgade file"
+  depends on JES_FOTA
 
 endmenu

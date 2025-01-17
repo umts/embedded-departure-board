@@ -43,7 +43,7 @@ static int unique_disply_text(
 }
 
 /** Iterates through the Departures array objects to find desired values. */
-#ifdef CONFIG_STOP_REQUEST_INFOPOINT
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER
 static int parse_departures(
     const char *const json_ptr, int t, jsmntok_t tokens[], int rdir,
     size_t departures_count, RouteDirection *route_direction, const int time_now
@@ -156,7 +156,7 @@ static int parse_departures(
   route_direction->departures_size = valid_departure_count;
   return t;
 }
-#endif  // CONFIG_STOP_REQUEST_INFOPOINT
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER
 
 /** Iterates through the RouteDirections array objects to find desired values.
  */
