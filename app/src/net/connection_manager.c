@@ -8,10 +8,7 @@
 
 #ifdef CONFIG_MODEM_KEY_MGMT
 #include <modem/modem_key_mgmt.h>
-#endif
-
-#ifdef CONFIG_NET_SOCKETS_SOCKOPT_TLS
-#include <zephyr/net/net_if.h>
+#else
 #include <zephyr/net/tls_credentials.h>
 #endif
 
@@ -19,12 +16,19 @@
 
 LOG_MODULE_REGISTER(connection_manager);
 
-static const char ca_cert[] = {
-#include "../keys/public/jes-contact.pem"
+#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
+static const char jes_cert[] = {
+#include "jes-contact-root-r4.pem.hex"
+    // Null terminate certificate if running Mbed TLS
+    IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
 };
+#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
 
-#if CONFIG_MODEM_KEY_MGMT
-BUILD_ASSERT(sizeof(ca_cert) < KB(4), "Certificates too large");
+#ifdef CONFIG_MODEM_KEY_MGMT
+// The total size of the included certificates must be less than 4KB
+#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
+BUILD_ASSERT(sizeof(jes_cert) < KB(4), "Certificates too large");
+#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
 #endif
 
 /* Macros used to subscribe to specific Zephyr NET management events. */
@@ -38,10 +42,10 @@ static struct net_mgmt_event_callback l4_cb;
 static struct net_mgmt_event_callback conn_cb;
 
 /* Provision certificate to modem */
+#ifdef CONFIG_MODEM_KEY_MGMT
 static int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_len) {
   int err;
 
-#ifdef CONFIG_MODEM_KEY_MGMT
   bool exists;
   int mismatch;
 
@@ -73,18 +77,21 @@ static int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_
     LOG_ERR("Failed to provision certificate, err %d", err);
     return err;
   }
-#else  /* CONFIG_MODEM_KEY_MGMT */
-  err = tls_credential_add(sec_tag, TLS_CREDENTIAL_CA_CERTIFICATE, ca_cert, sizeof(ca_cert));
+
+  return 0;
+}
+#else
+static int provision_cert(sec_tag_t sec_tag, const char cert[], size_t cert_len) {
+  int err = tls_credential_add(sec_tag, TLS_CREDENTIAL_CA_CERTIFICATE, cert, cert_len);
   if (err == -EEXIST) {
     LOG_INF("CA certificate already exists, sec tag: %d", sec_tag);
   } else if (err < 0) {
     LOG_ERR("Failed to register CA certificate: %d", err);
     return err;
   }
-#endif /* !CONFIG_MODEM_KEY_MGMT */
-
   return 0;
 }
+#endif /* !CONFIG_MODEM_KEY_MGMT */
 
 static void on_net_event_l4_disconnected(void) { LOG_INF("Disconnected from the network"); }
 
@@ -145,11 +152,13 @@ int lte_connect(void) {
   }
 
   /* Provision certificates before connecting to the network */
-  err = provision_cert(JES_SEC_TAG, ca_cert, sizeof(ca_cert));
+#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
+  err = provision_cert(JES_SEC_TAG, jes_cert, sizeof(jes_cert));
   if (err) {
     LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", JES_SEC_TAG);
     return err;
   }
+#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
 
   LOG_INF("Connecting to the network");
 

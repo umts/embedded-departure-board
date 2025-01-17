@@ -1,9 +1,9 @@
 /** @headerfile custom_http_client.h */
 #include "custom_http_client.h"
 
-#include <app_version.h>
 #include <stdlib.h>
 #include <string.h>
+#include <zephyr/app_version.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/socket.h>
@@ -11,27 +11,22 @@
 #include <zephyr/storage/stream_flash.h>
 
 #include "net/connection_manager.h"
-#include "net/fota.h"
 #include "watchdog_app.h"
+
+#if CONFIG_JES_FOTA
+#include "net/fota.h"
+#endif  // CONFIG_JES_FOTA
 
 LOG_MODULE_REGISTER(custom_http_client);
 
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
   int err;
-  int verify;
 
   /* Security tag that we have provisioned the certificate with */
   sec_tag_t tls_sec_tag[] = {sec_tag};
 
-  /* Set up TLS peer verification */
-  enum {
-    NONE = 0,
-    OPTIONAL = 1,
-    REQUIRED = 2,
-  };
-
-  verify = REQUIRED;
+  socklen_t verify = TLS_PEER_VERIFY_REQUIRED;
 
   err = setsockopt(fd, SOL_TLS, TLS_PEER_VERIFY, &verify, sizeof(verify));
   if (err) {
@@ -144,10 +139,9 @@ static int parse_headers(int *sock, char *headers_buf, int headers_buf_size) {
 }
 
 static long parse_response(
-    int *sock, char *recv_body_buf, int recv_body_buf_size, long offset,
-    char *headers_buf, int headers_buf_size, _Bool write_nvs
+    int *sock, char *recv_body_buf, int recv_body_buf_size, long offset, char *headers_buf,
+    int headers_buf_size, _Bool write_nvs
 ) {
-  int rc = 0;
   int bytes;
 
   int headers_size = parse_headers(sock, headers_buf, headers_buf_size);
@@ -157,6 +151,9 @@ static long parse_response(
   } else if (headers_size < 0) {
     return headers_size;
   }
+
+#ifdef CONFIG_JES_FOTA
+  int rc = 0;
 
   do {
     if (write_nvs) {
@@ -175,17 +172,13 @@ static long parse_response(
       }
       LOG_DBG("recv bytes: %d", bytes);
       LOG_DBG("Total: %ld", offset);
-#ifdef CONFIG_BOOTLOADER_MCUBOOT
       rc = write_buffer_to_flash(recv_body_buf, bytes, false);
-#endif
       if (rc < 0) {
         LOG_ERR("write_buffer_to_flash() failed, error: %s", strerror(errno));
         return bytes;
       }
     } else {
-      bytes = recv(
-          *sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0
-      );
+      bytes = recv(*sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0);
       if (bytes < 0) {
         LOG_ERR("recv() body failed, %s", strerror(errno));
         return bytes;
@@ -193,14 +186,23 @@ static long parse_response(
     }
     offset += bytes;
   } while (bytes != 0);
+#else
+  do {
+    bytes = recv(*sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0);
+    if (bytes < 0) {
+      LOG_ERR("recv() body failed, %s", strerror(errno));
+      return bytes;
+    }
+    offset += bytes;
+  } while (bytes != 0);
+#endif  // CONFIG_JES_FOTA
 
   LOG_DBG("Received Body. Size: %ld bytes", offset);
   LOG_INF("Total bytes received: %ld", offset + headers_size);
 
+#ifdef CONFIG_JES_FOTA
   if (write_nvs) {
-#ifdef CONFIG_BOOTLOADER_MCUBOOT
     rc = write_buffer_to_flash(recv_body_buf, 0, true);
-#endif
 
     if (rc < 0) {
       LOG_ERR("write_buffer_to_flash() failed, error: %s", strerror(errno));
@@ -208,6 +210,7 @@ static long parse_response(
     }
     return rc;
   }
+#endif  // CONFIG_JES_FOTA
 
   /* Make sure recv_buf is NULL terminated (for safe use with strstr) */
   if (offset < recv_body_buf_size) {
@@ -262,11 +265,6 @@ static int send_http_request(
   static struct addrinfo hints = {
       .ai_socktype = SOCK_STREAM, .ai_flags = AI_NUMERICSERV
   };
-
-  LOG_DBG("hostname: %s", hostname);
-  LOG_DBG("path: %s", path);
-  LOG_DBG("accept: %s", accept);
-  LOG_DBG("SEC_TAG: %d", sec_tag);
 
 retry:
   err = wdt_feed(wdt, wdt_channel_id);
@@ -406,7 +404,7 @@ clean_up:
     range_start = rc;
     goto retry;
   } else if ((rc == -3) && (retry_client_error == 0)) {
-    // The InfoPoint endpoint occasionally returns 404; retry once
+    // The BusTracker endpoint occasionally returns 404; retry once
     LOG_WRN("GET request failed once, retrying...");
     retry_client_error = 1;
     goto retry;
@@ -432,7 +430,7 @@ redirect:
       if (strncmp(ptr, "https", 5) == 0) {
         if (sec_tag == NO_SEC_TAG) {
           LOG_ERR(
-              "Redirect requires TLS, but a TLS sec_tag was assigned. Assign "
+              "Redirect requires TLS, but no TLS sec_tag was assigned. Assign "
               "correct sec_tag in the code "
               "Aborting."
           );
@@ -474,33 +472,33 @@ int http_request_stop_json(
   int err;
 
   /** Make the size 255 incase we get a redirect with a longer hostname */
-  static char hostname[255] = CONFIG_STOP_REQUEST_HOSTNAME;
+  static char hostname[255] = CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME;
 
   /** Make the size 255 incase we get a redirect with a longer path */
-  static char path[255] = CONFIG_STOP_REQUEST_PATH;
+  static char path[255] = CONFIG_STOP_REQUEST_BUSTRACKER_PATH;
 
   if (k_sem_take(&network_connection_sem, K_SECONDS(30)) != 0) {
     LOG_ERR("Failed to take network_connection_sem");
     err = 1;
   } else {
-#if CONFIG_STOP_REQUEST_INFOPOINT
+#if CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
     err = send_http_request(
-        hostname, path, "application/json", NO_SEC_TAG, stop_body_buf,
-        stop_body_buf_size, headers_buf, headers_buf_size, false
+        hostname, path, "application/json", BUSTRACKER_SEC_TAG, stop_body_buf, stop_body_buf_size,
+        headers_buf, headers_buf_size, false
     );
-    k_sem_give(&network_connection_sem);
 #else
     err = send_http_request(
-        hostname, path, "application/json", JES_SEC_TAG, stop_body_buf,
-        stop_body_buf_size, headers_buf, headers_buf_size, false
+        hostname, path, "application/json", NO_SEC_TAG, stop_body_buf, stop_body_buf_size,
+        headers_buf, headers_buf_size, false
     );
+#endif
     k_sem_give(&network_connection_sem);
-#endif  // CONFIG_STOP_REQUEST_INFOPOINT
   }
 
   return err;
 }
 
+#if CONFIG_JES_FOTA
 int http_get_firmware(
     char *write_buf, int write_buf_size, char *headers_buf, int headers_buf_size
 ) {
@@ -511,9 +509,8 @@ int http_get_firmware(
     err = 1;
   } else {
     err = send_http_request(
-        CONFIG_OTA_HOSTNAME, CONFIG_OTA_PATH, "application/octet-stream",
-        JES_SEC_TAG, write_buf, write_buf_size, headers_buf, headers_buf_size,
-        true
+        CONFIG_JES_FOTA_HOSTNAME, CONFIG_JES_FOTA_PATH, "application/octet-stream", JES_SEC_TAG,
+        write_buf, write_buf_size, headers_buf, headers_buf_size, true
     );
 
     k_sem_give(&network_connection_sem);
@@ -521,3 +518,4 @@ int http_get_firmware(
 
   return err;
 }
+#endif  // CONFIG_JES_FOTA
