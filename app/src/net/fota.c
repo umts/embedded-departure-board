@@ -1,21 +1,24 @@
-
 #ifdef CONFIG_BOOTLOADER_MCUBOOT
 
 #include "fota.h"
 
-#include <string.h>
-#include <sys/errno.h>
 #include <zephyr/device.h>
-#include <zephyr/dfu/flash_img.h>
 #include <zephyr/dfu/mcuboot.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/storage/flash_map.h>
+
+#include "pm_config.h"
+
+#ifdef CONFIG_JES_FOTA
+#include <string.h>
+#include <sys/errno.h>
+#include <zephyr/dfu/flash_img.h>
 #include <zephyr/sys/util.h>
 
 #include "net/custom_http_client.h"
-#include "pm_config.h"
 #include "watchdog_app.h"
+#endif  // CONFIG_JES_FOTA
 
 LOG_MODULE_REGISTER(fota);
 
@@ -31,8 +34,6 @@ BUILD_ASSERT(
     "Missing " PM_MCUBOOT_SECONDARY_STRING
     " fixed partition. Secondary slot partition is required!"
 );
-
-struct flash_img_context ctx;
 
 void validate_image(void) {
   int rc;
@@ -57,6 +58,10 @@ void validate_image(void) {
     }
   }
 }
+
+#ifdef CONFIG_JES_FOTA
+
+struct flash_img_context ctx;
 
 int write_buffer_to_flash(char *data, size_t len, _Bool flush) {
   int rc;
@@ -135,4 +140,5 @@ void download_update(void) {
   }
 }
 
-#endif
+#endif  // CONFIG_JES_FOTA
+#endif  // CONFIG_BOOTLOADER_MCUBOOT
