@@ -19,6 +19,10 @@
 
 LOG_MODULE_REGISTER(custom_http_client);
 
+static const char swiftly_api_key[] = {
+#include "../keys/private/swiftly-authorization.key"
+};
+
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
   int err;
@@ -109,7 +113,7 @@ static int parse_headers(int *sock, char *headers_buf, int headers_buf_size) {
   do {
     bytes = recv(*sock, &headers_buf[headers_offset], 1, 0);
     if (bytes < 0) {
-      LOG_ERR("recv() headers failed, %s", strerror(errno));
+      LOG_ERR("recv() headers failed. Err %d: %s", errno, strerror(errno));
       return bytes;
     }
 
@@ -297,7 +301,15 @@ retry:
   }
   ptr = stpcpy(ptr, "Accept: ");
   ptr = stpcpy(ptr, accept);
-  ptr = stpcpy(ptr, "\r\nConnection: close\r\n\r\n");
+  ptr = stpcpy(ptr, "\r\n");
+
+  if (sec_tag == SWIFTLY_SEC_TAG) {
+    ptr = stpcpy(ptr, "Authorization: ");
+    ptr = stpcpy(ptr, swiftly_api_key);
+    ptr = stpcpy(ptr, "\r\n");
+  }
+
+  ptr = stpcpy(ptr, "Connection: close\r\n\r\n");
 
   headers_size = (ptr - &headers_buf[0]);
 
@@ -327,10 +339,10 @@ retry:
 
   if (sec_tag == NO_SEC_TAG) {
     sock = socket(addr_inf->ai_family, SOCK_STREAM, addr_inf->ai_protocol);
-  } else if (IS_ENABLED(CONFIG_MBEDTLS)) {
-    sock = socket(addr_inf->ai_family, SOCK_STREAM | SOCK_NATIVE_TLS, IPPROTO_TLS_1_2);
-  } else {
+  } else if (IS_ENABLED(CONFIG_MODEM_KEY_MGMT)) {
     sock = socket(addr_inf->ai_family, SOCK_STREAM, IPPROTO_TLS_1_2);
+  } else {
+    sock = socket(addr_inf->ai_family, SOCK_STREAM | SOCK_NATIVE_TLS, IPPROTO_TLS_1_2);
   }
 
   if (sock == -1) {
@@ -351,7 +363,8 @@ retry:
 
   err = connect(sock, addr_inf->ai_addr, addr_inf->ai_addrlen);
   if (err) {
-    LOG_ERR("connect() failed, %s", strerror(errno));
+    LOG_ERR("connect() failed. Err %d: %s", errno, strerror(errno));
+    rc = -1;
     goto clean_up;
   }
 
@@ -405,6 +418,8 @@ clean_up:
     LOG_WRN("GET request failed once, retrying...");
     retry_client_error = 1;
     goto retry;
+  } else if (rc < 0) {
+    return EXIT_FAILURE;
   }
 
   return EXIT_SUCCESS;
@@ -468,26 +483,44 @@ int http_request_stop_json(
   int err;
 
   /** Make the size 255 incase we get a redirect with a longer hostname */
-  static char hostname[255] = CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME;
+  static char hostname[255] = CONFIG_STOP_REQUEST_SWIFTLY_HOSTNAME;
 
   /** Make the size 255 incase we get a redirect with a longer path */
-  static char path[255] = CONFIG_STOP_REQUEST_BUSTRACKER_PATH;
+  static char path[255] = CONFIG_STOP_REQUEST_SWIFTLY_PATH;
 
   if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {
+    err = send_http_request(
+        hostname, path, "application/json", SWIFTLY_SEC_TAG, stop_body_buf, stop_body_buf_size,
+        headers_buf, headers_buf_size, false
+    );
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER
+    if (err) {
+      memcpy(
+          &hostname[0], CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME,
+          sizeof(CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME)
+      );
+      hostname[sizeof(CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME) + 1] = '\0';
+      memcpy(
+          &path[0], CONFIG_STOP_REQUEST_BUSTRACKER_PATH, sizeof(CONFIG_STOP_REQUEST_BUSTRACKER_PATH)
+      );
+      path[sizeof(CONFIG_STOP_REQUEST_BUSTRACKER_PATH) + 1] = '\0';
 #ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-    err = send_http_request(
-        hostname, path, "application/json", BUSTRACKER_SEC_TAG, stop_body_buf, stop_body_buf_size,
-        headers_buf, headers_buf_size, false
-    );
+      err = send_http_request(
+          hostname, path, "application/json", BUSTRACKER_SEC_TAG, stop_body_buf, stop_body_buf_size,
+          headers_buf, headers_buf_size, false
+      );
 #else
-    err = send_http_request(
-        hostname, path, "application/json", NO_SEC_TAG, stop_body_buf, stop_body_buf_size,
-        headers_buf, headers_buf_size, false
-    );
+      err = send_http_request(
+          hostname, path, "application/json", NO_SEC_TAG, stop_body_buf, stop_body_buf_size,
+          headers_buf, headers_buf_size, false
+      );
 #endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+    }
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER
+
     k_sem_give(&lte_connected_sem);
   }
 

@@ -32,6 +32,12 @@ static const char bustracker_cert[] = {
 };
 #endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
 
+static const char swiftly_cert[] = {
+#include "goswift-ly.pem.hex"
+    // Null terminate certificate if running Mbed TLS
+    IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
+};
+
 #ifdef CONFIG_MODEM_KEY_MGMT
 // The total size of the included certificates must be less than 4KB
 BUILD_ASSERT(
@@ -46,7 +52,13 @@ BUILD_ASSERT(
         sizeof(bustracker_cert)
 #else
         0
-#endif
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+        +
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
+        sizeof(swiftly_cert)
+#else
+        0
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
     ) < KB(4),
     "Certificates too large"
 );
@@ -62,15 +74,11 @@ void nrf_modem_fault_handler(struct nrf_modem_fault_info *fault_info) {
 }
 #endif
 
-#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES) || \
-    defined(CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS)
 /* Provision certificate to modem */
 #ifdef CONFIG_MODEM_KEY_MGMT
 static int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_len) {
   int err;
-
   bool exists;
-  int mismatch;
 
   err = modem_key_mgmt_exists(sec_tag, MODEM_KEY_MGMT_CRED_TYPE_CA_CHAIN, &exists);
   if (err) {
@@ -79,20 +87,11 @@ static int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_
   }
 
   if (exists) {
-    mismatch = modem_key_mgmt_cmp(sec_tag, MODEM_KEY_MGMT_CRED_TYPE_CA_CHAIN, cert, cert_len);
-    if (!mismatch) {
-      LOG_INF("Certificate match");
-      return 0;
-    }
-
-    LOG_INF("Certificate mismatch");
     err = modem_key_mgmt_delete(sec_tag, MODEM_KEY_MGMT_CRED_TYPE_CA_CHAIN);
     if (err) {
       LOG_ERR("Failed to delete existing certificate, err %d", err);
     }
   }
-
-  LOG_INF("Provisioning certificate");
 
   /*  Provision certificate to the modem */
   err = modem_key_mgmt_write(sec_tag, MODEM_KEY_MGMT_CRED_TYPE_CA_CHAIN, cert, cert_len);
@@ -114,9 +113,7 @@ static int provision_cert(sec_tag_t sec_tag, const char cert[], size_t cert_len)
   }
   return 0;
 }
-#endif  /* !CONFIG_MODEM_KEY_MGMT */
-#endif  // defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES) ||
-        // defined(CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS)
+#endif  // CONFIG_MODEM_KEY_MGMT
 
 int lte_connect(void) {
   int err;
@@ -146,6 +143,14 @@ int lte_connect(void) {
     return err;
   }
 #endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
+  err = provision_cert(SWIFTLY_SEC_TAG, swiftly_cert, sizeof(swiftly_cert));
+  if (err) {
+    LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", SWIFTLY_SEC_TAG);
+    return err;
+  }
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
   LOG_INF("Initializing LTE interface");
   err = wdt_feed(wdt, wdt_channel_id);

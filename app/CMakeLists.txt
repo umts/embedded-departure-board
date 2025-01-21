@@ -23,6 +23,12 @@ generate_inc_file_for_target(
   ${gen_dir}/bustracker-pvta-com.pem.hex
 )
 
+generate_inc_file_for_target(
+  app
+  keys/public/goswift-ly.pem
+  ${gen_dir}/goswift-ly.pem.hex
+)
+
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 FILE(GLOB_RECURSE app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})

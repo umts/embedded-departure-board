@@ -43,6 +43,19 @@ config STOP_JSON_BUF_SIZE
   int "Defines the max size for stop JSON response body receive buffer"
   default 20480
 
+## SWIFTLY ##
+config STOP_REQUEST_SWIFTLY
+  bool "Use Swiftly servers to fetch JSON feed"
+  default y
+
+config STOP_REQUEST_SWIFTLY_HOSTNAME
+  string "Swiftly server hostname used to retrieve stop data"
+  depends on STOP_REQUEST_SWIFTLY
+
+config STOP_REQUEST_SWIFTLY_PATH
+  string "Swiftly server path used to retrieve stop data"
+  depends on STOP_REQUEST_SWIFTLY
+
 ## BUSTRACKER ##
 config STOP_REQUEST_BUSTRACKER
   bool "Use BusTracker InfoPoint servers to fetch JSON feed"

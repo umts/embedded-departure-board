@@ -1,3 +1,4 @@
+#ifdef CONFIG_LIGHT_SENSOR
 #include "light_sensor.h"
 
 #include <zephyr/device.h>
@@ -33,3 +34,4 @@ int get_lux(void) {
 
   return ret;
 }
+#endif  // CONFIG_LIGHT_SENSOR
