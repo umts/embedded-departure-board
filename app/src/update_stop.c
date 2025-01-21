@@ -101,7 +101,7 @@ int update_stop(void) {
   static Stop stop = {.last_updated = 0, .id = CONFIG_STOP_ID};
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
-  static char headers_buf[1024];
+  static char headers_buf[2048];
 
   // Keep track of retry attempts so we don't get in a loop
   int retry_error = 0;

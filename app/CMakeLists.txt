@@ -13,8 +13,14 @@ zephyr_include_directories(${gen_dir})
 
 generate_inc_file_for_target(
   app
-  keys/public/jes-contact-root-r4.pem
-  ${gen_dir}/jes-contact-root-r4.pem.hex
+  keys/public/jes-contact.pem
+  ${gen_dir}/jes-contact.pem.hex
+)
+
+generate_inc_file_for_target(
+  app
+  keys/public/bustracker-pvta-com.pem
+  ${gen_dir}/bustracker-pvta-com.pem.hex
 )
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

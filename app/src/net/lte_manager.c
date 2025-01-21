@@ -1,13 +1,13 @@
 /** @headerfile lte_manager.h */
 #include "lte_manager.h"
 
+#include <modem/lte_lc.h>
+#include <modem/nrf_modem_lib.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
 #ifdef CONFIG_MODEM_KEY_MGMT
-#include <modem/lte_lc.h>
 #include <modem/modem_key_mgmt.h>
-#include <modem/nrf_modem_lib.h>
 #else
 #include <zephyr/net/tls_credentials.h>
 #endif
@@ -18,17 +18,38 @@ LOG_MODULE_REGISTER(lte_manager);
 
 #if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
 static const char jes_cert[] = {
-#include "jes-contact-root-r4.pem.hex"
+#include "jes-contact.pem.hex"
     // Null terminate certificate if running Mbed TLS
     IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
 };
 #endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
 
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+static const char bustracker_cert[] = {
+#include "bustracker-pvta-com.pem.hex"
+    // Null terminate certificate if running Mbed TLS
+    IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
+};
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+
 #ifdef CONFIG_MODEM_KEY_MGMT
 // The total size of the included certificates must be less than 4KB
+BUILD_ASSERT(
+    (
 #if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
-BUILD_ASSERT(sizeof(jes_cert) < KB(4), "Certificates too large");
+        sizeof(jes_cert)
+#else
+        0
 #endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+        +
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+        sizeof(bustracker_cert)
+#else
+        0
+#endif
+    ) < KB(4),
+    "Certificates too large"
+);
 #endif
 
 K_SEM_DEFINE(lte_connected_sem, 1, 1);
@@ -41,7 +62,8 @@ void nrf_modem_fault_handler(struct nrf_modem_fault_info *fault_info) {
 }
 #endif
 
-#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
+#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES) || \
+    defined(CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS)
 /* Provision certificate to modem */
 #ifdef CONFIG_MODEM_KEY_MGMT
 static int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_len) {
@@ -92,8 +114,9 @@ static int provision_cert(sec_tag_t sec_tag, const char cert[], size_t cert_len)
   }
   return 0;
 }
-#endif /* !CONFIG_MODEM_KEY_MGMT */
-#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+#endif  /* !CONFIG_MODEM_KEY_MGMT */
+#endif  // defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES) ||
+        // defined(CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS)
 
 int lte_connect(void) {
   int err;
@@ -115,6 +138,14 @@ int lte_connect(void) {
     return err;
   }
 #endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+  err = provision_cert(BUSTRACKER_SEC_TAG, bustracker_cert, sizeof(bustracker_cert));
+  if (err) {
+    LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", BUSTRACKER_SEC_TAG);
+    return err;
+  }
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
 
   LOG_INF("Initializing LTE interface");
   err = wdt_feed(wdt, wdt_channel_id);
