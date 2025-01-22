@@ -39,6 +39,10 @@ config LIGHT_SENSOR
 
 #### HTTP stop request settings ####
 
+config HTTP_REQUEST_RETRY_COUNT
+  int "Defines the number of HTTP request retries on failure (i.e. 404)"
+  default 0
+
 config STOP_JSON_BUF_SIZE
   int "Defines the max size for stop JSON response body receive buffer"
   default 20480

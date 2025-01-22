@@ -413,12 +413,12 @@ clean_up:
     // Partial transefer complete; reconnect with new range request
     range_start = rc;
     goto retry;
-  } else if ((rc == -3) && (retry_client_error == 0)) {
-    // The BusTracker endpoint occasionally returns 404; retry once
-    LOG_WRN("GET request failed once, retrying...");
-    retry_client_error = 1;
+  } else if ((rc == -3) && (retry_client_error < CONFIG_HTTP_REQUEST_RETRY_COUNT)) {
+    LOG_WRN("HTTP GET request to %s%s failed, retrying...", hostname, path);
+    retry_client_error++;
     goto retry;
   } else if (rc < 0) {
+    LOG_ERR("HTTP GET request to %s%s failed", hostname, path);
     return EXIT_FAILURE;
   }
 
