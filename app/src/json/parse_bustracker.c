@@ -1,4 +1,5 @@
-#include "jsmn_parse.h"
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER
+#include "parse_bustracker.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -9,15 +10,17 @@
 
 #include "json/jsmn.h"
 #include "json/json_helpers.h"
-#include "stop.h"
 
-LOG_MODULE_REGISTER(jsmn_parse);
+LOG_MODULE_REGISTER(parse_bustracker);
 
 /** The number of keys + values in for each object type in our JSON string */
 #define DEPARTURE_TOK_COUNT 18
+
 #define HEADWAY_TOK_COUNT 14
+
 #define ROUTE_DIRECTION_TOK_COUNT \
   (12 + (CONFIG_ROUTE_MAX_DEPARTURES * (DEPARTURE_TOK_COUNT + HEADWAY_TOK_COUNT)))
+
 #define STOP_TOK_COUNT (6 + (CONFIG_STOP_MAX_ROUTES * ROUTE_DIRECTION_TOK_COUNT))
 
 /** With jsmn JSON objects count as a token, so we need to offset by an
@@ -30,8 +33,8 @@ LOG_MODULE_REGISTER(jsmn_parse);
 #define DEPARTURE_TOK tokens[t + rdir + dep + 3]
 
 static int unique_disply_text(
-    const char *const json_ptr, RouteDirection *route_direction,
-    const jsmntok_t *tok, size_t valid_departure_count
+    const char *const json_ptr, RouteDirection *route_direction, const jsmntok_t *tok,
+    size_t valid_departure_count
 ) {
   for (size_t i = 0; i < valid_departure_count; i++) {
     Departure *departure = &route_direction->departures[i];
@@ -43,10 +46,9 @@ static int unique_disply_text(
 }
 
 /** Iterates through the Departures array objects to find desired values. */
-// #ifdef CONFIG_STOP_REQUEST_BUSTRACKER
 static int parse_departures(
-    const char *const json_ptr, int t, jsmntok_t tokens[], int rdir,
-    size_t departures_count, RouteDirection *route_direction, const int time_now
+    const char *const json_ptr, int t, jsmntok_t tokens[], int rdir, size_t departures_count,
+    RouteDirection *route_direction, const int time_now
 ) {
   size_t valid_departure_count = 0;
 
@@ -72,17 +74,15 @@ static int parse_departures(
     for (int dep = 0; dep < (departure_size * 2); dep++) {
       if (jsoneq(json_ptr, &DEPARTURE_TOK, "DisplayText")) {
         dep++;
-        departure_uniq = unique_disply_text(
-            json_ptr, route_direction, &DEPARTURE_TOK, valid_departure_count
-        );
+        departure_uniq =
+            unique_disply_text(json_ptr, route_direction, &DEPARTURE_TOK, valid_departure_count);
 
         if (departure_uniq) {
           memcpy(
               departure->display_text, json_ptr + DEPARTURE_TOK.start,
               DEPARTURE_TOK.end - DEPARTURE_TOK.start
           );
-          departure->display_text[(DEPARTURE_TOK.end - DEPARTURE_TOK.start)] =
-              '\0';
+          departure->display_text[(DEPARTURE_TOK.end - DEPARTURE_TOK.start)] = '\0';
           if (edt_in_future) {
             goto check_validity;
           }
@@ -130,8 +130,7 @@ static int parse_departures(
       } else {
         dep++;
         LOG_WRN(
-            "Unexpected key in Departures: %.*s\n",
-            DEPARTURE_TOK.end - DEPARTURE_TOK.start,
+            "Unexpected key in Departures: %.*s\n", DEPARTURE_TOK.end - DEPARTURE_TOK.start,
             json_ptr + DEPARTURE_TOK.start
         );
       }
@@ -147,28 +146,23 @@ static int parse_departures(
   }
 #ifdef CONFIG_DEBUG
   for (int i = 0; i < CONFIG_ROUTE_MAX_DEPARTURES; i++) {
-    LOG_DBG(
-        "Uniq display text(s) %d: %s", i,
-        route_direction->departures[i].display_text
-    );
+    LOG_DBG("Uniq display text(s) %d: %s", i, route_direction->departures[i].display_text);
   }
 #endif  // CONFIG_DEBUG
   route_direction->departures_size = valid_departure_count;
   return t;
 }
-// #endif  // CONFIG_STOP_REQUEST_BUSTRACKER
 
 /** Iterates through the RouteDirections array objects to find desired values.
  */
 static int parse_route_directions(
-    const char *const json_ptr, int t, jsmntok_t tokens[],
-    size_t route_directions_count, Stop *stop, const int time_now
+    const char *const json_ptr, int t, jsmntok_t tokens[], size_t route_directions_count,
+    Stop *stop, const int time_now
 ) {
   size_t valid_route_count = 0;
 
   for (int rd_num = 0; rd_num < route_directions_count; rd_num++) {
-    RouteDirection *route_direction =
-        &stop->route_directions[valid_route_count];
+    RouteDirection *route_direction = &stop->route_directions[valid_route_count];
     /** The number of keys in the RouteDirection object.
      *
      *  tokens[t + 1] is a RouteDirection object,
@@ -186,8 +180,7 @@ static int parse_route_directions(
     for (int rdir = 0; rdir < (route_direction_size * 2); rdir++) {
       if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "Direction")) {
         rdir++;
-        route_direction->direction_code =
-            *(json_ptr + ROUTE_DIRECTION_TOK.start);
+        route_direction->direction_code = *(json_ptr + ROUTE_DIRECTION_TOK.start);
         LOG_DBG("- Direction: %c", *(json_ptr + ROUTE_DIRECTION_TOK.start));
       } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "IsDone")) {
         rdir++;
@@ -199,11 +192,9 @@ static int parse_route_directions(
         LOG_DBG("- RouteId: %d", atoi(json_ptr + ROUTE_DIRECTION_TOK.start));
       } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "Departures")) {
         rdir++;
-        if ((ROUTE_DIRECTION_TOK.type == JSMN_ARRAY) &&
-            (ROUTE_DIRECTION_TOK.size > 0)) {
+        if ((ROUTE_DIRECTION_TOK.type == JSMN_ARRAY) && (ROUTE_DIRECTION_TOK.size > 0)) {
           t = parse_departures(
-              json_ptr, t, tokens, rdir, ROUTE_DIRECTION_TOK.size,
-              route_direction, time_now
+              json_ptr, t, tokens, rdir, ROUTE_DIRECTION_TOK.size, route_direction, time_now
           );
           valid_route_count++;
         } else {
@@ -211,8 +202,7 @@ static int parse_route_directions(
         }
       } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "HeadwayDepartures")) {
         rdir++;
-        if ((ROUTE_DIRECTION_TOK.type == JSMN_ARRAY) &&
-            (ROUTE_DIRECTION_TOK.size > 0)) {
+        if ((ROUTE_DIRECTION_TOK.type == JSMN_ARRAY) && (ROUTE_DIRECTION_TOK.size > 0)) {
           /* We don't care about this array but we do need to account for it's
            * size */
           t += (ROUTE_DIRECTION_TOK.size * 2) + 1;
@@ -244,9 +234,7 @@ static int parse_route_directions(
  *
  * TODO: Acount for size of *optional* arrays while iterating.
  */
-int parse_stop_json(
-    const char *const json_ptr, Stop *stop, unsigned int time_now
-) {
+int parse_bustracker_json(const char *const json_ptr, Stop *stop, unsigned int time_now) {
   jsmn_parser p;
 
   /** The number of maximum possible tokens we expect in our JSON string + 1 for
@@ -262,9 +250,7 @@ int parse_stop_json(
 
   /** The number of tokens *allocated* from tokens array to parse the JSON
    * string */
-  ret = jsmn_parse(
-      &p, json_ptr, strlen(json_ptr), tokens, sizeof(tokens) / sizeof(jsmntok_t)
-  );
+  ret = jsmn_parse(&p, json_ptr, strlen(json_ptr), tokens, sizeof(tokens) / sizeof(jsmntok_t));
 
   err = eval_jsmn_return(ret);
   if (err) {
@@ -326,9 +312,7 @@ int parse_stop_json(
        * so tokens[t].size is the number of RouteDirections
        */
       if (tokens[t].type == JSMN_ARRAY && tokens[t].size > 0) {
-        t = parse_route_directions(
-            json_ptr, t, tokens, tokens[t].size, stop, time_now
-        );
+        t = parse_route_directions(json_ptr, t, tokens, tokens[t].size, stop, time_now);
       } else {
         LOG_WRN("No RouteDirections to parse.");
         break;
@@ -348,3 +332,4 @@ int parse_stop_json(
   }
   return EXIT_SUCCESS;
 }
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER
