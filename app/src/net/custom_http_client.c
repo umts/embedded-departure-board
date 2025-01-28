@@ -23,6 +23,15 @@ static const char swiftly_api_key[] = {
 #include "../keys/private/swiftly-authorization.key"
 };
 
+enum response_code {
+  HTTP_NULL,
+  HTTP_INFO,
+  HTTP_SUCCESS,
+  HTTP_REDIRECT,
+  HTTP_CLIENT_ERROR,
+  HTTP_SERVER_ERROR
+};
+
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
   int err;
@@ -414,11 +423,11 @@ clean_up:
     range_start = rc;
     goto retry;
   } else if ((rc == -3) && (retry_client_error < CONFIG_HTTP_REQUEST_RETRY_COUNT)) {
-    LOG_WRN("HTTP GET request to %s%s failed, retrying...", hostname, path);
+    LOG_WRN("HTTP request GET %s%s failed, retrying...", hostname, path);
     retry_client_error++;
     goto retry;
   } else if (rc < 0) {
-    LOG_ERR("HTTP GET request to %s%s failed", hostname, path);
+    LOG_ERR("HTTP request GET %s%s failed", hostname, path);
     return EXIT_FAILURE;
   }
 
@@ -478,7 +487,8 @@ redirect:
 }
 
 int http_request_stop_json(
-    char *stop_body_buf, int stop_body_buf_size, char *headers_buf, int headers_buf_size
+    char *stop_body_buf, int stop_body_buf_size, char *headers_buf, int headers_buf_size,
+    int *json_src
 ) {
   int err;
 
@@ -498,6 +508,7 @@ int http_request_stop_json(
     );
 #ifdef CONFIG_STOP_REQUEST_BUSTRACKER
     if (err) {
+      *json_src = BUSTRACKER;
       memcpy(
           &hostname[0], CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME,
           sizeof(CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME)

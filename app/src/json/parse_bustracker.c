@@ -13,6 +13,31 @@
 
 LOG_MODULE_REGISTER(parse_bustracker);
 
+/** Convert BusTracker's route IDs to PVTA standard IDs */
+static void *id_to_route_id(char rout_id[], int id) {
+  switch (id) {
+    case 30038:
+      memcpy(rout_id, "38", sizeof("38"));
+      break;
+    case 10043:
+      memcpy(rout_id, "B43", sizeof("B43"));
+      break;
+    case 10943:
+      memcpy(rout_id, "B43E", sizeof("B43E"));
+      break;
+    case 20029:
+      memcpy(rout_id, "R29", sizeof("R29"));
+      break;
+    case 30079:
+      memcpy(rout_id, "B79", sizeof("B79"));
+      break;
+    default:
+      rout_id[0] = '\0';
+      break;
+  }
+  return NULL;
+}
+
 /** The number of keys + values in for each object type in our JSON string */
 #define DEPARTURE_TOK_COUNT 18
 
@@ -180,7 +205,12 @@ static int parse_route_directions(
     for (int rdir = 0; rdir < (route_direction_size * 2); rdir++) {
       if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "Direction")) {
         rdir++;
-        route_direction->direction_code = *(json_ptr + ROUTE_DIRECTION_TOK.start);
+        if ((*(json_ptr + ROUTE_DIRECTION_TOK.start) == 'N') ||
+            (*(json_ptr + ROUTE_DIRECTION_TOK.start) == 'E')) {
+          route_direction->direction_code = '0';
+        } else {
+          route_direction->direction_code = '1';
+        }
         LOG_DBG("- Direction: %c", *(json_ptr + ROUTE_DIRECTION_TOK.start));
       } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "IsDone")) {
         rdir++;
@@ -188,7 +218,7 @@ static int parse_route_directions(
         rdir++;
       } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "RouteId")) {
         rdir++;
-        route_direction->id = atoi(json_ptr + ROUTE_DIRECTION_TOK.start);
+        (void)id_to_route_id(route_direction->route_id, atoi(json_ptr + ROUTE_DIRECTION_TOK.start));
         LOG_DBG("- RouteId: %d", atoi(json_ptr + ROUTE_DIRECTION_TOK.start));
       } else if (jsoneq(json_ptr, &ROUTE_DIRECTION_TOK, "Departures")) {
         rdir++;
@@ -289,22 +319,6 @@ int parse_bustracker_json(const char *const json_ptr, Stop *stop, unsigned int t
   while (t < ret) {
     if (jsoneq(json_ptr, &tokens[t], "LastUpdated")) {
       t++;
-      const char *const last_updated_string = json_ptr + tokens[t].start + 7;
-      LOG_DBG("LastUpdated: %lu\n", strtoul(last_updated_string, NULL, 10));
-      unsigned long new_last_updated = strtoul(last_updated_string, NULL, 10);
-      stop->last_updated = new_last_updated;
-
-      /*
-       * Picolibc strtoull is not behaving as expected, needs more investigation
-       *
-       * if (stop->last_updated < new_last_updated) {
-       * stop->last_updated = new_last_updated;
-       * } else {
-       * LOG_INF("StopDepartures not updated, skipping.");
-       * break;
-       * }
-       */
-
     } else if (jsoneq(json_ptr, &tokens[t], "RouteDirections")) {
       /* Increase t by an additional 1 to step into the array */
       t++;
