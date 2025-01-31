@@ -87,6 +87,12 @@ static int parse_predictions(
             "                blockId: %.*s,", tokens[t].end - tokens[t].start,
             json_ptr + tokens[t].start
         );
+      } else if (jsoneq(json_ptr, &tokens[t], "scheduleBased")) {
+        t++;
+        LOG_DBG(
+            "                scheduleBased: %.*s,", tokens[t].end - tokens[t].start,
+            json_ptr + tokens[t].start
+        );
       } else if (jsoneq(json_ptr, &tokens[t], "occupancyStatus")) {
         t++;
         LOG_DBG(

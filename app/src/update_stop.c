@@ -139,6 +139,7 @@ int update_stop(void) {
   static const DisplayBox display_boxes[] = DISPLAY_BOXES;
 
   static char headers_buf[2048];
+  int json_src = SWIFTLY;
 
   /** HTTP response body buffer with size defined by the
    * CONFIG_STOP_JSON_BUF_SIZE
@@ -148,7 +149,6 @@ int update_stop(void) {
 #ifdef CONFIG_STOP_REQUEST_BUSTRACKER
   // Keep track of retry attempts so we don't get in a loop
   int retry_error = 0;
-  int json_src = SWIFTLY;
 
 retry:
 #endif  // CONFIG_STOP_REQUEST_BUSTRACKER

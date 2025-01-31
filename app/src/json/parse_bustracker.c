@@ -38,14 +38,25 @@ static void *id_to_route_id(char rout_id[], int id) {
   return NULL;
 }
 
-/** The number of keys + values in for each object type in our JSON string */
+/** Total expected tokens for "Departures" array
+ * 8 key tokens + 8 value tokens + 1 object token + 1 array token = 18 tokens
+ */
 #define DEPARTURE_TOK_COUNT 18
 
+/** Total expected tokens for "HeadwayDepartures" array
+ * 8 key tokens + 8 value tokens + 1 object token + 1 array token = 18 tokens
+ */
 #define HEADWAY_TOK_COUNT 14
 
+/** Total expected tokens for "RouteDirections" array
+ * 6 key tokens + 6 value tokens = 12 tokens
+ */
 #define ROUTE_DIRECTION_TOK_COUNT \
   (12 + (CONFIG_ROUTE_MAX_DEPARTURES * (DEPARTURE_TOK_COUNT + HEADWAY_TOK_COUNT)))
 
+/** Total expected tokens for requested stop JSON
+ * 3 key tokens + 3 value tokens = 6 tokens
+ */
 #define STOP_TOK_COUNT (6 + (CONFIG_STOP_MAX_ROUTES * ROUTE_DIRECTION_TOK_COUNT))
 
 /** With jsmn JSON objects count as a token, so we need to offset by an
