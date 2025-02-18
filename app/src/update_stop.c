@@ -96,6 +96,8 @@ static int update_routes_bustracker(Stop stop, DisplayBox display_boxes[], unsig
 #endif  // CONFIG_STOP_REQUEST_BUSTRACKER
 
 static int update_routes_swiftly(Stop stop, DisplayBox display_boxes[]) {
+  unsigned int times[6] = {0, 0, 0, 0, 0, 0};
+
   for (size_t box = 0; box < CONFIG_NUMBER_OF_DISPLAY_BOXES; box++) {
     (void)display_off(box);
   }
@@ -117,9 +119,21 @@ static int update_routes_swiftly(Stop stop, DisplayBox display_boxes[]) {
             "  Display address: %d, Direction Code: %c, Minutes to departure: %d",
             display->position, destination.direction_id, destination.min
         );
-        if (write_num_to_display(display, display->brightness, destination.min)) {
-          return 1;
+        if ((times[display->position] == 0) || (destination.min < times[display->position])) {
+          times[display->position] = destination.min;
+          if (write_num_to_display(display, display->brightness, destination.min)) {
+            return 1;
+          }
         }
+#ifdef CONFIG_DEBUG
+        else {
+          LOG_WRN(
+              "Display %u has lower time displayed;\nCurrent: %u\nAttempted: "
+              "%u",
+              display->position, times[display->position], destination.min
+          );
+        }
+#endif
       } else {
         LOG_INF(
             "Display address for Route: %s, Direction Code: %c not found. Minutes to "
