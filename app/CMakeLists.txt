@@ -11,23 +11,18 @@ project(embedded-departure-board)
 set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)
 zephyr_include_directories(${gen_dir})
 
-generate_inc_file_for_target(
-  app
-  keys/public/jes-contact.pem
-  ${gen_dir}/jes-contact.pem.hex
+foreach(inc_file
+  r4.crt
+  isrgrootx1.der
+  AmazonRootCA1.cer
+  AmazonRootCA3.cer
 )
-
-generate_inc_file_for_target(
-  app
-  keys/public/bustracker-pvta-com.pem
-  ${gen_dir}/bustracker-pvta-com.pem.hex
-)
-
-generate_inc_file_for_target(
-  app
-  keys/public/goswift-ly.pem
-  ${gen_dir}/goswift-ly.pem.hex
-)
+  generate_inc_file_for_target(
+    app
+    keys/public/${inc_file}
+    ${gen_dir}/${inc_file}.hex
+  )
+endforeach()
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 FILE(GLOB_RECURSE app_sources src/*.c)

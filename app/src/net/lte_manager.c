@@ -18,7 +18,7 @@ LOG_MODULE_REGISTER(lte_manager);
 
 #if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
 static const char jes_cert[] = {
-#include "jes-contact.pem.hex"
+#include "r4.crt.hex"
     // Null terminate certificate if running Mbed TLS
     IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
 };
@@ -26,17 +26,19 @@ static const char jes_cert[] = {
 
 #ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
 static const char bustracker_cert[] = {
-#include "bustracker-pvta-com.pem.hex"
+#include "isrgrootx1.der.hex"
     // Null terminate certificate if running Mbed TLS
     IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
 };
 #endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
 
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
 static const char swiftly_cert[] = {
-#include "goswift-ly.pem.hex"
+#include "AmazonRootCA1.cer.hex"
     // Null terminate certificate if running Mbed TLS
     IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
 };
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
 #ifdef CONFIG_MODEM_KEY_MGMT
 // The total size of the included certificates must be less than 4KB

@@ -95,6 +95,7 @@ static int update_routes_bustracker(Stop stop, DisplayBox display_boxes[], unsig
 }
 #endif  // CONFIG_STOP_REQUEST_BUSTRACKER
 
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
 static int update_routes_swiftly(Stop stop, DisplayBox display_boxes[]) {
   unsigned int times[6] = {0, 0, 0, 0, 0, 0};
 
@@ -145,6 +146,7 @@ static int update_routes_swiftly(Stop stop, DisplayBox display_boxes[]) {
   }
   return 0;
 }
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
 int update_stop(void) {
   int ret;
@@ -183,6 +185,7 @@ retry:
   }
 #endif  // CONFIG_STOP_REQUEST_BUSTRACKER
 
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
   ret = parse_swiftly_json(&json_buf[0], &stop, time_now);
   if (ret) {
     return 1;
@@ -192,8 +195,11 @@ retry:
   if (ret) {
     return 1;
   }
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
 #ifdef CONFIG_STOP_REQUEST_BUSTRACKER
+  return 0;
+
 fallback:
   ret = parse_bustracker_json(&json_buf[0], &stop, time_now);
   if (ret) {
