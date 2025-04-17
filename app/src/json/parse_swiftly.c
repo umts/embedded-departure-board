@@ -1,4 +1,3 @@
-#ifdef CONFIG_STOP_REQUEST_SWIFTLY
 #include "parse_swiftly.h"
 
 #include <stdlib.h>
@@ -37,7 +36,7 @@ LOG_MODULE_REGISTER(parse_swiftly);
 /** Iterates through the predictions array objects to find desired values. */
 static int parse_predictions(
     const char *const json_ptr, int t, jsmntok_t tokens[], size_t array_size,
-    Destination *destination, const int time_now
+    Destination *destination
 ) {
   /** The number of key-value pairs in a prediction object */
   int prediction_size;
@@ -143,7 +142,7 @@ static int parse_predictions(
 /** Iterates through the destinations array objects to find desired values. */
 static int parse_destinations(
     const char *const json_ptr, int t, jsmntok_t tokens[], size_t array_size,
-    PredictionsData *predictions_data, const int time_now
+    PredictionsData *predictions_data
 ) {
   /** The number of key-value pairs in a destination object */
   int destination_size;
@@ -183,7 +182,7 @@ static int parse_destinations(
         LOG_DBG("            predictions: [");
         t++;
         if ((tokens[t].type == JSMN_ARRAY) && (tokens[t].size > 0)) {
-          t = parse_predictions(json_ptr, t, tokens, tokens[t].size, destination, time_now);
+          t = parse_predictions(json_ptr, t, tokens, tokens[t].size, destination);
         } else {
           break;
         }
@@ -214,8 +213,7 @@ static int parse_destinations(
 
 /** Iterates through the predictionsData array objects to find desired values. */
 static int parse_predictions_data(
-    const char *const json_ptr, int t, jsmntok_t tokens[], size_t array_size, Stop *stop,
-    const int time_now
+    const char *const json_ptr, int t, jsmntok_t tokens[], size_t array_size, Stop *stop
 ) {
   /** The number of key-value pairs in a predictionsData object */
   int pdata_size;
@@ -282,7 +280,7 @@ static int parse_predictions_data(
         LOG_DBG("        destinations: [");
         t++;
         if ((tokens[t].type == JSMN_ARRAY) && (tokens[t].size > 0)) {
-          t = parse_destinations(json_ptr, t, tokens, tokens[t].size, predictions_data, time_now);
+          t = parse_destinations(json_ptr, t, tokens, tokens[t].size, predictions_data);
         } else {
           break;
         }
@@ -307,8 +305,7 @@ static int parse_predictions_data(
 
 /** Iterates through the data array objects to find desired values. */
 static int parse_data(
-    const char *const json_ptr, int t, jsmntok_t tokens[], size_t data_size, Stop *stop,
-    const int time_now
+    const char *const json_ptr, int t, jsmntok_t tokens[], size_t data_size, Stop *stop
 ) {
   /* tokens[t] is the data object, data_size == tokens[t].size (the number of key-value pairs in the
    * object), tokens[t + 1] is the first key.
@@ -323,7 +320,7 @@ static int parse_data(
       t++;
       if ((tokens[t].type == JSMN_ARRAY) && (tokens[t].size > 0)) {
         LOG_DBG("    predictionsData: [");
-        t = parse_predictions_data(json_ptr, t, tokens, tokens[t].size, stop, time_now);
+        t = parse_predictions_data(json_ptr, t, tokens, tokens[t].size, stop);
       } else {
         break;
       }
@@ -342,7 +339,7 @@ static int parse_data(
   return t;
 }
 
-int parse_swiftly_json(const char *const json_ptr, Stop *stop, unsigned int time_now) {
+int parse_swiftly_json(const char *const json_ptr, Stop *stop) {
   jsmn_parser p;
 
   /** The number of maximum possible tokens we expect in our JSON string */
@@ -403,7 +400,7 @@ int parse_swiftly_json(const char *const json_ptr, Stop *stop, unsigned int time
     } else if (jsoneq(json_ptr, &tokens[t], "data")) {
       t++;
       LOG_DBG("  data: {");
-      t = parse_data(json_ptr, t, tokens, tokens[t].size, stop, time_now);
+      t = parse_data(json_ptr, t, tokens, tokens[t].size, stop);
       LOG_DBG("  }");
     } else {
       LOG_WRN(
@@ -420,4 +417,3 @@ int parse_swiftly_json(const char *const json_ptr, Stop *stop, unsigned int time
   LOG_DBG("Total tokens parsed: %d", t - 1);
   return EXIT_SUCCESS;
 }
-#endif  // CONFIG_STOP_REQUEST_SWIFTLY

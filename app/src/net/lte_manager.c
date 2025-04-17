@@ -16,51 +16,27 @@
 
 LOG_MODULE_REGISTER(lte_manager);
 
-#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
+#if defined(CONFIG_JES_FOTA)
 static const char jes_cert[] = {
 #include "r4.crt.hex"
     // Null terminate certificate if running Mbed TLS
     IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
 };
-#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+#endif  // CONFIG_JES_FOTA
 
-#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-static const char bustracker_cert[] = {
-#include "isrgrootx1.der.hex"
-    // Null terminate certificate if running Mbed TLS
-    IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
-};
-#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-
-#ifdef CONFIG_STOP_REQUEST_SWIFTLY
 static const char swiftly_cert[] = {
 #include "AmazonRootCA1.cer.hex"
     // Null terminate certificate if running Mbed TLS
     IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
 };
-#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
 #ifdef CONFIG_MODEM_KEY_MGMT
 // The total size of the included certificates must be less than 4KB
 BUILD_ASSERT(
-    (
-#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
-        sizeof(jes_cert)
-#else
-        0
-#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
-        +
-#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-        sizeof(bustracker_cert)
-#else
-        0
-#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-        +
-#ifdef CONFIG_STOP_REQUEST_SWIFTLY
-        sizeof(swiftly_cert)
-#else
-        0
-#endif  // CONFIG_STOP_REQUEST_SWIFTLY
+    (sizeof(swiftly_cert)
+#if defined(CONFIG_JES_FOTA)
+     + sizeof(jes_cert)
+#endif  // CONFIG_JES_FOTA
     ) < KB(4),
     "Certificates too large"
 );
@@ -130,29 +106,19 @@ int lte_connect(void) {
 #endif
 
   /* Provision certificates before connecting to the network */
-#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
+#if defined(CONFIG_JES_FOTA)
   err = provision_cert(JES_SEC_TAG, jes_cert, sizeof(jes_cert));
   if (err) {
     LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", JES_SEC_TAG);
     return err;
   }
-#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+#endif  // CONFIG_JES_FOTA
 
-#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-  err = provision_cert(BUSTRACKER_SEC_TAG, bustracker_cert, sizeof(bustracker_cert));
-  if (err) {
-    LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", BUSTRACKER_SEC_TAG);
-    return err;
-  }
-#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-
-#ifdef CONFIG_STOP_REQUEST_SWIFTLY
   err = provision_cert(SWIFTLY_SEC_TAG, swiftly_cert, sizeof(swiftly_cert));
   if (err) {
     LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", SWIFTLY_SEC_TAG);
     return err;
   }
-#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
   LOG_INF("Initializing LTE interface");
   err = wdt_feed(wdt, wdt_channel_id);

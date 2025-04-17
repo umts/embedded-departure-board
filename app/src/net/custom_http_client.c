@@ -19,6 +19,10 @@
 
 LOG_MODULE_REGISTER(custom_http_client);
 
+#define FULL_API_PATH                             \
+  CONFIG_SWIFTLY_API_PATH "?stop=" CONFIG_STOP_ID \
+                          "&number=" CONFIG_SWIFTLY_API_NUMBER_OF_PREDICTIONS
+
 static const char swiftly_api_key[] = {
 #include "../keys/private/swiftly-authorization.key"
 };
@@ -487,18 +491,16 @@ redirect:
   goto retry;
 }
 
-#ifdef CONFIG_STOP_REQUEST_SWIFTLY
 int http_request_stop_json(
-    char *stop_body_buf, int stop_body_buf_size, char *headers_buf, int headers_buf_size,
-    int *json_src
+    char *stop_body_buf, int stop_body_buf_size, char *headers_buf, int headers_buf_size
 ) {
   int err;
 
   /** Make the size 255 incase we get a redirect with a longer hostname */
-  static char hostname[255] = CONFIG_STOP_REQUEST_SWIFTLY_HOSTNAME;
+  static char hostname[255] = CONFIG_SWIFTLY_API_HOSTNAME;
 
   /** Make the size 255 incase we get a redirect with a longer path */
-  static char path[255] = CONFIG_STOP_REQUEST_SWIFTLY_PATH;
+  static char path[255] = FULL_API_PATH;
 
   if (k_sem_take(&lte_connected_sem, K_FOREVER) != 0) {
     LOG_ERR("Failed to take lte_connected_sem");
@@ -508,74 +510,12 @@ int http_request_stop_json(
         hostname, path, "application/json", SWIFTLY_SEC_TAG, stop_body_buf, stop_body_buf_size,
         headers_buf, headers_buf_size, false
     );
-#ifdef CONFIG_STOP_REQUEST_BUSTRACKER
-    if (err) {
-      *json_src = BUSTRACKER;
-      memcpy(
-          &hostname[0], CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME,
-          sizeof(CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME)
-      );
-      hostname[sizeof(CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME) + 1] = '\0';
-      memcpy(
-          &path[0], CONFIG_STOP_REQUEST_BUSTRACKER_PATH, sizeof(CONFIG_STOP_REQUEST_BUSTRACKER_PATH)
-      );
-      path[sizeof(CONFIG_STOP_REQUEST_BUSTRACKER_PATH) + 1] = '\0';
-#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-      err = send_http_request(
-          hostname, path, "application/json", BUSTRACKER_SEC_TAG, stop_body_buf, stop_body_buf_size,
-          headers_buf, headers_buf_size, false
-      );
-#else
-      err = send_http_request(
-          hostname, path, "application/json", NO_SEC_TAG, stop_body_buf, stop_body_buf_size,
-          headers_buf, headers_buf_size, false
-      );
-#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-    }
-#endif  // CONFIG_STOP_REQUEST_BUSTRACKER
 
     k_sem_give(&lte_connected_sem);
   }
 
   return err;
 }
-
-#else
-int http_request_stop_json(
-    char *stop_body_buf, int stop_body_buf_size, char *headers_buf, int headers_buf_size,
-    int *json_src
-) {
-  int err;
-  *json_src = BUSTRACKER;
-
-  /** Make the size 255 incase we get a redirect with a longer hostname */
-  static char hostname[255] = CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME;
-
-  /** Make the size 255 incase we get a redirect with a longer path */
-  static char path[255] = CONFIG_STOP_REQUEST_BUSTRACKER_PATH;
-
-  if (k_sem_take(&lte_connected_sem, K_FOREVER) != 0) {
-    LOG_ERR("Failed to take lte_connected_sem");
-    err = 1;
-  } else {
-#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-    err = send_http_request(
-        hostname, path, "application/json", BUSTRACKER_SEC_TAG, stop_body_buf, stop_body_buf_size,
-        headers_buf, headers_buf_size, false
-    );
-#else
-    err = send_http_request(
-        hostname, path, "application/json", NO_SEC_TAG, stop_body_buf, stop_body_buf_size,
-        headers_buf, headers_buf_size, false
-    );
-#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
-
-    k_sem_give(&lte_connected_sem);
-  }
-
-  return err;
-}
-#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
 #if CONFIG_JES_FOTA
 int http_get_firmware(

@@ -11,11 +11,11 @@ config STOP_ID
 
 config STOP_MAX_ROUTES
   int "Maximum number of routes expected at the configured stop"
-  default 6
+  default 5
 
 config ROUTE_MAX_DEPARTURES
   int "Maximum number of departures expected for EACH route"
-  default 4
+  default 2
 
 #### SIGN SETTINGS ####
 
@@ -45,49 +45,20 @@ config HTTP_REQUEST_RETRY_COUNT
 
 config STOP_JSON_BUF_SIZE
   int "Defines the max size for stop JSON response body receive buffer"
-  default 20480
+  default 4096
 
 ## SWIFTLY ##
-config STOP_REQUEST_SWIFTLY
-  bool "Use Swiftly servers to fetch JSON feed"
-  default y
+config SWIFTLY_API_HOSTNAME
+  string "Swiftly API hostname used to retrieve stop predictions data"
+  default "api.goswift.ly"
 
-config STOP_REQUEST_SWIFTLY_HOSTNAME
-  string "Swiftly server hostname used to retrieve stop data"
-  depends on STOP_REQUEST_SWIFTLY
+config SWIFTLY_API_PATH
+  string "Swiftly API HTTP path used to retrieve stop predictions data"
+  default "/real-time/pioneer-valley-pvta/predictions"
 
-config STOP_REQUEST_SWIFTLY_PATH
-  string "Swiftly server path used to retrieve stop data"
-  depends on STOP_REQUEST_SWIFTLY
-
-## BUSTRACKER ##
-config STOP_REQUEST_BUSTRACKER
-  bool "Use BusTracker InfoPoint servers to fetch JSON feed"
-
-config STOP_REQUEST_BUSTRACKER_USE_TLS
-  bool "Use TLS (HTTPS) when connecting to BusTracker InfoPoint servers"
-  depends on STOP_REQUEST_BUSTRACKER
-  default y if STOP_REQUEST_BUSTRACKER
-
-config STOP_REQUEST_BUSTRACKER_HOSTNAME
-  string "BusTracker server hostname used to retrieve stop data"
-  depends on STOP_REQUEST_BUSTRACKER
-
-config STOP_REQUEST_BUSTRACKER_PATH
-  string "BusTracker server path used to retrieve stop data"
-  depends on STOP_REQUEST_BUSTRACKER
-
-## JES ##
-config STOP_REQUEST_JES
-  bool "Use JES servers to fetch JSON feed"
-
-config STOP_REQUEST_JES_HOSTNAME
-  string "JES server hostname used to retrieve stop data"
-  depends on STOP_REQUEST_JES
-
-config STOP_REQUEST_JES_PATH
-  string "JES server path used to retrieve stop data"
-  depends on STOP_REQUEST_JES
+config SWIFTLY_API_NUMBER_OF_PREDICTIONS
+  string "The number of future predictions to return per route/stop in the response"
+  default "1"
 
 #### NTP SETTINGS ####
 
