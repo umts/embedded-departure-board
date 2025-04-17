@@ -168,6 +168,7 @@ static long parse_response(
   int headers_size = parse_headers(sock, headers_buf, headers_buf_size);
 
   if (headers_size == 0) {
+    LOG_ERR("Headers size == 0");
     return -1;
   } else if (headers_size < 0) {
     return headers_size;
@@ -354,7 +355,7 @@ retry:
   }
 
   if (sock == -1) {
-    LOG_ERR("Failed to open socket!\n");
+    LOG_ERR("Failed to open socket!");
     goto clean_up;
   }
 
@@ -401,6 +402,7 @@ retry:
   );
   if (rc == -1) {
     LOG_ERR("EOF or error in response headers.");
+    printk("%s\n", headers_buf);
   }
 
 clean_up:
@@ -485,6 +487,7 @@ redirect:
   goto retry;
 }
 
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
 int http_request_stop_json(
     char *stop_body_buf, int stop_body_buf_size, char *headers_buf, int headers_buf_size,
     int *json_src
@@ -497,7 +500,7 @@ int http_request_stop_json(
   /** Make the size 255 incase we get a redirect with a longer path */
   static char path[255] = CONFIG_STOP_REQUEST_SWIFTLY_PATH;
 
-  if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
+  if (k_sem_take(&lte_connected_sem, K_FOREVER) != 0) {
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {
@@ -536,6 +539,43 @@ int http_request_stop_json(
 
   return err;
 }
+
+#else
+int http_request_stop_json(
+    char *stop_body_buf, int stop_body_buf_size, char *headers_buf, int headers_buf_size,
+    int *json_src
+) {
+  int err;
+  *json_src = BUSTRACKER;
+
+  /** Make the size 255 incase we get a redirect with a longer hostname */
+  static char hostname[255] = CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME;
+
+  /** Make the size 255 incase we get a redirect with a longer path */
+  static char path[255] = CONFIG_STOP_REQUEST_BUSTRACKER_PATH;
+
+  if (k_sem_take(&lte_connected_sem, K_FOREVER) != 0) {
+    LOG_ERR("Failed to take lte_connected_sem");
+    err = 1;
+  } else {
+#ifdef CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+    err = send_http_request(
+        hostname, path, "application/json", BUSTRACKER_SEC_TAG, stop_body_buf, stop_body_buf_size,
+        headers_buf, headers_buf_size, false
+    );
+#else
+    err = send_http_request(
+        hostname, path, "application/json", NO_SEC_TAG, stop_body_buf, stop_body_buf_size,
+        headers_buf, headers_buf_size, false
+    );
+#endif  // CONFIG_STOP_REQUEST_BUSTRACKER_USE_TLS
+
+    k_sem_give(&lte_connected_sem);
+  }
+
+  return err;
+}
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
 #if CONFIG_JES_FOTA
 int http_get_firmware(

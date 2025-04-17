@@ -38,7 +38,7 @@
         "serial",
         "image",
         "upload",
-        "${workspaceFolder}/build/zephyr/app_update.bin",
+        "${workspaceFolder}/build/app/zephyr/zephyr.signed.bin",
         "-e"
       ],
       "options": {},

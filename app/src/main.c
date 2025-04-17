@@ -205,6 +205,8 @@ int main(void) {
         LOG_ERR("Failed to set rtc.");
         goto reset;
       }
+    } else {
+      LOG_DBG("Failed to take rtc_sync_sem");
     }
 
     if (k_sem_take(&update_stop_sem, K_NO_WAIT) == 0) {
@@ -240,6 +242,8 @@ int main(void) {
         LOG_ERR("Failed to feed watchdog. Err: %d", ret);
         goto reset;
       }
+    } else {
+      LOG_DBG("Failed to take update_stop_sem");
     }
 
     k_cpu_idle();

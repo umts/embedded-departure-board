@@ -59,6 +59,8 @@ mcuboot_primary:
   - app
   - tfm
   - mcuboot_pad
+  - tfm
+  - app
   region: flash_primary
   size: 0xd0000
   span: *id001
