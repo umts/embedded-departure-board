@@ -10,6 +10,10 @@
 #include "update_stop.h"
 #include "watchdog_app.h"
 
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
+#include "protected_storage.h"
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
+
 #ifdef CONFIG_LIGHT_SENSOR
 #include "display/pwm_leds.h"
 #include "light_sensor.h"
@@ -165,6 +169,14 @@ int main(void) {
     LOG_ERR("Failed to feed watchdog. Err: %d", ret);
     goto reset;
   }
+
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
+  ret = write_swiftly_api_key();
+  if (ret) {
+    LOG_ERR("Failed to store data!. Err: %d", ret);
+    goto reset;
+  }
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
   ret = lte_connect();
   if (ret) {

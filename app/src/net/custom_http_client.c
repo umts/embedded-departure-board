@@ -13,15 +13,16 @@
 #include "net/lte_manager.h"
 #include "watchdog_app.h"
 
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
+#include <psa/protected_storage.h>
+#define SWIFTLY_KEY_PSA_UID 1
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
+
 #if CONFIG_JES_FOTA
 #include "net/fota.h"
 #endif  // CONFIG_JES_FOTA
 
 LOG_MODULE_REGISTER(custom_http_client);
-
-static const char swiftly_api_key[] = {
-#include "../keys/private/swiftly-authorization.key"
-};
 
 enum response_code {
   HTTP_NULL,
@@ -285,6 +286,18 @@ static int send_http_request(
   struct zsock_addrinfo *addr_inf;
   static struct zsock_addrinfo hints = {.ai_socktype = SOCK_STREAM, .ai_flags = AI_NUMERICSERV};
 
+#if CONFIG_STOP_REQUEST_SWIFTLY
+  size_t bytes_read;
+  char stored_data[33];
+  struct psa_storage_info_t uid_info;
+
+  err = psa_ps_get_info((psa_storage_uid_t)SWIFTLY_KEY_PSA_UID, &uid_info);
+  if (err) {
+    LOG_INF("Failed to get info! (%d)", err);
+    return err;
+  }
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
+
 retry:
   err = wdt_feed(wdt, wdt_channel_id);
   if (err) {
@@ -312,11 +325,20 @@ retry:
   ptr = stpcpy(ptr, accept);
   ptr = stpcpy(ptr, "\r\n");
 
+#ifdef CONFIG_STOP_REQUEST_SWIFTLY
   if (sec_tag == SWIFTLY_SEC_TAG) {
+    err = psa_ps_get(
+        (psa_storage_uid_t)SWIFTLY_KEY_PSA_UID, 0, uid_info.size, &stored_data, &bytes_read
+    );
+    if (err) {
+      LOG_ERR("Failed to get data stored in UID1! (%d)", err);
+      return err;
+    }
     ptr = stpcpy(ptr, "Authorization: ");
-    ptr = stpcpy(ptr, swiftly_api_key);
+    ptr = stpcpy(ptr, stored_data);
     ptr = stpcpy(ptr, "\r\n");
   }
+#endif  // CONFIG_STOP_REQUEST_SWIFTLY
 
   ptr = stpcpy(ptr, "Connection: close\r\n\r\n");
 
