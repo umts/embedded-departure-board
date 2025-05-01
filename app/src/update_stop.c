@@ -9,7 +9,7 @@
 #include "net/custom_http_client.h"
 #include "stop.h"
 
-LOG_MODULE_REGISTER(update_stop);
+LOG_MODULE_REGISTER(update_stop, LOG_LEVEL_INF);
 
 K_TIMER_DEFINE(update_stop_timer, update_stop_timeout_handler, NULL);
 
@@ -28,7 +28,7 @@ static DisplayBox* get_display_address(
 }
 
 static int update_routes(Stop stop, DisplayBox display_boxes[]) {
-  unsigned int times[6] = {0, 0, 0, 0, 0, 0};
+  unsigned int times[6] = {0};
 
   for (size_t box = 0; box < CONFIG_NUMBER_OF_DISPLAY_BOXES; box++) {
     (void)display_off(box);
@@ -67,7 +67,7 @@ static int update_routes(Stop stop, DisplayBox display_boxes[]) {
         }
 #endif
       } else {
-        LOG_INF(
+        LOG_WRN(
             "Display address for Route: %s, Direction Code: %c not found. Minutes to "
             "departure: %d",
             prediction_data.route_id, destination.direction_id, destination.min

@@ -10,7 +10,7 @@
 #include "json/jsmn.h"
 #include "json/json_helpers.h"
 
-LOG_MODULE_REGISTER(parse_swiftly);
+LOG_MODULE_REGISTER(parse_swiftly, LOG_LEVEL_DBG);
 
 /** Total expected tokens for "predictions" array
  * 8 key tokens + 8 value tokens + 1 object token + 1 array token = 18 tokens

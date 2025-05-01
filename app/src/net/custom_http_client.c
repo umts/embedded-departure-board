@@ -418,7 +418,7 @@ clean_up:
 
   (void)zsock_freeaddrinfo(addr_inf);
 
-  LOG_DBG("Response Headers:\n%s", &headers_buf[0]);
+  LOG_WRN("Response Headers:\n%s", &headers_buf[0]);
 
   if (rc == -2) {
     // Redirect returned; follow redirect
