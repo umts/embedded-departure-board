@@ -3,7 +3,7 @@
 
 typedef struct Destination {
   char direction_id;
-  unsigned int min;
+  int min;
 } Destination;
 
 typedef struct PredictionsData {

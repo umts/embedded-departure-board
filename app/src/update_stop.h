@@ -5,12 +5,12 @@
 
 /** Specify the route id, position, direction, color, and brightness for each display box */
 // clang-format off
-#define DISPLAY_BOXES {                                                                         \
-  { .id = "38",   .position = 0, .direction_code = '1', .color = 0x660066, .brightness = 0xFF }, \
-  { .id = "B43",  .position = 1, .direction_code = '0', .color = 0x003366, .brightness = 0xFF }, \
-  { .id = "B43",  .position = 2, .direction_code = '1', .color = 0x003366, .brightness = 0xFF }, \
-  { .id = "943",  .position = 3, .direction_code = '1', .color = 0x003366, .brightness = 0xFF }, \
-  { .id = "R29",  .position = 4, .direction_code = '1', .color = 0xFF0000, .brightness = 0x3C }, \
+#define DISPLAY_BOXES {                                                                          \
+  { .id = "R29",  .position = 0, .direction_code = '1', .color = 0xFF0000, .brightness = 0x3C }, \
+  { .id = "38",   .position = 1, .direction_code = '1', .color = 0x660066, .brightness = 0xFF }, \
+  { .id = "B43",  .position = 2, .direction_code = '0', .color = 0x003366, .brightness = 0xFF }, \
+  { .id = "B43",  .position = 3, .direction_code = '1', .color = 0x003366, .brightness = 0xFF }, \
+  { .id = "943",  .position = 4, .direction_code = '1', .color = 0x003366, .brightness = 0xFF }, \
   { .id = "B79",  .position = 5, .direction_code = '0', .color = 0x003366, .brightness = 0xFF }  \
 }
 // clang-format on

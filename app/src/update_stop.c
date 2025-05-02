@@ -9,7 +9,7 @@
 #include "net/custom_http_client.h"
 #include "stop.h"
 
-LOG_MODULE_REGISTER(update_stop, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(update_stop);
 
 K_TIMER_DEFINE(update_stop_timer, update_stop_timeout_handler, NULL);
 
@@ -43,6 +43,9 @@ static int update_routes(Stop stop, DisplayBox display_boxes[]) {
     for (size_t departure_num = 0; departure_num < prediction_data.destinations_size;
          departure_num++) {
       struct Destination destination = prediction_data.destinations[departure_num];
+      if (destination.min == -1) {
+        continue;
+      }
 
       DisplayBox* display =
           get_display_address(display_boxes, prediction_data.route_id, destination.direction_id);

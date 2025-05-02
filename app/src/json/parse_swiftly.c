@@ -10,7 +10,7 @@
 #include "json/jsmn.h"
 #include "json/json_helpers.h"
 
-LOG_MODULE_REGISTER(parse_swiftly, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(parse_swiftly);
 
 /** Total expected tokens for "predictions" array
  * 8 key tokens + 8 value tokens + 1 object token + 1 array token = 18 tokens
@@ -156,6 +156,7 @@ static int parse_destinations(
 
   for (int dest_count = 0; dest_count < array_size; dest_count++) {
     Destination *destination = &predictions_data->destinations[dest_count];
+    destination->min = -1;
 
     // tokens[t].size is the number of key-value pairs in the object
     destination_size = tokens[t].size;
