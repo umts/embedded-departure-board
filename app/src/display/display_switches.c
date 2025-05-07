@@ -27,12 +27,17 @@ LOG_MODULE_REGISTER(display_switches);
 #error "Overlay for enable switch 4 node not properly defined."
 #endif
 
+#if !DT_NODE_EXISTS(DT_NODELABEL(display_switch_5))
+#error "Overlay for enable switch 5 node not properly defined."
+#endif
+
 static const struct gpio_dt_spec display_switches[] = {
     GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_0), gpios),
     GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_1), gpios),
     GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_2), gpios),
     GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_3), gpios),
-    GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_4), gpios)
+    GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_4), gpios),
+    GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_5), gpios)
 };
 
 int init_display_switches(void) {

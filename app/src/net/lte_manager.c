@@ -1,13 +1,13 @@
 /** @headerfile lte_manager.h */
 #include "lte_manager.h"
 
+#include <modem/lte_lc.h>
+#include <modem/nrf_modem_lib.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
 #ifdef CONFIG_MODEM_KEY_MGMT
-#include <modem/lte_lc.h>
 #include <modem/modem_key_mgmt.h>
-#include <modem/nrf_modem_lib.h>
 #else
 #include <zephyr/net/tls_credentials.h>
 #endif
@@ -16,19 +16,30 @@
 
 LOG_MODULE_REGISTER(lte_manager);
 
-#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
+#if defined(CONFIG_JES_FOTA)
 static const char jes_cert[] = {
-#include "jes-contact-root-r4.pem.hex"
+#include "r4.crt.hex"
     // Null terminate certificate if running Mbed TLS
     IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
 };
-#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+#endif  // CONFIG_JES_FOTA
+
+static const char swiftly_cert[] = {
+#include "AmazonRootCA1.cer.hex"
+    // Null terminate certificate if running Mbed TLS
+    IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
+};
 
 #ifdef CONFIG_MODEM_KEY_MGMT
 // The total size of the included certificates must be less than 4KB
-#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
-BUILD_ASSERT(sizeof(jes_cert) < KB(4), "Certificates too large");
-#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+BUILD_ASSERT(
+    (sizeof(swiftly_cert)
+#if defined(CONFIG_JES_FOTA)
+     + sizeof(jes_cert)
+#endif  // CONFIG_JES_FOTA
+    ) < KB(4),
+    "Certificates too large"
+);
 #endif
 
 K_SEM_DEFINE(lte_connected_sem, 1, 1);
@@ -41,14 +52,11 @@ void nrf_modem_fault_handler(struct nrf_modem_fault_info *fault_info) {
 }
 #endif
 
-#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
 /* Provision certificate to modem */
 #ifdef CONFIG_MODEM_KEY_MGMT
 static int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_len) {
   int err;
-
   bool exists;
-  int mismatch;
 
   err = modem_key_mgmt_exists(sec_tag, MODEM_KEY_MGMT_CRED_TYPE_CA_CHAIN, &exists);
   if (err) {
@@ -57,20 +65,11 @@ static int provision_cert(nrf_sec_tag_t sec_tag, const char cert[], size_t cert_
   }
 
   if (exists) {
-    mismatch = modem_key_mgmt_cmp(sec_tag, MODEM_KEY_MGMT_CRED_TYPE_CA_CHAIN, cert, cert_len);
-    if (!mismatch) {
-      LOG_INF("Certificate match");
-      return 0;
-    }
-
-    LOG_INF("Certificate mismatch");
     err = modem_key_mgmt_delete(sec_tag, MODEM_KEY_MGMT_CRED_TYPE_CA_CHAIN);
     if (err) {
       LOG_ERR("Failed to delete existing certificate, err %d", err);
     }
   }
-
-  LOG_INF("Provisioning certificate");
 
   /*  Provision certificate to the modem */
   err = modem_key_mgmt_write(sec_tag, MODEM_KEY_MGMT_CRED_TYPE_CA_CHAIN, cert, cert_len);
@@ -92,8 +91,7 @@ static int provision_cert(sec_tag_t sec_tag, const char cert[], size_t cert_len)
   }
   return 0;
 }
-#endif /* !CONFIG_MODEM_KEY_MGMT */
-#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+#endif  // CONFIG_MODEM_KEY_MGMT
 
 int lte_connect(void) {
   int err;
@@ -108,13 +106,19 @@ int lte_connect(void) {
 #endif
 
   /* Provision certificates before connecting to the network */
-#if defined(CONFIG_JES_FOTA) || defined(CONFIG_STOP_REQUEST_JES)
+#if defined(CONFIG_JES_FOTA)
   err = provision_cert(JES_SEC_TAG, jes_cert, sizeof(jes_cert));
   if (err) {
     LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", JES_SEC_TAG);
     return err;
   }
-#endif  // CONFIG_JES_FOTA || CONFIG_STOP_REQUEST_JES
+#endif  // CONFIG_JES_FOTA
+
+  err = provision_cert(SWIFTLY_SEC_TAG, swiftly_cert, sizeof(swiftly_cert));
+  if (err) {
+    LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", SWIFTLY_SEC_TAG);
+    return err;
+  }
 
   LOG_INF("Initializing LTE interface");
   err = wdt_feed(wdt, wdt_channel_id);

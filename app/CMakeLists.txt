@@ -11,11 +11,16 @@ project(embedded-departure-board)
 set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)
 zephyr_include_directories(${gen_dir})
 
-generate_inc_file_for_target(
-  app
-  keys/public/jes-contact-root-r4.pem
-  ${gen_dir}/jes-contact-root-r4.pem.hex
+foreach(inc_file
+  r4.crt
+  AmazonRootCA1.cer
 )
+  generate_inc_file_for_target(
+    app
+    keys/public/${inc_file}
+    ${gen_dir}/${inc_file}.hex
+  )
+endforeach()
 
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 FILE(GLOB_RECURSE app_sources src/*.c)

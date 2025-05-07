@@ -23,6 +23,7 @@
   "clangd.arguments": [
     "--compile-commands-dir=${workspaceFolder}/build/app",
     "--completion-style=detailed",
-    "--header-insertion=never"
+    "--header-insertion=never",
+    "--malloc-trim"
   ]
 }

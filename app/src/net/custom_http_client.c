@@ -19,6 +19,23 @@
 
 LOG_MODULE_REGISTER(custom_http_client);
 
+#define FULL_API_PATH                             \
+  CONFIG_SWIFTLY_API_PATH "?stop=" CONFIG_STOP_ID \
+                          "&number=" CONFIG_SWIFTLY_API_NUMBER_OF_PREDICTIONS
+
+static const char swiftly_api_key[] = {
+#include "../keys/private/swiftly-authorization.key"
+};
+
+enum response_code {
+  HTTP_NULL,
+  HTTP_INFO,
+  HTTP_SUCCESS,
+  HTTP_REDIRECT,
+  HTTP_CLIENT_ERROR,
+  HTTP_SERVER_ERROR
+};
+
 /* Setup TLS options on a given socket */
 int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
   int err;
@@ -28,23 +45,33 @@ int tls_setup(int fd, char *hostname, sec_tag_t sec_tag) {
 
   socklen_t verify = TLS_PEER_VERIFY_REQUIRED;
 
-  err = setsockopt(fd, SOL_TLS, TLS_PEER_VERIFY, &verify, sizeof(verify));
+  err = zsock_setsockopt(fd, SOL_TLS, TLS_PEER_VERIFY, &verify, sizeof(verify));
   if (err) {
-    LOG_ERR("Failed to setup peer verification, %s", strerror(errno));
+    LOG_ERR("Failed to setup peer verification, Err: %s (%d)", strerror(errno), errno);
     return err;
   }
 
-  err = setsockopt(fd, SOL_TLS, TLS_SEC_TAG_LIST, tls_sec_tag, sizeof(tls_sec_tag));
+  err = zsock_setsockopt(fd, SOL_TLS, TLS_SEC_TAG_LIST, tls_sec_tag, sizeof(tls_sec_tag));
   if (err) {
-    LOG_ERR("Failed to setup TLS sec tag, %s", strerror(errno));
+    LOG_ERR("Failed to setup TLS sec tag, Err: %s (%d)", strerror(errno), errno);
     return err;
   }
 
-  err = setsockopt(fd, SOL_TLS, TLS_HOSTNAME, hostname, strlen(hostname));
+  err = zsock_setsockopt(fd, SOL_TLS, TLS_HOSTNAME, hostname, strlen(hostname));
   if (err) {
-    LOG_ERR("Failed to setup TLS hostname, %s", strerror(errno));
+    LOG_ERR("Failed to setup TLS hostname, Err: %s (%d)", strerror(errno), errno);
     return err;
   }
+
+#ifdef CONFIG_MBEDTLS_SSL_CACHE_C
+  socklen_t session_cache = TLS_SESSION_CACHE_ENABLED;
+
+  err = zsock_setsockopt(fd, SOL_TLS, TLS_SESSION_CACHE, &session_cache, sizeof(session_cache));
+  if (err) {
+    LOG_ERR("Unable to set TLS session cache, Err: %s (%d)", strerror(errno), errno);
+    return err;
+  }
+#endif  // CONFIG_MBEDTLS_SSL_CACHE_C
 
   return EXIT_SUCCESS;
 }
@@ -97,9 +124,9 @@ static int parse_headers(int *sock, char *headers_buf, int headers_buf_size) {
   size_t headers_offset = 0;
 
   do {
-    bytes = recv(*sock, &headers_buf[headers_offset], 1, 0);
+    bytes = zsock_recv(*sock, &headers_buf[headers_offset], 1, 0);
     if (bytes < 0) {
-      LOG_ERR("recv() headers failed, %s", strerror(errno));
+      LOG_ERR("recv() headers failed. Err %d: %s", errno, strerror(errno));
       return bytes;
     }
 
@@ -145,6 +172,7 @@ static long parse_response(
   int headers_size = parse_headers(sock, headers_buf, headers_buf_size);
 
   if (headers_size == 0) {
+    LOG_ERR("Headers size == 0");
     return -1;
   } else if (headers_size < 0) {
     return headers_size;
@@ -155,7 +183,7 @@ static long parse_response(
 
   do {
     if (write_nvs) {
-      bytes = recv(*sock, recv_body_buf, recv_body_buf_size, 0);
+      bytes = zsock_recv(*sock, recv_body_buf, recv_body_buf_size, 0);
       if (bytes < 0) {
         if (errno == EMSGSIZE) {
           LOG_WRN(
@@ -176,7 +204,7 @@ static long parse_response(
         return bytes;
       }
     } else {
-      bytes = recv(*sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0);
+      bytes = zsock_recv(*sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0);
       if (bytes < 0) {
         LOG_ERR("recv() body failed, %s", strerror(errno));
         return bytes;
@@ -186,7 +214,7 @@ static long parse_response(
   } while (bytes != 0);
 #else
   do {
-    bytes = recv(*sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0);
+    bytes = zsock_recv(*sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0);
     if (bytes < 0) {
       LOG_ERR("recv() body failed, %s", strerror(errno));
       return bytes;
@@ -258,8 +286,8 @@ static int send_http_request(
   // Keep track of retry attempts so we don't get in a loop
   int retry_client_error = 0;
 
-  struct addrinfo *addr_inf;
-  static struct addrinfo hints = {.ai_socktype = SOCK_STREAM, .ai_flags = AI_NUMERICSERV};
+  struct zsock_addrinfo *addr_inf;
+  static struct zsock_addrinfo hints = {.ai_socktype = SOCK_STREAM, .ai_flags = AI_NUMERICSERV};
 
 retry:
   err = wdt_feed(wdt, wdt_channel_id);
@@ -278,8 +306,7 @@ retry:
   } else {
     ptr = stpcpy(ptr, ":443\r\n");
   }
-  // TODO: Change APP_VERSION_STRING to APP_VERSION_TWEAK_STRING when possible
-  ptr = stpcpy(ptr, "User-Agent: EDB/" APP_VERSION_STRING " Stop-ID/" CONFIG_STOP_ID "\r\n");
+  ptr = stpcpy(ptr, "User-Agent: EDB/" APP_VERSION_TWEAK_STRING " Stop-ID/" CONFIG_STOP_ID "\r\n");
   if (range_start > 0) {
     ptr = stpcpy(ptr, "Range: ");
     ptr += sprintf(ptr, "%ld", range_start);
@@ -287,16 +314,24 @@ retry:
   }
   ptr = stpcpy(ptr, "Accept: ");
   ptr = stpcpy(ptr, accept);
-  ptr = stpcpy(ptr, "\r\nConnection: close\r\n\r\n");
+  ptr = stpcpy(ptr, "\r\n");
+
+  if (sec_tag == SWIFTLY_SEC_TAG) {
+    ptr = stpcpy(ptr, "Authorization: ");
+    ptr = stpcpy(ptr, swiftly_api_key);
+    ptr = stpcpy(ptr, "\r\n");
+  }
+
+  ptr = stpcpy(ptr, "Connection: close\r\n\r\n");
 
   headers_size = (ptr - &headers_buf[0]);
 
   LOG_DBG("Send Headers (size: %d):\n%s", headers_size, &headers_buf[0]);
 
   if (sec_tag == NO_SEC_TAG) {
-    err = getaddrinfo(hostname, "80", &hints, &addr_inf);
+    err = zsock_getaddrinfo(hostname, "80", &hints, &addr_inf);
   } else {
-    err = getaddrinfo(hostname, "443", &hints, &addr_inf);
+    err = zsock_getaddrinfo(hostname, "443", &hints, &addr_inf);
   }
   if (err) {
     LOG_ERR("getaddrinfo() failed, %s", strerror(errno));
@@ -305,7 +340,7 @@ retry:
 
   char peer_addr[INET6_ADDRSTRLEN];
 
-  if (inet_ntop(
+  if (zsock_inet_ntop(
           addr_inf->ai_family, &((struct sockaddr_in *)(addr_inf->ai_addr))->sin_addr, peer_addr,
           INET6_ADDRSTRLEN
       ) == NULL) {
@@ -316,15 +351,15 @@ retry:
   LOG_DBG("Resolved %s (%s)", peer_addr, net_family2str(addr_inf->ai_family));
 
   if (sec_tag == NO_SEC_TAG) {
-    sock = socket(addr_inf->ai_family, SOCK_STREAM, addr_inf->ai_protocol);
-  } else if (IS_ENABLED(CONFIG_MBEDTLS)) {
-    sock = socket(addr_inf->ai_family, SOCK_STREAM | SOCK_NATIVE_TLS, IPPROTO_TLS_1_2);
+    sock = zsock_socket(addr_inf->ai_family, SOCK_STREAM, addr_inf->ai_protocol);
+  } else if (IS_ENABLED(CONFIG_MODEM_KEY_MGMT)) {
+    sock = zsock_socket(addr_inf->ai_family, SOCK_STREAM, IPPROTO_TLS_1_2);
   } else {
-    sock = socket(addr_inf->ai_family, SOCK_STREAM, IPPROTO_TLS_1_2);
+    sock = zsock_socket(addr_inf->ai_family, SOCK_STREAM | SOCK_NATIVE_TLS, IPPROTO_TLS_1_2);
   }
 
   if (sock == -1) {
-    LOG_ERR("Failed to open socket!\n");
+    LOG_ERR("Failed to open socket!");
     goto clean_up;
   }
 
@@ -339,9 +374,10 @@ retry:
       "Connecting to %s:%d", hostname, ntohs(((struct sockaddr_in *)(addr_inf->ai_addr))->sin_port)
   );
 
-  err = connect(sock, addr_inf->ai_addr, addr_inf->ai_addrlen);
+  err = zsock_connect(sock, addr_inf->ai_addr, addr_inf->ai_addrlen);
   if (err) {
-    LOG_ERR("connect() failed, %s", strerror(errno));
+    LOG_ERR("connect() failed. Err %d: %s", errno, strerror(errno));
+    rc = -3;
     goto clean_up;
   }
 
@@ -354,7 +390,7 @@ retry:
 
   offset = 0;
   do {
-    bytes = send(sock, &headers_buf[offset], headers_size - offset, 0);
+    bytes = zsock_send(sock, &headers_buf[offset], headers_size - offset, MSG_WAITACK);
     if (bytes < 0) {
       LOG_ERR("send() failed, %s", strerror(errno));
       goto clean_up;
@@ -370,16 +406,17 @@ retry:
   );
   if (rc == -1) {
     LOG_ERR("EOF or error in response headers.");
+    printk("%s\n", headers_buf);
   }
 
 clean_up:
   LOG_DBG("Closing socket %d", sock);
-  err = close(sock);
+  err = zsock_close(sock);
   if (err) {
     LOG_ERR("close() failed, %s", strerror(errno));
   }
 
-  (void)freeaddrinfo(addr_inf);
+  (void)zsock_freeaddrinfo(addr_inf);
 
   LOG_DBG("Response Headers:\n%s", &headers_buf[0]);
 
@@ -390,11 +427,13 @@ clean_up:
     // Partial transefer complete; reconnect with new range request
     range_start = rc;
     goto retry;
-  } else if ((rc == -3) && (retry_client_error == 0)) {
-    // The BusTracker endpoint occasionally returns 404; retry once
-    LOG_WRN("GET request failed once, retrying...");
-    retry_client_error = 1;
+  } else if ((rc == -3) && (retry_client_error < CONFIG_HTTP_REQUEST_RETRY_COUNT)) {
+    LOG_WRN("HTTP request GET %s%s failed, retrying...", hostname, path);
+    retry_client_error++;
     goto retry;
+  } else if (rc < 0) {
+    LOG_ERR("HTTP request GET %s%s failed", hostname, path);
+    return EXIT_FAILURE;
   }
 
   return EXIT_SUCCESS;
@@ -458,19 +497,20 @@ int http_request_stop_json(
   int err;
 
   /** Make the size 255 incase we get a redirect with a longer hostname */
-  static char hostname[255] = CONFIG_STOP_REQUEST_BUSTRACKER_HOSTNAME;
+  static char hostname[255] = CONFIG_SWIFTLY_API_HOSTNAME;
 
   /** Make the size 255 incase we get a redirect with a longer path */
-  static char path[255] = CONFIG_STOP_REQUEST_BUSTRACKER_PATH;
+  static char path[255] = FULL_API_PATH;
 
-  if (k_sem_take(&lte_connected_sem, K_SECONDS(30)) != 0) {
+  if (k_sem_take(&lte_connected_sem, K_FOREVER) != 0) {
     LOG_ERR("Failed to take lte_connected_sem");
     err = 1;
   } else {
     err = send_http_request(
-        hostname, path, "application/json", NO_SEC_TAG, stop_body_buf, stop_body_buf_size,
+        hostname, path, "application/json", SWIFTLY_SEC_TAG, stop_body_buf, stop_body_buf_size,
         headers_buf, headers_buf_size, false
     );
+
     k_sem_give(&lte_connected_sem);
   }
 
