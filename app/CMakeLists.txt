@@ -22,6 +22,10 @@ foreach(inc_file
   )
 endforeach()
 
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/keys/private/swiftly-api.key)
+  write_file(${CMAKE_CURRENT_SOURCE_DIR}/keys/private/swiftly-api.key \"ffffffffffffffffffffffffffffffff\")
+endif()
+
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 FILE(GLOB_RECURSE app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})

@@ -97,9 +97,11 @@ jobs:
         if: ${{ inputs.release_build }}
         env:
           BOOT_ECDSA_P256: ${{ secrets.BOOT_ECDSA_P256 }}
+          SWIFTLY_API_KEY: ${{ secrets.SWIFTLY_API_KEY }}
         run: |
           mkdir ./app/keys/private/
           echo "$BOOT_ECDSA_P256" >> ./app/keys/private/boot-ecdsa-p256.pem
+          echo "$SWIFTLY_API_KEY" >> ./app/keys/private/swiftly-api.key
 
       - name: Mark mounted git repositories as trusted
         run: git config --global --add safe.directory '*'

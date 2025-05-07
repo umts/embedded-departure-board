@@ -24,7 +24,7 @@ LOG_MODULE_REGISTER(custom_http_client);
                           "&number=" CONFIG_SWIFTLY_API_NUMBER_OF_PREDICTIONS
 
 static const char swiftly_api_key[] = {
-#include "../keys/private/swiftly-authorization.key"
+#include "../keys/private/swiftly-api.key"
 };
 
 enum response_code {

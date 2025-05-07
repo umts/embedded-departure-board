@@ -3,6 +3,7 @@
 ### Requirements
 - Python 3
 - [Zephyr SDK](https://github.com/zephyrproject-rtos/sdk-ng/releases)
+- [32 bit Swiftly API key](#building)
 
 ### Setup
 1. Clone and enter the repo
@@ -48,6 +49,10 @@ Our Github Actions [build workflow](https://github.com/umts/embedded-departure-b
 
 
 ## Building
+Currently this build requires a 32 bit [Swiftly](https://www.goswift.ly/) API key placed in `${CMAKE_CURRENT_SOURCE_DIR}/keys/private/swiftly-api.key` (Wrapped in `""`). If that key file does not exist CMake will create it with a fake key to allow the build to succeed.
+
+If you are not using a [pre-signed binary](https://github.com/umts/embedded-departure-board/releases/latest) and you would like a functioning API key, [you can request one here](https://swiftly.zendesk.com/hc/en-us/requests/new?ticket_form_id=33738491027469).
+
 ### Testing
 
 ```sh
