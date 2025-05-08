@@ -70,14 +70,14 @@ west build --sysbuild ./app -b circuitdojo_feather/nrf9160/ns -- -DFILE_SUFFIX=r
 Flashing the device with an external programmer is quicker than using a bootloader. More importantly, it's the easiest way (and currently the only tested way) to secure the bootloader, update the modem firmware, and use the cortex-debugger.
 
 #### Requirements
-- External programming device, the [nRF5340 Dk](https://www.nordicsemi.com/Products/Development-hardware/nRF5340-DK) is what we currently use.
+- External programming device, the [nRF5340 Dk](https://www.nordicsemicom/Products/Development-hardware/nRF5340-DK) is what we currently use
 - 6-pin [Tag Connect cable](https://www.tag-connect.com/product/tc2030-ctx-nl-6-pin-no-legs-cable-with-10-pin-micro-connector-for-cortex-processors)
-- [J-Link](https://www.segger.com/downloads/jlink/) software.
-- [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools/download#infotabs).
+- [J-Link](https://www.segger.com/downloads/jlink/) software
+- [nRF Util](https://www.nordicsemi.com/Products/Development-tools/nRF-Util)
 
 #### Running
 ```sh
-west flash -r nrfjprog --erase --softreset
+west flash --erase --softreset
 ```
 
 ### Uploading via the bootloader

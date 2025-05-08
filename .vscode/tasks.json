@@ -77,7 +77,7 @@
         "flash",
         "--skip-rebuild",
         "-r",
-        "nrfjprog",
+        "nrfutil",
         "--erase",
         "--softreset"
       ],
@@ -86,7 +86,7 @@
         "kind": "test",
         "isDefault": true
       },
-      "detail": "west flash -r nfrjprog",
+      "detail": "west flash -r nfrutil",
       "problemMatcher": []
     },
     {
