@@ -109,8 +109,6 @@ int main(void) {
     if (err) {
       goto end;
     }
-
-    k_msleep(3000);
   }
 
 end:
