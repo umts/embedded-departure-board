@@ -19,34 +19,16 @@ LOG_MODULE_REGISTER(display_switches);
 #error "Overlay for enable switch 2 node not properly defined."
 #endif
 
-#if !DT_NODE_EXISTS(DT_NODELABEL(display_switch_3))
-#error "Overlay for enable switch 3 node not properly defined."
-#endif
-
-#if !DT_NODE_EXISTS(DT_NODELABEL(display_switch_4))
-#error "Overlay for enable switch 4 node not properly defined."
-#endif
-
-#if !DT_NODE_EXISTS(DT_NODELABEL(display_switch_5))
-#error "Overlay for enable switch 5 node not properly defined."
-#endif
-
 static const struct gpio_dt_spec display_switches[] = {
     GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_0), gpios),
     GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_1), gpios),
-    GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_2), gpios),
-    GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_3), gpios),
-    GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_4), gpios),
-    GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_5), gpios)
+    GPIO_DT_SPEC_GET(DT_NODELABEL(display_switch_2), gpios)
 };
 
 int init_display_switches(void) {
   for (size_t i = 0; i < ARRAY_SIZE(display_switches); i++) {
     if (!gpio_is_ready_dt(&display_switches[i])) {
-      LOG_ERR(
-          "Display switch %d GPIO port %s not ready", i,
-          display_switches[i].port->name
-      );
+      LOG_ERR("Display switch %d GPIO port %s not ready", i, display_switches[i].port->name);
       return -ENODEV;
     }
 
