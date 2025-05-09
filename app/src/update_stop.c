@@ -62,7 +62,7 @@ static int update_routes(Stop stop, DisplayBox display_boxes[]) {
         }
 #ifdef CONFIG_DEBUG
         else {
-          LOG_WRN(
+          LOG_INF(
               "Display %u has lower time displayed;\nCurrent: %u\nAttempted: "
               "%u",
               display->position, times[display->position], destination.min
@@ -70,7 +70,7 @@ static int update_routes(Stop stop, DisplayBox display_boxes[]) {
         }
 #endif
       } else {
-        LOG_WRN(
+        LOG_INF(
             "Display address for Route: %s, Direction Code: %c not found. Minutes to "
             "departure: %d",
             prediction_data.route_id, destination.direction_id, destination.min
