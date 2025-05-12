@@ -262,7 +262,7 @@ reset:
 #else
   LOG_ERR("Reached end of main; rebooting.");
   /* The ARM implementation sys_reboot ignores the parameter */
-  sys_reboot(SYS_REBOOT_COLD);
+  sys_reboot(SYS_REBOOT_WARM);
 #endif
 }
 #endif  // CONFIG_LED_DISPLAY_TEST

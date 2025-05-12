@@ -172,7 +172,8 @@ static long parse_response(
   int headers_size = parse_headers(sock, headers_buf, headers_buf_size);
 
   if (headers_size == 0) {
-    LOG_ERR("Headers size == 0");
+    // This should never occur because the headers_buf will still containd the send headers
+    LOG_ERR("Empty response HEADERs");
     return -1;
   } else if (headers_size < 0) {
     return headers_size;
@@ -407,6 +408,7 @@ retry:
   if (rc == -1) {
     LOG_ERR("EOF or error in response headers.");
     printk("%s\n", headers_buf);
+    rc = -3;
   }
 
 clean_up:

@@ -14,7 +14,8 @@
         "${workspaceFolder}/app",
         "${input:build-opts}",
         "--",
-        "-DCMAKE_BUILD_TYPE=Release"
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DFILE_SUFFIX=release"
       ],
       "options": {
         "env": {
