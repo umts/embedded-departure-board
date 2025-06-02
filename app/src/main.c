@@ -260,6 +260,7 @@ reset:
     k_msleep(29000);
   }
 #else
+  k_msleep(3000);
   LOG_ERR("Reached end of main; rebooting.");
   /* The ARM implementation sys_reboot ignores the parameter */
   sys_reboot(SYS_REBOOT_WARM);

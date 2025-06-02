@@ -25,7 +25,7 @@ static const char jes_cert[] = {
 #endif  // CONFIG_JES_FOTA
 
 static const char swiftly_cert[] = {
-#include "AmazonRootCA1.cer.hex"
+#include "AmazonRootCA3.cer.hex"
     // Null terminate certificate if running Mbed TLS
     IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
 };

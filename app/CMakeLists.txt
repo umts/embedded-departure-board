@@ -13,7 +13,7 @@ zephyr_include_directories(${gen_dir})
 
 foreach(inc_file
   r4.crt
-  AmazonRootCA1.cer
+  AmazonRootCA3.cer
 )
   generate_inc_file_for_target(
     app
