@@ -8,12 +8,13 @@ manifest:
     - name: nrf
       repo-path: sdk-nrf
       remote: ncs
-      revision: v3.0.1
+      revision: v3.4.0
       import:
          name-allowlist:
           - cmsis
           - cmsis-dsp
           - cmsis-nn
+          - cmsis_6
           - hal_nordic
           - littlefs
           - mbedtls
@@ -24,7 +25,7 @@ manifest:
           - picolibc
           - qcbor
           - segger
-          - tinycrypt
+          - tf-psa-crypto
           - trusted-firmware-m
           - zcbor
           - zephyr

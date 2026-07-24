@@ -8,19 +8,68 @@
   hw-flow-control;
 };
 
+/* Must stay in sync with ../../../boards/circuitdojo_feather_nrf9160_ns.overlay
+ * -- see that file's comment for why this is devicetree-native rather than
+ * Partition-Manager-driven as of the NCS 3.4.0 bump. */
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;
 /delete-node/ &slot1_partition;
+/delete-node/ &tfm_ps_partition;
+/delete-node/ &tfm_its_partition;
+/delete-node/ &tfm_otp_partition;
+/delete-node/ &storage_partition;
 
 &flash0 {
   partitions {
     boot_partition: partition@0 {
+      compatible = "zephyr,mapped-partition";
       label = "mcuboot";
       reg = <0x00000000 0x10000>;
     };
+
     slot0_partition: partition@10000 {
+      compatible = "zephyr,mapped-partition";
       label = "image-0";
-      reg = <0x000010000 0x0000e8000>;
+      reg = <0x00010000 0x000d0000>;
+      ranges = <0x0 0x10000 0xd0000>;
+      #address-cells = <1>;
+      #size-cells = <1>;
+
+      slot0_s_partition: partition@0 {
+        compatible = "zephyr,mapped-partition";
+        label = "image-0-secure";
+        reg = <0x00000000 0x00038000>;
+      };
+
+      slot0_ns_partition: partition@38000 {
+        compatible = "zephyr,mapped-partition";
+        label = "image-0-nonsecure";
+        reg = <0x00038000 0x00098000>;
+      };
+    };
+
+    tfm_ps_partition: partition@e0000 {
+      compatible = "zephyr,mapped-partition";
+      label = "tfm-ps";
+      reg = <0x000e0000 0x00002000>;
+    };
+
+    tfm_its_partition: partition@e2000 {
+      compatible = "zephyr,mapped-partition";
+      label = "tfm-its";
+      reg = <0x000e2000 0x00002000>;
+    };
+
+    tfm_otp_partition: partition@e4000 {
+      compatible = "zephyr,mapped-partition";
+      label = "tfm-otp";
+      reg = <0x000e4000 0x00002000>;
+    };
+
+    storage_partition: partition@e6000 {
+      compatible = "zephyr,mapped-partition";
+      label = "storage";
+      reg = <0x000e6000 0x0001a000>;
     };
   };
 };
@@ -31,9 +80,13 @@
     #address-cells = <1>;
     #size-cells = <1>;
 
+    /* No secure/nonsecure sub-split -- see the app overlay's matching
+     * comment: "zephyr,mapped-partition" requires a soc-nv-flash parent,
+     * which external SPI flash isn't, and this slot is never XIP-executed
+     * in place anyway. */
     slot1_partition: partition@0 {
       label = "image-1";
-      reg = <0x00000000 0x0000d8000>;
+      reg = <0x00000000 0x000d0000>;
     };
   };
 };

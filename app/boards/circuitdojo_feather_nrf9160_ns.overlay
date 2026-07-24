@@ -1,5 +1,34 @@
 #include <zephyr/dt-bindings/led/led.h>
 
+/* Rebalance the secure/nonsecure SRAM split: NCS 3.4.0's stock default (see
+ * zephyr/dts/vendor/nordic/nrf91xx_partition.dtsi) is 88 KB secure / 168 KB
+ * nonsecure, replacing this project's old pm_static.yml-driven 64 KB
+ * secure / 192 KB nonsecure split (Partition Manager provided this before
+ * the devicetree-based partitioning migration -- see the flash partition
+ * comment further down in this file). The stock split left the nonsecure
+ * app image 10984 bytes short of fitting in RAM (confirmed via a real link
+ * failure, "region RAM overflowed") -- this app's own TF-M secure image
+ * has run fine in 64 KB in production, so reclaiming the other 24 KB for
+ * the nonsecure side (which this RAM-hungry app -- MBEDTLS_HEAP_SIZE alone
+ * is 64 KB -- actually needs) is the right call here, not shrinking the app.
+ * Only the reg/ranges properties are overridden by label, not delete+
+ * redefine, so the modem IPC sub-partitions (sram0_ns_modem's children)
+ * carry over unchanged -- their offsets are relative to sram0_ns's own
+ * "ranges", not to its absolute base address. */
+&sram0_s {
+  reg = <0x0 DT_SIZE_K(64)>;
+};
+
+&sram0_ns {
+  reg = <0x10000 DT_SIZE_K(192)>;
+  ranges = <0x0 0x10000 DT_SIZE_K(192)>;
+};
+
+&sram0_ns_app {
+  /* 192 KB nonsecure - 40 KB modem (sram0_ns_modem, unchanged) = 152 KB. */
+  reg = <0xa000 DT_SIZE_K(152)>;
+};
+
 &pinctrl {
   i2c1_default: i2c1_default {
     group1 {
@@ -104,19 +133,86 @@
   pinctrl-names = "default", "sleep";
 };
 
+/* Devicetree-based partitioning (migrated off the legacy Partition Manager,
+ * `pm_static.yml`, in the NCS 3.4.0 bump -- PARTITION_MANAGER is now marked
+ * [DEPRECATED] there and this project's strict Kconfig-warnings-are-fatal
+ * build treats that as a hard build failure, not just a warning to ignore.
+ * Byte layout is carried over unchanged from the old pm_static.yml so on-
+ * flash behavior/capacity is identical, just declared natively instead.
+ * Mirrors zephyr/dts/vendor/nordic/nrf91xx_partition.dtsi's own
+ * slot0_s/slot0_ns "zephyr,mapped-partition" sub-partitioning pattern for
+ * TF-M's secure/nonsecure split (previously provided by Partition Manager,
+ * not by devicetree, on this board -- see the old tfm/tfm_nonsecure entries
+ * in git history's pm_static.yml). Must stay in sync with
+ * ../sysbuild/mcuboot/boards/circuitdojo_feather_nrf9160.overlay. */
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;
 /delete-node/ &slot1_partition;
+/delete-node/ &tfm_ps_partition;
+/delete-node/ &tfm_its_partition;
+/delete-node/ &tfm_otp_partition;
+/delete-node/ &storage_partition;
 
 &flash0 {
   partitions {
     boot_partition: partition@0 {
+      compatible = "zephyr,mapped-partition";
       label = "mcuboot";
       reg = <0x00000000 0x10000>;
     };
+
     slot0_partition: partition@10000 {
+      compatible = "zephyr,mapped-partition";
       label = "image-0";
-      reg = <0x000010000 0x0000e8000>;
+      reg = <0x00010000 0x000d0000>;
+      ranges = <0x0 0x10000 0xd0000>;
+      #address-cells = <1>;
+      #size-cells = <1>;
+
+      slot0_s_partition: partition@0 {
+        compatible = "zephyr,mapped-partition";
+        label = "image-0-secure";
+        reg = <0x00000000 0x00038000>;
+      };
+
+      slot0_ns_partition: partition@38000 {
+        compatible = "zephyr,mapped-partition";
+        label = "image-0-nonsecure";
+        reg = <0x00038000 0x00098000>;
+      };
+    };
+
+    /* TF-M's own secure-side storage, after both slots (0xe0000 = mcuboot +
+     * slot0). Sized/ordered the same as the old pm_static.yml's
+     * tfm_ps/tfm_its/tfm_otp_nv_counters entries. */
+    tfm_ps_partition: partition@e0000 {
+      compatible = "zephyr,mapped-partition";
+      label = "tfm-ps";
+      reg = <0x000e0000 0x00002000>;
+    };
+
+    tfm_its_partition: partition@e2000 {
+      compatible = "zephyr,mapped-partition";
+      label = "tfm-its";
+      reg = <0x000e2000 0x00002000>;
+    };
+
+    tfm_otp_partition: partition@e4000 {
+      compatible = "zephyr,mapped-partition";
+      label = "tfm-otp";
+      reg = <0x000e4000 0x00002000>;
+    };
+
+    /* Non-secure settings/NVS storage (old pm_static.yml's separate
+     * settings_storage/nvs_storage, merged into one contiguous region --
+     * NVS just needs a contiguous partition, the split was a Partition
+     * Manager bookkeeping artifact, not a functional requirement). Runs to
+     * the end of the 1 MB internal flash, using what used to be the
+     * "EMPTY_0/1/2" alignment slack in pm_static.yml. */
+    storage_partition: partition@e6000 {
+      compatible = "zephyr,mapped-partition";
+      label = "storage";
+      reg = <0x000e6000 0x0001a000>;
     };
   };
 };
@@ -127,9 +223,23 @@
     #address-cells = <1>;
     #size-cells = <1>;
 
+    /* MCUboot secondary (update) slot, external SPI flash -- same total size
+     * as the internal primary slot0_partition above so either can be
+     * swapped into the other. This board's internal flash (1 MB) has no
+     * room for a second full-size slot, hence external flash (see the app's
+     * own README/CLAUDE.md for why -- unlike the sibling pigeon-examples
+     * https_init sample, which dropped the external secondary entirely).
+     * No secure/nonsecure sub-partition split here: unlike slot0, this slot
+     * is never memory-mapped/XIP-executed in place (external SPI-NOR isn't
+     * linearly addressable the way internal flash is), it's just an opaque
+     * byte staging area MCUboot copies to/from the primary slot on swap --
+     * "zephyr,mapped-partition" requires a soc-nv-flash parent and fails
+     * devicetree generation on an external SPI flash node, so this stays
+     * plain "fixed-partitions", matching how this project's overlay always
+     * declared this slot before the Partition Manager migration. */
     slot1_partition: partition@0 {
       label = "image-1";
-      reg = <0x00000000 0x0000d8000>;
+      reg = <0x00000000 0x000d0000>;
     };
   };
 };

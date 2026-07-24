@@ -8,8 +8,6 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/storage/flash_map.h>
 
-#include "pm_config.h"
-
 #ifdef CONFIG_JES_FOTA
 #include <string.h>
 #include <sys/errno.h>
@@ -24,14 +22,22 @@ LOG_MODULE_REGISTER(fota);
 
 #define STRINGIZE(arg) #arg
 #define STRINGIZE_VALUE(arg) STRINGIZE(arg)
-#define PM_MCUBOOT_SECONDARY_STRING STRINGIZE_VALUE(PM_MCUBOOT_SECONDARY_NAME)
+/* Devicetree label for the secondary (update) slot -- see this board's
+ * overlay's slot1_partition node (on external SPI flash). Replaces the
+ * Partition-Manager-generated PM_MCUBOOT_SECONDARY_NAME/_ID/PM_MCUBOOT_
+ * PRIMARY_ID macros (pm_config.h), dropped in the NCS 3.4.0 bump's move to
+ * devicetree-based partitioning -- see app/CLAUDE.md-equivalent notes in
+ * the board overlay comment for why.
+ */
+#define MCUBOOT_SECONDARY_LABEL slot1_partition
+#define MCUBOOT_SECONDARY_STRING STRINGIZE_VALUE(MCUBOOT_SECONDARY_LABEL)
 
 #define CONTENT_LENGTH_HEADER ""
 #define SHA256_HEADER "sha-256: "
 
 BUILD_ASSERT(
-    FIXED_PARTITION_EXISTS(PM_MCUBOOT_SECONDARY_NAME),
-    "Missing " PM_MCUBOOT_SECONDARY_STRING
+    FIXED_PARTITION_EXISTS(MCUBOOT_SECONDARY_LABEL),
+    "Missing " MCUBOOT_SECONDARY_STRING
     " fixed partition. Secondary slot partition is required!"
 );
 
@@ -40,7 +46,7 @@ void validate_image(void) {
   char buf[BOOT_IMG_VER_STRLEN_MAX];
   struct mcuboot_img_header header;
 
-  boot_read_bank_header(PM_MCUBOOT_PRIMARY_ID, &header, sizeof(header));
+  boot_read_bank_header(FIXED_PARTITION_ID(slot0_partition), &header, sizeof(header));
   snprintk(
       buf, sizeof(buf), "%d.%d.%d-%d", header.h.v1.sem_ver.major,
       header.h.v1.sem_ver.minor, header.h.v1.sem_ver.revision,
@@ -89,12 +95,12 @@ void download_update(void) {
   char *sha256_ptr;
   uint8_t sha256[32];
 
-  rc = boot_erase_img_bank(PM_MCUBOOT_SECONDARY_ID);
+  rc = boot_erase_img_bank(FIXED_PARTITION_ID(MCUBOOT_SECONDARY_LABEL));
   if (rc < 0) {
     LOG_ERR("Failed to erase secondary image bank");
   }
 
-  rc = flash_img_init_id(&ctx, PM_MCUBOOT_SECONDARY_ID);
+  rc = flash_img_init_id(&ctx, FIXED_PARTITION_ID(MCUBOOT_SECONDARY_LABEL));
   if (rc < 0) {
     LOG_ERR("Failed to init stream flash");
   }
@@ -125,7 +131,7 @@ void download_update(void) {
         .match = sha256, .clen = flash_img_bytes_written(&ctx)
     };
 
-    rc = flash_img_check(&ctx, &fic, PM_MCUBOOT_SECONDARY_ID);
+    rc = flash_img_check(&ctx, &fic, FIXED_PARTITION_ID(MCUBOOT_SECONDARY_LABEL));
     if (rc < 0) {
       LOG_ERR("flash_img_check failed: %s (%d)", strerror(rc), rc);
       return;

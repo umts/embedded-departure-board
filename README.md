@@ -32,6 +32,11 @@
    pip install -r nrf/scripts/requirements.txt
    pip install -r bootloader/mcuboot/scripts/requirements.txt
    ```
+10. **Required one-time patch after every `west update`** (upstream Kconfig bug in NCS 3.4.0's vendored `zephyr/soc/nordic/Kconfig`, not something this repo can fix since that file is west-managed/gitignored): remove or comment out the line
+    ```
+    select CMSIS_CORE_HAS_SYSTEM_CORE_CLOCK if ARM
+    ```
+    from `SOC_FAMILY_NORDIC_NRF` in `zephyr/soc/nordic/Kconfig`. Without this, `west build` fails on *any* board in this SoC family (reproduces on a stock, unmodified `zephyr/samples/hello_world`) with `error: Aborting due to Kconfig warnings` — `CMSIS_CORE_HAS_SYSTEM_CORE_CLOCK`'s dependency, once a second declaration in `soc/nxp/imxrt/imxrt6xx/Kconfig.defconfig` is accounted for, is unsatisfiable, and this project's Kconfig-warnings-are-fatal default (see `zephyr/scripts/kconfig/kconfig.py`) treats that as a hard build failure rather than a warning. Not yet reported upstream.
 
 ### Recomended
 - Read the [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) to install the required development tools (system packages, Zephyr SDK, and udev rules).
