@@ -66,10 +66,17 @@
       reg = <0x000e4000 0x00002000>;
     };
 
-    storage_partition: partition@e6000 {
+    /* Starts at the next 32 KB boundary after TF-M's secure storage, not
+     * immediately at 0xe6000: the nRF9160 SPU assigns flash security in
+     * 32 KB blocks, so a nonsecure partition starting mid-block would force
+     * the whole 0xe0000-0xe8000 block nonsecure and expose TF-M's PS/ITS/
+     * NV-counter data to the app (the old pm_static.yml's EMPTY_* entries
+     * existed precisely to keep these boundaries block-aligned). The 8 KB
+     * at 0xe6000-0xe8000 stays reserved secure-side slack. */
+    storage_partition: partition@e8000 {
       compatible = "zephyr,mapped-partition";
       label = "storage";
-      reg = <0x000e6000 0x0001a000>;
+      reg = <0x000e8000 0x00018000>;
     };
   };
 };
@@ -93,6 +100,11 @@
 
 / {
   chosen {
+    /* Without Partition Manager, MCUboot's own link address comes from
+     * zephyr,code-partition. The board dts defaults this to slot0_partition
+     * (the application slot at 0x10000) -- MCUboot must link into its own
+     * 64 KB boot_partition at 0x0 or it lands on top of the app image. */
+    zephyr,code-partition = &boot_partition;
     nordic,pm-ext-flash = &w25q32jv;
     zephyr,console = &uart0;
     zephyr,shell-uart = &uart0;
