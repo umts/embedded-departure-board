@@ -8,19 +8,69 @@
   hw-flow-control;
 };
 
+/* Must stay in sync with ../../../boards/circuitdojo_feather_nrf9160_ns.overlay. */
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;
 /delete-node/ &slot1_partition;
+/delete-node/ &tfm_ps_partition;
+/delete-node/ &tfm_its_partition;
+/delete-node/ &tfm_otp_partition;
+/delete-node/ &storage_partition;
 
 &flash0 {
   partitions {
     boot_partition: partition@0 {
+      compatible = "zephyr,mapped-partition";
       label = "mcuboot";
       reg = <0x00000000 0x10000>;
     };
+
     slot0_partition: partition@10000 {
+      compatible = "zephyr,mapped-partition";
       label = "image-0";
-      reg = <0x000010000 0x0000e8000>;
+      reg = <0x00010000 0x000d0000>;
+      ranges = <0x0 0x10000 0xd0000>;
+      #address-cells = <1>;
+      #size-cells = <1>;
+
+      slot0_s_partition: partition@0 {
+        compatible = "zephyr,mapped-partition";
+        label = "image-0-secure";
+        reg = <0x00000000 0x00038000>;
+      };
+
+      slot0_ns_partition: partition@38000 {
+        compatible = "zephyr,mapped-partition";
+        label = "image-0-nonsecure";
+        reg = <0x00038000 0x00098000>;
+      };
+    };
+
+    tfm_ps_partition: partition@e0000 {
+      compatible = "zephyr,mapped-partition";
+      label = "tfm-ps";
+      reg = <0x000e0000 0x00002000>;
+    };
+
+    tfm_its_partition: partition@e2000 {
+      compatible = "zephyr,mapped-partition";
+      label = "tfm-its";
+      reg = <0x000e2000 0x00002000>;
+    };
+
+    tfm_otp_partition: partition@e4000 {
+      compatible = "zephyr,mapped-partition";
+      label = "tfm-otp";
+      reg = <0x000e4000 0x00002000>;
+    };
+
+    /* The SPU assigns flash security in 32 KB blocks, so nonsecure storage
+     * must start on a 32 KB boundary or the block shared with TF-M's secure
+     * storage would become nonsecure. 0xe6000-0xe8000 is reserved slack. */
+    storage_partition: partition@e8000 {
+      compatible = "zephyr,mapped-partition";
+      label = "storage";
+      reg = <0x000e8000 0x00018000>;
     };
   };
 };
@@ -31,15 +81,20 @@
     #address-cells = <1>;
     #size-cells = <1>;
 
+    /* Staging area only, never executed from; "zephyr,mapped-partition"
+     * requires internal flash. */
     slot1_partition: partition@0 {
       label = "image-1";
-      reg = <0x00000000 0x0000d8000>;
+      reg = <0x00000000 0x000d0000>;
     };
   };
 };
 
 / {
   chosen {
+    /* MCUboot must link into its own partition; the board dts default
+     * (slot0_partition) would place it on top of the app image. */
+    zephyr,code-partition = &boot_partition;
     nordic,pm-ext-flash = &w25q32jv;
     zephyr,console = &uart0;
     zephyr,shell-uart = &uart0;

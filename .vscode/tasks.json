@@ -76,7 +76,7 @@
         "&&",
         "west",
         "flash",
-        "--skip-rebuild",
+        "--no-rebuild",
         "-r",
         "nrfutil",
         "--erase",

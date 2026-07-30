@@ -267,7 +267,12 @@ static char *get_redirect_location(char *headers_buf, int headers_buf_size) {
     ptr++;
   }
 
-  *strstr(ptr, "\r\n") = '\0';
+  char* end = strstr(ptr, "\r\n");
+  if (end == NULL) {
+    LOG_ERR("Location header not terminated");
+    return NULL;
+  }
+  *end = '\0';
 
   return ptr;
 }

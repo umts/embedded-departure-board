@@ -32,7 +32,6 @@
    pip install -r nrf/scripts/requirements.txt
    pip install -r bootloader/mcuboot/scripts/requirements.txt
    ```
-
 ### Recomended
 - Read the [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) to install the required development tools (system packages, Zephyr SDK, and udev rules).
 
@@ -77,7 +76,7 @@ Flashing the device with an external programmer is quicker than using a bootload
 
 #### Running
 ```sh
-west flash --erase --softreset
+west flash -r nrfutil --erase --softreset
 ```
 
 ### Uploading via the bootloader
