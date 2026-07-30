@@ -13,10 +13,6 @@
 #include "net/lte_manager.h"
 #include "watchdog_app.h"
 
-#if CONFIG_JES_FOTA
-#include "net/fota.h"
-#endif  // CONFIG_JES_FOTA
-
 LOG_MODULE_REGISTER(custom_http_client);
 
 #define FULL_API_PATH                             \
@@ -179,41 +175,6 @@ static long parse_response(
     return headers_size;
   }
 
-#ifdef CONFIG_JES_FOTA
-  int rc = 0;
-
-  do {
-    if (write_nvs) {
-      bytes = zsock_recv(*sock, recv_body_buf, recv_body_buf_size, 0);
-      if (bytes < 0) {
-        if (errno == EMSGSIZE) {
-          LOG_WRN(
-              "recv() returned EMSGSIZE. Modem's secure socket buffer limit "
-              "reached.\nRetrying with new socket, Range: %ld-",
-              offset
-          );
-          return offset;
-        }
-        LOG_ERR("recv() body failed, %s", strerror(errno));
-        return bytes;
-      }
-      LOG_DBG("recv bytes: %d", bytes);
-      LOG_DBG("Total: %ld", offset);
-      rc = write_buffer_to_flash(recv_body_buf, bytes, false);
-      if (rc < 0) {
-        LOG_ERR("write_buffer_to_flash() failed, error: %s", strerror(errno));
-        return bytes;
-      }
-    } else {
-      bytes = zsock_recv(*sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0);
-      if (bytes < 0) {
-        LOG_ERR("recv() body failed, %s", strerror(errno));
-        return bytes;
-      }
-    }
-    offset += bytes;
-  } while (bytes != 0);
-#else
   do {
     bytes = zsock_recv(*sock, (recv_body_buf + offset), (recv_body_buf_size - offset), 0);
     if (bytes < 0) {
@@ -222,22 +183,9 @@ static long parse_response(
     }
     offset += bytes;
   } while (bytes != 0);
-#endif  // CONFIG_JES_FOTA
 
   LOG_DBG("Received Body. Size: %ld bytes", offset);
   LOG_INF("Total bytes received: %ld", offset + headers_size);
-
-#ifdef CONFIG_JES_FOTA
-  if (write_nvs) {
-    rc = write_buffer_to_flash(recv_body_buf, 0, true);
-
-    if (rc < 0) {
-      LOG_ERR("write_buffer_to_flash() failed, error: %s", strerror(errno));
-      return bytes;
-    }
-    return rc;
-  }
-#endif  // CONFIG_JES_FOTA
 
   /* Make sure recv_buf is NULL terminated (for safe use with strstr) */
   if (offset < recv_body_buf_size) {
@@ -523,25 +471,3 @@ int http_request_stop_json(
 
   return err;
 }
-
-#if CONFIG_JES_FOTA
-int http_get_firmware(
-    char *write_buf, int write_buf_size, char *headers_buf, int headers_buf_size
-) {
-  int err;
-
-  if (k_sem_take(&lte_connected_sem, K_FOREVER) != 0) {
-    LOG_ERR("Failed to take lte_connected_sem");
-    err = 1;
-  } else {
-    err = send_http_request(
-        CONFIG_JES_FOTA_HOSTNAME, CONFIG_JES_FOTA_PATH, "application/octet-stream", JES_SEC_TAG,
-        write_buf, write_buf_size, headers_buf, headers_buf_size, true
-    );
-
-    k_sem_give(&lte_connected_sem);
-  }
-
-  return err;
-}
-#endif  // CONFIG_JES_FOTA

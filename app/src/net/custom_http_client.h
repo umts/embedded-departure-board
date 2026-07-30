@@ -12,13 +12,4 @@ int http_request_stop_json(
     char *stop_body_buf, int stop_body_buf_size, char *headers_buf, int headers_buf_size
 );
 
-#ifdef CONFIG_JES_FOTA
-/** @brief Makes an HTTP GET request to download a firmware update file and
- * writes it to flash.
- */
-int http_get_firmware(
-    char *write_buf, int write_buf_size, char *headers_buf, int headers_buf_size
-);
-#endif  // CONFIG_JES_FOTA
-
 #endif  // CUSTOM_HTTP_CLIENT_H
