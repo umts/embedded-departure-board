@@ -79,17 +79,4 @@ config NTP_FETCH_RETRY_COUNT
   int "Max attempts to fetch time from NTP server before changing to fallback server"
   default 2
 
-#### FOTA SETTINGS ####
-
-config JES_FOTA
-  bool "Enable FOTA downloads from JES servers"
-
-config JES_FOTA_HOSTNAME
-  string "HTTP hostname used to download firmware upgade file"
-  depends on JES_FOTA
-
-config JES_FOTA_PATH
-  string "HTTP path used to download firmware upgade file"
-  depends on JES_FOTA
-
 endmenu

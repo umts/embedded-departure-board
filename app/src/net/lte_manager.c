@@ -16,14 +16,6 @@
 
 LOG_MODULE_REGISTER(lte_manager);
 
-#if defined(CONFIG_JES_FOTA)
-static const char jes_cert[] = {
-#include "r4.crt.hex"
-    // Null terminate certificate if running Mbed TLS
-    IF_ENABLED(CONFIG_TLS_CREDENTIALS, (0x00))
-};
-#endif  // CONFIG_JES_FOTA
-
 static const char swiftly_cert[] = {
 #include "AmazonRootCA3.cer.hex"
     // Null terminate certificate if running Mbed TLS
@@ -32,14 +24,7 @@ static const char swiftly_cert[] = {
 
 #ifdef CONFIG_MODEM_KEY_MGMT
 // The total size of the included certificates must be less than 4KB
-BUILD_ASSERT(
-    (sizeof(swiftly_cert)
-#if defined(CONFIG_JES_FOTA)
-     + sizeof(jes_cert)
-#endif  // CONFIG_JES_FOTA
-    ) < KB(4),
-    "Certificates too large"
-);
+BUILD_ASSERT((sizeof(swiftly_cert)) < KB(4), "Certificates too large");
 #endif
 
 K_SEM_DEFINE(lte_connected_sem, 1, 1);
@@ -106,14 +91,6 @@ int lte_connect(void) {
 #endif
 
   /* Provision certificates before connecting to the network */
-#if defined(CONFIG_JES_FOTA)
-  err = provision_cert(JES_SEC_TAG, jes_cert, sizeof(jes_cert));
-  if (err) {
-    LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", JES_SEC_TAG);
-    return err;
-  }
-#endif  // CONFIG_JES_FOTA
-
   err = provision_cert(SWIFTLY_SEC_TAG, swiftly_cert, sizeof(swiftly_cert));
   if (err) {
     LOG_ERR("Failed to provision TLS certificate. TLS_SEC_TAG: %d", SWIFTLY_SEC_TAG);
