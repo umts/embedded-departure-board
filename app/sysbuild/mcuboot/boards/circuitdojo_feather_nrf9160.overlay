@@ -8,9 +8,7 @@
   hw-flow-control;
 };
 
-/* Must stay in sync with ../../../boards/circuitdojo_feather_nrf9160_ns.overlay
- * -- see that file's comment for why this is devicetree-native rather than
- * Partition-Manager-driven as of the NCS 3.4.0 bump. */
+/* Must stay in sync with ../../../boards/circuitdojo_feather_nrf9160_ns.overlay. */
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;
 /delete-node/ &slot1_partition;
@@ -83,10 +81,8 @@
     #address-cells = <1>;
     #size-cells = <1>;
 
-    /* No secure/nonsecure sub-split -- see the app overlay's matching
-     * comment: "zephyr,mapped-partition" requires a soc-nv-flash parent,
-     * which external SPI flash isn't, and this slot is never XIP-executed
-     * in place anyway. */
+    /* Staging area only, never executed from; "zephyr,mapped-partition"
+     * requires internal flash. */
     slot1_partition: partition@0 {
       label = "image-1";
       reg = <0x00000000 0x000d0000>;

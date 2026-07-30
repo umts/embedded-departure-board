@@ -104,18 +104,9 @@
   pinctrl-names = "default", "sleep";
 };
 
-/* Devicetree-based partitioning (migrated off the legacy Partition Manager,
- * `pm_static.yml`, in the NCS 3.4.0 bump -- PARTITION_MANAGER is now marked
- * [DEPRECATED] there and this project's strict Kconfig-warnings-are-fatal
- * build treats that as a hard build failure, not just a warning to ignore.
- * Byte layout is carried over unchanged from the old pm_static.yml so on-
- * flash behavior/capacity is identical, just declared natively instead.
- * Mirrors zephyr/dts/vendor/nordic/nrf91xx_partition.dtsi's own
- * slot0_s/slot0_ns "zephyr,mapped-partition" sub-partitioning pattern for
- * TF-M's secure/nonsecure split (previously provided by Partition Manager,
- * not by devicetree, on this board -- see the old tfm/tfm_nonsecure entries
- * in git history's pm_static.yml). Must stay in sync with
- * ../sysbuild/mcuboot/boards/circuitdojo_feather_nrf9160.overlay. */
+/* This app's flash layout: TF-M secure/nonsecure sub-partitioning of slot0
+ * plus TF-M storage, replacing the board's stock partition table. Must stay
+ * in sync with ../sysbuild/mcuboot/boards/circuitdojo_feather_nrf9160.overlay. */
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;
 /delete-node/ &slot1_partition;
@@ -153,9 +144,7 @@
       };
     };
 
-    /* TF-M's own secure-side storage, after both slots (0xe0000 = mcuboot +
-     * slot0). Sized/ordered the same as the old pm_static.yml's
-     * tfm_ps/tfm_its/tfm_otp_nv_counters entries. */
+    /* TF-M's own secure-side storage, after both slots. */
     tfm_ps_partition: partition@e0000 {
       compatible = "zephyr,mapped-partition";
       label = "tfm-ps";
@@ -192,20 +181,10 @@
     #address-cells = <1>;
     #size-cells = <1>;
 
-    /* MCUboot secondary (update) slot, external SPI flash -- same total size
-     * as the internal primary slot0_partition above so either can be
-     * swapped into the other. This board's internal flash (1 MB) has no
-     * room for a second full-size slot, hence external flash (see the app's
-     * own README/CLAUDE.md for why -- unlike the sibling pigeon-examples
-     * https_init sample, which dropped the external secondary entirely).
-     * No secure/nonsecure sub-partition split here: unlike slot0, this slot
-     * is never memory-mapped/XIP-executed in place (external SPI-NOR isn't
-     * linearly addressable the way internal flash is), it's just an opaque
-     * byte staging area MCUboot copies to/from the primary slot on swap --
-     * "zephyr,mapped-partition" requires a soc-nv-flash parent and fails
-     * devicetree generation on an external SPI flash node, so this stays
-     * plain "fixed-partitions", matching how this project's overlay always
-     * declared this slot before the Partition Manager migration. */
+    /* MCUboot secondary (update) slot: same size as slot0 so images can
+     * swap; internal flash has no room for a second slot. Plain
+     * fixed-partitions because "zephyr,mapped-partition" requires internal
+     * flash, and this slot is only a staging area, never executed from. */
     slot1_partition: partition@0 {
       label = "image-1";
       reg = <0x00000000 0x000d0000>;
