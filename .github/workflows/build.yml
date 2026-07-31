@@ -44,18 +44,10 @@ jobs:
           tar -xf zephyr-sdk-${ZSDK_VERSION}_linux-x86_64_minimal.tar.xz -C ${ZEPHYR_SDK_INSTALL_PATH}/
           rm zephyr-sdk-${ZSDK_VERSION}_linux-x86_64_minimal.tar.xz
 
-      - name: Download arm-zephyr-eabi toolchain
-        run: wget -nv ${WGET_ARGS} https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZSDK_VERSION}/toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz
-
-      - name: Extract arm-zephyr-eabi toolchain
-        run: |
-          tar -xf toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz -C ${ZEPHYR_SDK_INSTALL_PATH}/zephyr-sdk-${ZSDK_VERSION}/
-          rm toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz
-
       - name: Run Zephyr SDK setup script
         run: |
           cd ${ZEPHYR_SDK_INSTALL_PATH}
-          zephyr-sdk-${ZSDK_VERSION}/setup.sh -h -c
+          zephyr-sdk-${ZSDK_VERSION}/setup.sh -t arm-zephyr-eabi -h -c
 
       - name: Restore west cache
         id: west-cache
@@ -109,12 +101,14 @@ jobs:
       - name: Build Zephyr app test
         if: ${{ !inputs.release_build }}
         env:
+          ZEPHYR_TOOLCHAIN_VARIANT: zephyr
           BOARD: circuitdojo_feather/nrf9160/ns
         run: west build --sysbuild ./app -p -- -DCMAKE_BUILD_TYPE=Release
 
       - name: Build Zephyr app for release
         if: ${{ inputs.release_build }}
         env:
+          ZEPHYR_TOOLCHAIN_VARIANT: zephyr
           BOARD: circuitdojo_feather/nrf9160/ns
         run: west build --sysbuild ./app -p -- -DFILE_SUFFIX=release -DCMAKE_BUILD_TYPE=Release
 

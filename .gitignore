@@ -1,5 +1,10 @@
-# Zephyr build folder
+# Zephyr build folders
 build/
+build_release/
+build_debug/
+
+# Zephyr local conf file
+app/prj.local.conf
 
 # Zephyr logs
 log*.txt
