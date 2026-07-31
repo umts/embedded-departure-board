@@ -82,7 +82,7 @@ jobs:
           echo "Created release [${{ env.version_tag }}]($html_url)" >> $GITHUB_STEP_SUMMARY
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           merge-multiple: true
 

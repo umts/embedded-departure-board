@@ -30,7 +30,7 @@ jobs:
         shell: bash
     steps:
       - name: Git checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       ## The ci-base image now takes care of this, but doesn't allow minimal install ##
       - name: Make ZEPHYR_SDK_INSTALL_PATH
@@ -49,8 +49,8 @@ jobs:
 
       - name: Extract arm-zephyr-eabi toolchain
         run: |
-          tar -xf toolchain_linux-x86_64_arm-zephyr-eabi.tar.xz -C ${ZEPHYR_SDK_INSTALL_PATH}/zephyr-sdk-${ZSDK_VERSION}/
-          rm toolchain_linux-x86_64_arm-zephyr-eabi.tar.xz
+          tar -xf toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz -C ${ZEPHYR_SDK_INSTALL_PATH}/zephyr-sdk-${ZSDK_VERSION}/
+          rm toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz
 
       - name: Run Zephyr SDK setup script
         run: |
@@ -59,7 +59,7 @@ jobs:
 
       - name: Restore west cache
         id: west-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             bootloader/
@@ -82,7 +82,7 @@ jobs:
 
       - name: Create west cache
         if: steps.west-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: |
             bootloader/
@@ -123,14 +123,14 @@ jobs:
 
       - name: Upload merged.hex
         if: ${{ inputs.release_build }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.BRANCH }}_merged.hex
           path: build/merged.hex
 
       - name: Upload zephyr.signed.bin
         if: ${{ inputs.release_build }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.BRANCH }}_zephyr.signed.bin
           path: build/app/zephyr/zephyr.signed.bin
