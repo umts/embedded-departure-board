@@ -10,7 +10,7 @@ jobs:
       vtag: ${{ steps.version_tag.outputs.vtag }}
     steps:
       - name: Git checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           sparse-checkout: 'app/VERSION'
           fetch-depth: '2'
