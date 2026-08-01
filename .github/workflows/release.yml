@@ -16,7 +16,7 @@ on:
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yml
+    uses: umts/embedded-departure-board/.github/workflows/build.yml@main
     with:
       release_build: true
     secrets: inherit
@@ -81,9 +81,6 @@ jobs:
           REPO: ${{ github.event.repository.name }}
           BRANCH: main
         run: |
-          # ensure jq present
-          type -p jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)
-
           http_code=$(curl -sS -w "%{http_code}" -o release.json \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
