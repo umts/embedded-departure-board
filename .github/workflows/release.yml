@@ -29,8 +29,8 @@ jobs:
       version_tag: ${{ inputs.version_tag }}
 
     steps:
-      - name: Check for curl
-        run: type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install curl -y)
+      - name: Update curl and jq
+        run: sudo apt-get update && sudo apt-get install -y curl jq
 
       - name: Extract branch name
         shell: bash
@@ -44,21 +44,32 @@ jobs:
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
         run: |
-          curl -L -X GET \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GH_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          "https://api.github.com/repos/${{ env.OWNER }}/${{ env.REPO }}/releases/tags/${{ env.version_tag }}" \
-          -o release.json
-          # Don't return exit code 1 if no match found
-          # Credit https://stackoverflow.com/a/49627999/8120300
-          html_url=$({ grep -Po -m 1 '(?:\G(?!^)",|"html_url":\s*)\s*"\K[^"]+' release.json || test $? = 1; }| { grep -v grep || test $? = 1; })
-          if [[ -z "$html_url" ]]; then
-            echo "No release matching tag ${{ env.version_tag }} found" >> $GITHUB_STEP_SUMMARY
-            echo "needs_release=true" >> $GITHUB_OUTPUT
+          api="https://api.github.com/repos/${OWNER}/${REPO}/releases/tags/${version_tag}"
+
+          # fetch release, capture HTTP status and body
+          http_code=$(curl -sS -w "%{http_code}" -o release.json \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$api")
+
+          if [ "$http_code" -eq 200 ]; then
+            upload_url=$(jq -r '.upload_url // empty' release.json)
+            # strip the template portion like "{?name,label}" so upload_url is usable
+            upload_url="${upload_url%\{*}"
+            html_url=$(jq -r '.html_url // empty' release.json)
+
+            echo "upload_url=$upload_url" >> "$GITHUB_ENV"
+            echo "Found release [$version_tag]($html_url)" >> $GITHUB_STEP_SUMMARY
+            echo "needs_release=false" >> "$GITHUB_OUTPUT"
+          elif [ "$http_code" -eq 404 ]; then
+            echo "No release matching tag $version_tag found" >> $GITHUB_STEP_SUMMARY
+            echo "needs_release=true" >> "$GITHUB_OUTPUT"
           else
-            echo "upload_url=$(grep -Po '(?:\G(?!^)",|"upload_url":\s*)\s*"\K[^"{]+' release.json)" >> $GITHUB_ENV
-            echo "Found release [${{ env.version_tag }}]($html_url)" >> $GITHUB_STEP_SUMMARY
+            echo "Unexpected HTTP $http_code from GitHub API" >> $GITHUB_STEP_SUMMARY
+            cat release.json >> $GITHUB_STEP_SUMMARY
+            # treat unexpected responses as needing a release (or change logic if you prefer)
+            echo "needs_release=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create release
@@ -70,16 +81,28 @@ jobs:
           REPO: ${{ github.event.repository.name }}
           BRANCH: main
         run: |
-          curl -L -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GH_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          "https://api.github.com/repos/${{ env.OWNER }}/${{ env.REPO }}/releases" \
-          -d '{"tag_name":"${{ env.version_tag }}","target_commitish":"${{ env.BRANCH }}","body":"___This release was automatically generated when the app version increased___","draft":false,"prerelease":false,"generate_release_notes":true}' \
-          -o release.json
-          echo "upload_url=$(grep -Po '(?:\G(?!^)",|"upload_url":\s*)\s*"\K[^"{]+' release.json)" >> $GITHUB_ENV
-          html_url=$(grep -Po -m 1 '(?:\G(?!^)",|"html_url":\s*)\s*"\K[^"]+' release.json)
-          echo "Created release [${{ env.version_tag }}]($html_url)" >> $GITHUB_STEP_SUMMARY
+          # ensure jq present
+          type -p jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)
+
+          http_code=$(curl -sS -w "%{http_code}" -o release.json \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -d '{"tag_name":"'"${version_tag}"'","target_commitish":"'"${BRANCH}"'","body":"___This release was automatically generated when the app version increased___","draft":false,"prerelease":false}' \
+            "https://api.github.com/repos/${OWNER}/${REPO}/releases")
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            upload_url=$(jq -r '.upload_url // empty' release.json)
+            upload_url="${upload_url%\{*}"
+            echo "upload_url=$upload_url" >> "$GITHUB_ENV"
+
+            html_url=$(jq -r '.html_url // empty' release.json)
+            echo "Created release [$version_tag]($html_url)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Failed to create release (HTTP $http_code)" >> $GITHUB_STEP_SUMMARY
+            cat release.json >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: Download artifacts
         uses: actions/download-artifact@v8
