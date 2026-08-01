@@ -34,7 +34,7 @@ jobs:
   release:
     if: needs.version_check.outputs.vup == 'true'
     needs: version_check
-    uses: ./.github/workflows/release.yml
+    uses: umts/embedded-departure-board/.github/workflows/release.yml@main
     with:
       version_tag: ${{ needs.version_check.outputs.vtag }}
     secrets: inherit
@@ -42,7 +42,7 @@ jobs:
   build:
     if: needs.version_check.outputs.vup == 'false'
     needs: version_check
-    uses: ./.github/workflows/build.yml
+    uses: umts/embedded-departure-board/.github/workflows/build.yml@main
     with:
       release_build: false
     secrets: inherit
